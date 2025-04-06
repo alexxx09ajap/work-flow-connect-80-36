@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { toast } from "@/components/ui/use-toast";
 
@@ -9,6 +8,7 @@ export type UserType = {
   photoURL?: string;
   bio?: string;
   skills?: string[];
+  role: 'freelancer' | 'client'; // Added role property
 };
 
 interface AuthContextType {
@@ -43,7 +43,8 @@ const MOCK_USERS = [
     password: 'password123',
     photoURL: '/assets/avatars/avatar-1.png',
     bio: 'Desarrollador Full Stack con 5 años de experiencia',
-    skills: ['React', 'Node.js', 'Firebase']
+    skills: ['React', 'Node.js', 'Firebase'],
+    role: 'freelancer'
   },
   {
     id: '2',
@@ -52,7 +53,8 @@ const MOCK_USERS = [
     password: 'password123',
     photoURL: '/assets/avatars/avatar-2.png',
     bio: 'Diseñadora UX/UI especializada en experiencias móviles',
-    skills: ['UI Design', 'Figma', 'Sketch']
+    skills: ['UI Design', 'Figma', 'Sketch'],
+    role: 'client'
   }
 ];
 
@@ -114,7 +116,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email,
         photoURL: undefined,
         bio: '',
-        skills: []
+        skills: [],
+        role: 'freelancer'
       };
       
       // Actualizar el contexto
