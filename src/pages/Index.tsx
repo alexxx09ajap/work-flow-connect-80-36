@@ -74,9 +74,9 @@ const Index = () => {
       </section>
       
       {/* Features Section */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-white dark:bg-gray-800">
         <div className="container-custom">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-12 text-wfc-purple dark:text-wfc-purple-medium">
             Todo lo que necesitas en un solo lugar
           </h2>
           

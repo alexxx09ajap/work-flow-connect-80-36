@@ -1,23 +1,98 @@
 
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { UserType } from './AuthContext';
+// Add the missing getAllUsers function to DataContextType
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { JobType } from './JobContext';
 
-// Categorías profesionales disponibles en la plataforma
-export type CategoryType = {
+export type UserType = {
   id: string;
   name: string;
-  icon?: string;
+  email: string;
+  role: 'freelancer' | 'client';
+  bio?: string;
+  photoURL?: string;
+  skills?: string[];
+  hourlyRate?: number;
+  joinedAt: number;
 };
 
-interface DataContextType {
+export type CommentType = {
+  id: string;
+  userId: string;
+  text: string;
+  timestamp: number;
+};
+
+export interface DataContextType {
   users: UserType[];
-  jobCategories: CategoryType[];
-  skillsList: string[];
-  loadingUsers: boolean;
   getUserById: (userId: string) => UserType | undefined;
+  getAllUsers: () => UserType[];
+  comments: Record<string, CommentType[]>;
+  addComment: (jobId: string, userId: string, text: string) => void;
+  getComments: (jobId: string) => CommentType[];
+  loading: boolean;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
+
+// Sample data for development
+const SAMPLE_USERS: UserType[] = [
+  {
+    id: '1',
+    name: 'Juan Pérez',
+    email: 'juan@example.com',
+    role: 'client',
+    bio: 'Dueño de una startup de tecnología',
+    photoURL: 'https://randomuser.me/api/portraits/men/1.jpg',
+    joinedAt: Date.now() - 7776000000 // 90 days ago
+  },
+  {
+    id: '2',
+    name: 'María González',
+    email: 'maria@example.com',
+    role: 'freelancer',
+    bio: 'Desarrolladora web con 5 años de experiencia',
+    skills: ['React', 'Node.js', 'MongoDB'],
+    hourlyRate: 25,
+    photoURL: 'https://randomuser.me/api/portraits/women/2.jpg',
+    joinedAt: Date.now() - 5184000000 // 60 days ago
+  },
+  {
+    id: '3',
+    name: 'Carlos Rodriguez',
+    email: 'carlos@example.com',
+    role: 'freelancer',
+    bio: 'Diseñador UX/UI especializado en aplicaciones móviles',
+    skills: ['UX/UI', 'Figma', 'Adobe XD'],
+    hourlyRate: 30,
+    photoURL: 'https://randomuser.me/api/portraits/men/3.jpg',
+    joinedAt: Date.now() - 2592000000 // 30 days ago
+  }
+];
+
+const SAMPLE_COMMENTS: Record<string, CommentType[]> = {
+  'job1': [
+    {
+      id: 'comment1',
+      userId: '2',
+      text: 'Me interesa este proyecto. Tengo experiencia en desarrollo web con React.',
+      timestamp: Date.now() - 86400000 // 1 day ago
+    },
+    {
+      id: 'comment2',
+      userId: '1',
+      text: 'Gracias por tu interés. ¿Podrías compartirme tu portafolio?',
+      timestamp: Date.now() - 43200000 // 12 hours ago
+    }
+  ],
+  'job2': [
+    {
+      id: 'comment3',
+      userId: '3',
+      text: 'Puedo desarrollar el diseño en Figma y entregar los componentes para React.',
+      timestamp: Date.now() - 172800000 // 2 days ago
+    }
+  ]
+};
 
 export const useData = () => {
   const context = useContext(DataContext);
@@ -27,87 +102,59 @@ export const useData = () => {
   return context;
 };
 
-// Datos de simulación
-const MOCK_USERS: UserType[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    email: 'john@example.com',
-    photoURL: '/assets/avatars/avatar-1.png',
-    bio: 'Desarrollador Full Stack con 5 años de experiencia',
-    skills: ['React', 'Node.js', 'Firebase', 'TypeScript']
-  },
-  {
-    id: '2',
-    name: 'Jane Smith',
-    email: 'jane@example.com',
-    photoURL: '/assets/avatars/avatar-2.png',
-    bio: 'Diseñadora UX/UI especializada en experiencias móviles',
-    skills: ['UI Design', 'Figma', 'Sketch', 'Adobe XD']
-  },
-  {
-    id: '3',
-    name: 'Carlos Rodriguez',
-    email: 'carlos@example.com',
-    photoURL: '/assets/avatars/avatar-3.png',
-    bio: 'Especialista en marketing digital con enfoque en SEO',
-    skills: ['SEO', 'Google Ads', 'Analytics', 'Content Marketing']
-  }
-];
-
-const JOB_CATEGORIES: CategoryType[] = [
-  { id: '1', name: 'Desarrollo Web' },
-  { id: '2', name: 'Diseño' },
-  { id: '3', name: 'Marketing' },
-  { id: '4', name: 'Redacción' },
-  { id: '5', name: 'Traducción' },
-  { id: '6', name: 'Contabilidad' },
-  { id: '7', name: 'Consultoría' },
-  { id: '8', name: 'Soporte Técnico' }
-];
-
-const SKILLS_LIST: string[] = [
-  'JavaScript', 'TypeScript', 'React', 'Angular', 'Vue.js',
-  'Node.js', 'Express', 'MongoDB', 'SQL', 'Firebase',
-  'AWS', 'Docker', 'Kubernetes', 'CI/CD', 'Git',
-  'UI Design', 'UX Design', 'Figma', 'Sketch', 'Adobe XD',
-  'Photoshop', 'Illustrator', 'After Effects', 'SEO',
-  'SEM', 'Google Ads', 'Facebook Ads', 'Content Marketing',
-  'Email Marketing', 'Social Media', 'WordPress', 'Shopify',
-  'PHP', 'Python', 'Java', 'C#', '.NET', 'Ruby on Rails',
-  'iOS Development', 'Android Development', 'Flutter', 'React Native'
-];
-
-interface DataProviderProps {
-  children: ReactNode;
-}
-
-export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
-  const [users, setUsers] = useState<UserType[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
-  const [jobCategories] = useState<CategoryType[]>(JOB_CATEGORIES);
-  const [skillsList] = useState<string[]>(SKILLS_LIST);
+export const DataProvider = ({ children }: { children: React.ReactNode }) => {
+  const [users, setUsers] = useState<UserType[]>(SAMPLE_USERS);
+  const [comments, setComments] = useState<Record<string, CommentType[]>>(SAMPLE_COMMENTS);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulamos carga de datos
-    setTimeout(() => {
-      setUsers(MOCK_USERS);
-      setLoadingUsers(false);
+    // Simulate loading data
+    const timer = setTimeout(() => {
+      setLoading(false);
     }, 1000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const getUserById = (userId: string) => {
     return users.find(user => user.id === userId);
+  };
+  
+  const getAllUsers = () => {
+    return users;
+  };
+
+  const addComment = (jobId: string, userId: string, text: string) => {
+    const newComment: CommentType = {
+      id: `comment_${Date.now()}`,
+      userId,
+      text,
+      timestamp: Date.now()
+    };
+
+    setComments(prev => {
+      const jobComments = prev[jobId] || [];
+      return {
+        ...prev,
+        [jobId]: [...jobComments, newComment]
+      };
+    });
+  };
+
+  const getComments = (jobId: string) => {
+    return comments[jobId] || [];
   };
 
   return (
     <DataContext.Provider
       value={{
         users,
-        jobCategories,
-        skillsList,
-        loadingUsers,
-        getUserById
+        getUserById,
+        getAllUsers,
+        comments,
+        addComment,
+        getComments,
+        loading
       }}
     >
       {children}
