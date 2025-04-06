@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ChatProvider } from "@/contexts/ChatContext";
 import { JobProvider } from "@/contexts/JobContext";
 import { DataProvider } from "@/contexts/DataContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -79,19 +80,21 @@ const AppRoutes = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
-      <AuthProvider>
-        <DataProvider>
-          <JobProvider>
-            <ChatProvider>
-              <TooltipProvider>
-                <AppRoutes />
-                <Toaster />
-                <Sonner />
-              </TooltipProvider>
-            </ChatProvider>
-          </JobProvider>
-        </DataProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <DataProvider>
+            <JobProvider>
+              <ChatProvider>
+                <TooltipProvider>
+                  <AppRoutes />
+                  <Toaster />
+                  <Sonner />
+                </TooltipProvider>
+              </ChatProvider>
+            </JobProvider>
+          </DataProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   </QueryClientProvider>
 );

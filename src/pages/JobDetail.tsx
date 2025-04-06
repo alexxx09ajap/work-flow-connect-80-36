@@ -12,13 +12,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageCircle, Calendar, DollarSign, User } from 'lucide-react';
+import { MessageCircle, Calendar, DollarSign, User, Heart, Bookmark } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { CommentItem } from '@/components/Comments/CommentItem';
 
 const JobDetail = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
-  const { getJob, addComment } = useJobs();
+  const { getJob, addComment, toggleSavedJob, toggleLike, savedJobs } = useJobs();
   const { currentUser } = useAuth();
   const { createChat } = useChat();
   const { getUserById } = useData();
@@ -27,6 +28,8 @@ const JobDetail = () => {
   
   const job = jobId ? getJob(jobId) : undefined;
   const jobOwner = job ? getUserById(job.userId) : undefined;
+  const isJobSaved = job && savedJobs.includes(job.id);
+  const hasUserLiked = job && currentUser ? job.likes.includes(currentUser.id) : false;
   
   if (!job) {
     return (
@@ -76,6 +79,24 @@ const JobDetail = () => {
     }
   };
 
+  const handleToggleSave = () => {
+    if (!currentUser || !job) return;
+    
+    toggleSavedJob(job.id, currentUser.id);
+    toast({
+      title: isJobSaved ? "Propuesta eliminada de guardados" : "Propuesta guardada",
+      description: isJobSaved 
+        ? "La propuesta ha sido eliminada de tus guardados" 
+        : "La propuesta ha sido añadida a tus guardados"
+    });
+  };
+
+  const handleToggleLike = () => {
+    if (!currentUser || !job) return;
+    
+    toggleLike(job.id, currentUser.id);
+  };
+
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
     return date.toLocaleDateString('es-ES', {
@@ -105,15 +126,39 @@ const JobDetail = () => {
             </p>
           </div>
           
-          <Badge className={`
-            ${job.status === 'open' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 
-              job.status === 'in-progress' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' : 
-              'bg-gray-100 text-gray-800 hover:bg-gray-200'}
-          `}>
-            {job.status === 'open' ? 'Abierto' : 
-             job.status === 'in-progress' ? 'En progreso' : 
-             'Completado'}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge className={`
+              ${job.status === 'open' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 
+                job.status === 'in-progress' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' : 
+                'bg-gray-100 text-gray-800 hover:bg-gray-200'}
+            `}>
+              {job.status === 'open' ? 'Abierto' : 
+               job.status === 'in-progress' ? 'En progreso' : 
+               'Completado'}
+            </Badge>
+            
+            {currentUser && (
+              <>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleToggleLike}
+                  className={hasUserLiked ? "text-red-500" : "text-gray-400"}
+                >
+                  <Heart className={`h-5 w-5 ${hasUserLiked ? "fill-red-500" : ""}`} />
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleToggleSave}
+                  className={isJobSaved ? "text-wfc-purple" : "text-gray-400"}
+                >
+                  <Bookmark className={`h-5 w-5 ${isJobSaved ? "fill-wfc-purple" : ""}`} />
+                </Button>
+              </>
+            )}
+          </div>
         </div>
         
         <div className="grid md:grid-cols-3 gap-6">
@@ -137,6 +182,11 @@ const JobDetail = () => {
                     ))}
                   </div>
                 </div>
+                
+                <div className="mt-4 flex items-center">
+                  <Heart className={`h-5 w-5 mr-1 ${job.likes.length > 0 ? "text-red-500 fill-red-500" : "text-gray-400"}`} />
+                  <span className="text-sm">{job.likes.length} {job.likes.length === 1 ? "like" : "likes"}</span>
+                </div>
               </CardContent>
             </Card>
             
@@ -152,23 +202,7 @@ const JobDetail = () => {
                 {job.comments.length > 0 && (
                   <div className="space-y-4 mb-6">
                     {job.comments.map((comment) => (
-                      <div key={comment.id} className="flex space-x-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={comment.userPhoto} alt={comment.userName} />
-                          <AvatarFallback className="bg-wfc-purple-medium text-white">
-                            {comment.userName?.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex justify-between">
-                            <h4 className="font-medium text-sm">{comment.userName}</h4>
-                            <span className="text-xs text-gray-500">
-                              {formatDate(comment.timestamp)} {formatTime(comment.timestamp)}
-                            </span>
-                          </div>
-                          <p className="text-gray-700 text-sm mt-1">{comment.content}</p>
-                        </div>
-                      </div>
+                      <CommentItem key={comment.id} comment={comment} jobId={job.id} />
                     ))}
                   </div>
                 )}

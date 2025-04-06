@@ -1,161 +1,198 @@
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Home, Briefcase, MessageCircle, User, Menu, X, LogOut, Plus } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { useMobile } from '@/hooks/use-mobile';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Menu, X, LayoutDashboard, Briefcase, MessageCircle, User, LogOut, Plus, Users } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface MainLayoutProps {
   children: React.ReactNode;
 }
 
-const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
+const MainLayout = ({ children }: MainLayoutProps) => {
   const { currentUser, logout } = useAuth();
+  const isMobile = useMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // Cerrar sidebar cuando cambia la ruta en dispositivos móviles
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [location.pathname, isMobile]);
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
   };
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  const navItems = [
-    { path: '/dashboard', label: 'Inicio', icon: Home },
-    { path: '/jobs', label: 'Propuestas', icon: Briefcase },
-    { path: '/chats', label: 'Mensajes', icon: MessageCircle },
-    { path: '/profile', label: 'Mi Perfil', icon: User },
+  
+  // Enlaces de navegación
+  const navLinks = [
+    { path: '/dashboard', label: 'Inicio', icon: <LayoutDashboard className="h-5 w-5" /> },
+    { path: '/jobs', label: 'Propuestas', icon: <Briefcase className="h-5 w-5" /> },
+    { path: '/chats', label: 'Mensajes', icon: <MessageCircle className="h-5 w-5" /> },
+    { path: '/profile', label: 'Perfil', icon: <User className="h-5 w-5" /> },
   ];
+  
+  const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-wfc-background flex flex-col">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="container-custom flex items-center justify-between py-4">
-          {/* Logo */}
-          <Link to="/dashboard" className="flex items-center">
-            <span className="text-xl font-bold text-wfc-purple">WorkFlowConnect</span>
-          </Link>
-          
-          {/* Navigation - Desktop */}
-          <nav className="hidden md:flex items-center space-x-1">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              const Icon = item.icon;
-              return (
-                <Link 
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
-                    isActive 
-                      ? 'bg-wfc-purple text-white' 
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <Icon className="h-4 w-4 mr-1" /> 
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-          
-          {/* User Menu & Mobile Toggle */}
-          <div className="flex items-center space-x-4">
-            <Button 
-              variant="default" 
-              className="hidden md:flex bg-wfc-purple hover:bg-wfc-purple-medium" 
-              onClick={() => navigate('/create-job')}
-            >
-              <Plus className="h-4 w-4 mr-1" /> Publicar propuesta
-            </Button>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={currentUser?.photoURL} alt={currentUser?.name} />
-                    <AvatarFallback className="bg-wfc-purple-medium text-white">
-                      {currentUser?.name?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate('/profile')}>
-                  Mi perfil
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout}>
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Cerrar sesión
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <button className="md:hidden" onClick={toggleMobileMenu}>
-              {isMobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
-            </button>
-          </div>
-        </div>
-        
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden bg-white p-4 border-t border-gray-200">
-            <nav className="flex flex-col space-y-2">
-              {navItems.map((item) => {
-                const isActive = location.pathname === item.path;
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`flex items-center px-4 py-2 rounded-md ${
-                      isActive
-                        ? 'bg-wfc-purple text-white'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Icon className="h-5 w-5 mr-2" />
-                    {item.label}
-                  </Link>
-                );
-              })}
-              <Button 
-                variant="default" 
-                className="bg-wfc-purple hover:bg-wfc-purple-medium w-full mt-2" 
-                onClick={() => {
-                  navigate('/create-job');
-                  setIsMobileMenuOpen(false);
-                }}
-              >
-                <Plus className="h-4 w-4 mr-1" /> Publicar propuesta
+    <div className="flex h-screen bg-background">
+      {/* Sidebar para tablet/desktop */}
+      <aside 
+        className={`
+          fixed inset-y-0 left-0 z-50 w-64 bg-sidebar-background border-r border-border transform transition-transform duration-300 ease-in-out
+          ${isMobile ? (sidebarOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'}
+          md:relative md:translate-x-0
+        `}
+      >
+        <div className="h-full flex flex-col">
+          <div className="flex items-center justify-between p-4">
+            <Link to="/dashboard" className="flex items-center space-x-2">
+              <div className="w-8 h-8 rounded-md bg-wfc-purple flex items-center justify-center">
+                <span className="text-white font-bold">WFC</span>
+              </div>
+              <span className="text-lg font-bold text-sidebar-foreground">WorkFlow Connect</span>
+            </Link>
+            {isMobile && (
+              <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}>
+                <X className="h-5 w-5" />
               </Button>
+            )}
+          </div>
+          
+          <Separator />
+          
+          <div className="flex-1 overflow-y-auto py-4 px-3">
+            <nav className="space-y-1">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`
+                    flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
+                    ${isActive(link.path) 
+                      ? 'bg-sidebar-accent text-sidebar-accent-foreground' 
+                      : 'text-sidebar-foreground hover:bg-sidebar-accent/50'}
+                  `}
+                >
+                  {link.icon}
+                  <span className="ml-3">{link.label}</span>
+                </Link>
+              ))}
+              
+              <Link
+                to="/create-job"
+                className="flex items-center px-3 py-2 mt-4 rounded-md text-sm font-medium bg-sidebar-primary text-sidebar-primary-foreground hover:bg-wfc-purple-medium transition-colors"
+              >
+                <Plus className="h-5 w-5" />
+                <span className="ml-3">Nueva propuesta</span>
+              </Link>
             </nav>
           </div>
-        )}
-      </header>
-      
-      {/* Main content */}
-      <main className="flex-grow container-custom py-6">
-        {children}
-      </main>
-      
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 py-6">
-        <div className="container-custom text-center text-gray-500 text-sm">
-          © {new Date().getFullYear()} WorkFlowConnect. Todos los derechos reservados.
+          
+          <div className="p-4 flex items-center justify-between">
+            <div className="flex items-center flex-1">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="p-1.5 flex items-center space-x-2 w-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={currentUser?.photoURL} />
+                      <AvatarFallback className="bg-wfc-purple-medium text-white">
+                        {currentUser?.name?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium truncate">{currentUser?.name}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Perfil</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Cerrar sesión</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            <ThemeToggle />
+          </div>
         </div>
-      </footer>
+      </aside>
+      
+      {/* Contenido principal */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        {/* Header móvil */}
+        {isMobile && (
+          <header className="bg-background border-b border-border p-4 flex items-center justify-between">
+            <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
+              <Menu className="h-5 w-5" />
+            </Button>
+            <Link to="/dashboard" className="flex items-center space-x-2">
+              <div className="w-8 h-8 rounded-md bg-wfc-purple flex items-center justify-center">
+                <span className="text-white font-bold">WFC</span>
+              </div>
+            </Link>
+            <div className="flex items-center space-x-2">
+              <ThemeToggle />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={currentUser?.photoURL} />
+                      <AvatarFallback className="bg-wfc-purple-medium text-white">
+                        {currentUser?.name?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Perfil</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Cerrar sesión</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </header>
+        )}
+        
+        {/* Overlay para cerrar sidebar en móvil */}
+        {isMobile && sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        
+        {/* Contenido */}
+        <main className="flex-1 overflow-y-auto bg-background p-6">
+          <div className="container-custom">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

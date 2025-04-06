@@ -12,14 +12,16 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
-import { X } from 'lucide-react';
+import { X, Camera } from 'lucide-react';
 import { useJobs } from '@/contexts/JobContext';
+import { Link } from 'react-router-dom';
 
 const ProfilePage = () => {
   const { currentUser, updateUserProfile } = useAuth();
   const { skillsList } = useData();
-  const { jobs } = useJobs();
+  const { jobs, getSavedJobs } = useJobs();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   
   const [profileForm, setProfileForm] = useState({
     name: currentUser?.name || '',
@@ -27,19 +29,31 @@ const ProfilePage = () => {
     skills: currentUser?.skills || [],
   });
   
-  // Filtrar propuestas del usuario
+  // Filtrar propuestas del usuario y propuestas guardadas
   const userJobs = jobs.filter(job => job.userId === currentUser?.id);
+  const savedJobs = currentUser ? getSavedJobs(currentUser.id) : [];
   
   const handleUpdateProfile = async () => {
     if (!currentUser) return;
     
     setIsUpdating(true);
     try {
+      // Simulamos la carga de la imagen de perfil
+      let photoURL = currentUser.photoURL;
+      
+      if (selectedImage) {
+        // En un caso real, aquí subiríamos la imagen a un servicio de almacenamiento
+        // y obtendríamos la URL de la imagen
+        photoURL = URL.createObjectURL(selectedImage);
+      }
+      
       await updateUserProfile({
         name: profileForm.name,
         bio: profileForm.bio,
         skills: profileForm.skills,
+        photoURL
       });
+      
       toast({
         title: "Perfil actualizado",
         description: "Tus cambios han sido guardados correctamente"
@@ -69,6 +83,16 @@ const ProfilePage = () => {
       skills: profileForm.skills.filter(s => s !== skill)
     });
   };
+  
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedImage(e.target.files[0]);
+      toast({
+        title: "Imagen seleccionada",
+        description: "Haz clic en 'Guardar cambios' para confirmar"
+      });
+    }
+  };
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -93,9 +117,10 @@ const ProfilePage = () => {
     <MainLayout>
       <div className="space-y-6">
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full md:w-[400px] grid-cols-2">
+          <TabsList className="grid w-full md:w-[400px] grid-cols-3">
             <TabsTrigger value="profile">Mi Perfil</TabsTrigger>
             <TabsTrigger value="proposals">Mis Propuestas</TabsTrigger>
+            <TabsTrigger value="saved">Guardadas</TabsTrigger>
           </TabsList>
           
           <TabsContent value="profile" className="mt-6">
@@ -198,15 +223,34 @@ const ProfilePage = () => {
                     <CardTitle>Foto de perfil</CardTitle>
                   </CardHeader>
                   <CardContent className="flex flex-col items-center">
-                    <Avatar className="h-24 w-24 mb-4">
-                      <AvatarImage src={currentUser.photoURL} alt={currentUser.name} />
+                    <Avatar className="h-24 w-24 mb-4 relative group">
+                      <AvatarImage 
+                        src={selectedImage ? URL.createObjectURL(selectedImage) : currentUser.photoURL} 
+                        alt={currentUser.name} 
+                      />
                       <AvatarFallback className="bg-wfc-purple-medium text-white text-2xl">
                         {currentUser.name?.charAt(0).toUpperCase()}
                       </AvatarFallback>
+                      
+                      <label htmlFor="profile-photo" className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                        <Camera className="text-white h-10 w-10" />
+                      </label>
                     </Avatar>
-                    <Button variant="outline" className="w-full">
-                      Cambiar foto
-                    </Button>
+                    
+                    <input
+                      type="file"
+                      id="profile-photo"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
+                    
+                    <Label htmlFor="profile-photo" className="cursor-pointer">
+                      <Button variant="outline" className="w-full" type="button">
+                        Cambiar foto
+                      </Button>
+                    </Label>
+                    
                     <p className="text-xs text-gray-500 mt-2 text-center">
                       Imagen PNG, JPG o GIF, máximo 2MB
                     </p>
@@ -222,6 +266,10 @@ const ProfilePage = () => {
                       <div className="flex justify-between">
                         <span className="text-gray-600">Propuestas publicadas</span>
                         <span className="font-medium">{userJobs.length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Propuestas guardadas</span>
+                        <span className="font-medium">{savedJobs.length}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Calificación</span>
@@ -285,6 +333,76 @@ const ProfilePage = () => {
                           </div>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="saved" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Propuestas Guardadas</CardTitle>
+                <CardDescription>
+                  Propuestas de trabajo que has guardado para revisar más tarde
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {savedJobs.length === 0 ? (
+                  <div className="text-center py-6">
+                    <p className="text-gray-500">Aún no has guardado ninguna propuesta</p>
+                    <Button 
+                      className="mt-4 bg-wfc-purple hover:bg-wfc-purple-medium"
+                      onClick={() => window.location.href = '/jobs'}
+                    >
+                      Explorar propuestas
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {savedJobs.map((job) => (
+                      <Link key={job.id} to={`/jobs/${job.id}`}>
+                        <div className="border border-gray-200 rounded-lg p-4 hover:border-wfc-purple cursor-pointer transition-colors">
+                          <div className="flex flex-col md:flex-row justify-between">
+                            <div>
+                              <h3 className="font-medium">{job.title}</h3>
+                              <p className="text-sm text-gray-500">
+                                {job.userName} • {formatDate(job.timestamp)}
+                              </p>
+                            </div>
+                            <div className="mt-2 md:mt-0 flex items-center">
+                              <Badge className="bg-purple-100 text-purple-800 mr-2">
+                                {job.category}
+                              </Badge>
+                              <Badge className={`
+                                ${job.status === 'open' ? 'bg-green-100 text-green-800' : 
+                                  job.status === 'in-progress' ? 'bg-blue-100 text-blue-800' : 
+                                  'bg-gray-100 text-gray-800'}
+                              `}>
+                                {job.status === 'open' ? 'Abierto' : 
+                                  job.status === 'in-progress' ? 'En progreso' : 
+                                  'Completado'}
+                              </Badge>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-700 mt-2 line-clamp-2">
+                            {job.description}
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {job.skills.slice(0, 3).map((skill, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {skill}
+                              </Badge>
+                            ))}
+                            {job.skills.length > 3 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{job.skills.length - 3} más
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
                     ))}
                   </div>
                 )}
