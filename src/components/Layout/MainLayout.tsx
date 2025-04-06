@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Menu, X, LayoutDashboard, Briefcase, MessageCircle, User, LogOut, Plus, Users } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -16,12 +15,11 @@ interface MainLayoutProps {
 
 const MainLayout = ({ children }: MainLayoutProps) => {
   const { currentUser, logout } = useAuth();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Cerrar sidebar cuando cambia la ruta en dispositivos móviles
   useEffect(() => {
     if (isMobile) {
       setSidebarOpen(false);
@@ -37,7 +35,6 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     }
   };
   
-  // Enlaces de navegación
   const navLinks = [
     { path: '/dashboard', label: 'Inicio', icon: <LayoutDashboard className="h-5 w-5" /> },
     { path: '/jobs', label: 'Propuestas', icon: <Briefcase className="h-5 w-5" /> },
@@ -49,7 +46,6 @@ const MainLayout = ({ children }: MainLayoutProps) => {
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar para tablet/desktop */}
       <aside 
         className={`
           fixed inset-y-0 left-0 z-50 w-64 bg-sidebar-background border-r border-border transform transition-transform duration-300 ease-in-out
@@ -135,9 +131,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         </div>
       </aside>
       
-      {/* Contenido principal */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* Header móvil */}
         {isMobile && (
           <header className="bg-background border-b border-border p-4 flex items-center justify-between">
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
@@ -178,7 +172,6 @@ const MainLayout = ({ children }: MainLayoutProps) => {
           </header>
         )}
         
-        {/* Overlay para cerrar sidebar en móvil */}
         {isMobile && sidebarOpen && (
           <div 
             className="fixed inset-0 bg-black bg-opacity-50 z-40"
@@ -186,7 +179,6 @@ const MainLayout = ({ children }: MainLayoutProps) => {
           />
         )}
         
-        {/* Contenido */}
         <main className="flex-1 overflow-y-auto bg-background p-6">
           <div className="container-custom">
             {children}
