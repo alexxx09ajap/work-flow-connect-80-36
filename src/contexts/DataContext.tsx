@@ -30,6 +30,9 @@ export interface DataContextType {
   addComment: (jobId: string, userId: string, text: string) => void;
   getComments: (jobId: string) => CommentType[];
   loading: boolean;
+  // Adding missing properties for job categories and skills
+  jobCategories: string[];
+  skillsList: string[];
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -69,6 +72,48 @@ const SAMPLE_USERS: UserType[] = [
   }
 ];
 
+// Sample job categories and skills
+const SAMPLE_JOB_CATEGORIES = [
+  'Desarrollo Web',
+  'Diseño UX/UI',
+  'Desarrollo Móvil',
+  'Marketing Digital',
+  'Redacción y Traducción',
+  'Consultoría',
+  'Administración de Sistemas',
+  'Análisis de Datos'
+];
+
+const SAMPLE_SKILLS = [
+  'JavaScript',
+  'React',
+  'Node.js',
+  'HTML/CSS',
+  'Python',
+  'UI Design',
+  'UX Research',
+  'Figma',
+  'Adobe XD',
+  'Photoshop',
+  'React Native',
+  'Flutter',
+  'Swift',
+  'Kotlin',
+  'SEO',
+  'SEM',
+  'Social Media',
+  'Content Writing',
+  'Translation',
+  'WordPress',
+  'PHP',
+  'MongoDB',
+  'PostgreSQL',
+  'AWS',
+  'DevOps',
+  'Docker',
+  'Machine Learning'
+];
+
 const SAMPLE_COMMENTS: Record<string, CommentType[]> = {
   'job1': [
     {
@@ -106,6 +151,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const [users, setUsers] = useState<UserType[]>(SAMPLE_USERS);
   const [comments, setComments] = useState<Record<string, CommentType[]>>(SAMPLE_COMMENTS);
   const [loading, setLoading] = useState(true);
+  const [jobCategories] = useState<string[]>(SAMPLE_JOB_CATEGORIES);
+  const [skillsList] = useState<string[]>(SAMPLE_SKILLS);
 
   useEffect(() => {
     // Simulate loading data
@@ -154,7 +201,9 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         comments,
         addComment,
         getComments,
-        loading
+        loading,
+        jobCategories,
+        skillsList
       }}
     >
       {children}
