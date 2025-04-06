@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useData } from '@/contexts/DataContext';
@@ -19,18 +20,15 @@ const JobsPage = () => {
 
   useEffect(() => {
     let results = jobs;
-
     if (searchQuery) {
-      results = results.filter(job =>
-        job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      results = results.filter(job => 
+        job.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
         job.description.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-
     if (categoryFilter !== 'all') {
       results = results.filter(job => job.category === categoryFilter);
     }
-
     setFilteredJobs(results);
   }, [jobs, searchQuery, categoryFilter]);
 
@@ -51,9 +49,9 @@ const JobsPage = () => {
         </div>
 
         <div className="mb-4 flex space-x-2">
-          <Input
-            type="text"
-            placeholder="Buscar trabajos..."
+          <Input 
+            type="text" 
+            placeholder="Buscar trabajos..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -78,11 +76,17 @@ const JobsPage = () => {
             </Badge>
           )}
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredJobs.map(job => (
-            <JobCard key={job.id} job={job} />
-          ))}
+          
+        <div className="space-y-4">
+          {filteredJobs.length > 0 ? (
+            filteredJobs.map(job => (
+              <JobCard key={job.id} job={job} />
+            ))
+          ) : (
+            <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-gray-500">No se encontraron propuestas con los criterios seleccionados</p>
+            </div>
+          )}
         </div>
       </div>
     </MainLayout>
