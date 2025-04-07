@@ -1,91 +1,96 @@
 
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from '@/components/ui/use-toast';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [acceptTerms, setAcceptTerms] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userRole, setUserRole] = useState('freelancer');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  
   const { register } = useAuth();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     
     if (!name || !email || !password || !confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Campos requeridos",
-        description: "Por favor completa todos los campos",
-      });
+      setError('Por favor, completa todos los campos');
       return;
     }
     
     if (password !== confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Las contraseñas no coinciden",
-        description: "Por favor verifica que las contraseñas sean iguales",
-      });
+      setError('Las contraseñas no coinciden');
       return;
     }
     
-    if (!acceptTerms) {
-      toast({
-        variant: "destructive",
-        title: "Términos y condiciones",
-        description: "Debes aceptar los términos y condiciones para registrarte",
-      });
+    if (password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
     
-    setIsSubmitting(true);
     try {
+      setLoading(true);
       await register(email, password, name);
-      navigate('/dashboard');
+      // Registration successful, user will be redirected to dashboard by the auth provider
     } catch (error) {
-      console.error('Error al registrar:', error);
-      // No es necesario mostrar toast aquí ya que register() ya lo hace
+      console.error('Error de registro:', error);
+      setError(error instanceof Error ? error.message : 'Error al registrar');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-wfc-background flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <Link to="/" className="flex justify-center mb-5">
-          <h1 className="text-2xl font-bold text-wfc-purple">WorkFlowConnect</h1>
-        </Link>
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="w-full max-w-md p-8">
+        <div className="mb-8 text-center">
+          <div className="flex items-center justify-center mb-4">
+            <div className="w-12 h-12 rounded-md bg-wfc-purple flex items-center justify-center">
+              <span className="text-white font-bold text-xl">WFC</span>
+            </div>
+          </div>
+          <h1 className="text-2xl font-bold">WorkFlow Connect</h1>
+          <p className="text-gray-500 mt-2">Crea tu cuenta y comienza a conectarte</p>
+        </div>
+        
         <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">Crear una cuenta</CardTitle>
-            <CardDescription className="text-center">
-              Ingresa tus datos para registrarte en WorkFlowConnect
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl">Crear una cuenta</CardTitle>
+            <CardDescription>
+              Ingresa tus datos para registrarte en la plataforma
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre completo</Label>
                 <Input
                   id="name"
-                  placeholder="Tu nombre"
+                  placeholder="John Doe"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
                 />
               </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="email">Correo electrónico</Label>
                 <Input
@@ -97,65 +102,66 @@ const Register = () => {
                   required
                 />
               </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="password">Contraseña</Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
-                  placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                 />
               </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="terms" 
-                  checked={acceptTerms}
-                  onCheckedChange={(checked) => {
-                    if (typeof checked === 'boolean') {
-                      setAcceptTerms(checked);
-                    }
-                  }}
-                />
-                <label
-                  htmlFor="terms"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              
+              <div className="space-y-2">
+                <Label>Tipo de cuenta</Label>
+                <RadioGroup 
+                  defaultValue="freelancer" 
+                  value={userRole} 
+                  onValueChange={setUserRole}
+                  className="flex space-x-4 mt-1"
                 >
-                  Acepto los{' '}
-                  <Link to="#" className="text-wfc-purple hover:underline">
-                    términos y condiciones
-                  </Link>
-                </label>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="freelancer" id="freelancer" />
+                    <Label htmlFor="freelancer">Freelancer</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="client" id="client" />
+                    <Label htmlFor="client">Cliente</Label>
+                  </div>
+                </RadioGroup>
               </div>
-              <Button 
-                type="submit" 
+            </CardContent>
+            
+            <CardFooter className="flex flex-col">
+              <Button
                 className="w-full bg-wfc-purple hover:bg-wfc-purple-medium"
-                disabled={isSubmitting}
+                type="submit"
+                disabled={loading}
               >
-                {isSubmitting ? "Registrando..." : "Registrarse"}
+                {loading ? 'Registrando...' : 'Registrarse'}
               </Button>
-            </form>
-          </CardContent>
-          <CardFooter>
-            <p className="text-sm text-center w-full">
-              ¿Ya tienes una cuenta?{' '}
-              <Link to="/login" className="text-wfc-purple hover:underline">
-                Iniciar sesión
-              </Link>
-            </p>
-          </CardFooter>
+              
+              <p className="mt-4 text-center text-sm">
+                ¿Ya tienes una cuenta?{' '}
+                <Link to="/login" className="text-wfc-purple hover:underline">
+                  Iniciar sesión
+                </Link>
+              </p>
+            </CardFooter>
+          </form>
         </Card>
       </div>
     </div>

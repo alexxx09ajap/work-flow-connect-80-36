@@ -1,59 +1,69 @@
 
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from '@/components/ui/use-toast';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const { login } = useAuth();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     
     if (!email || !password) {
-      toast({
-        variant: "destructive",
-        title: "Campos requeridos",
-        description: "Por favor completa todos los campos",
-      });
+      setError('Por favor, completa todos los campos');
       return;
     }
     
-    setIsSubmitting(true);
     try {
+      setLoading(true);
       await login(email, password);
-      navigate('/dashboard');
     } catch (error) {
-      console.error('Error al iniciar sesión:', error);
-      // No es necesario mostrar toast aquí ya que login() ya lo hace
+      console.error('Error de inicio de sesión:', error);
+      setError(error instanceof Error ? error.message : 'Error al iniciar sesión');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-wfc-background flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <Link to="/" className="flex justify-center mb-5">
-          <h1 className="text-2xl font-bold text-wfc-purple">WorkFlowConnect</h1>
-        </Link>
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="w-full max-w-md p-8">
+        <div className="mb-8 text-center">
+          <div className="flex items-center justify-center mb-4">
+            <div className="w-12 h-12 rounded-md bg-wfc-purple flex items-center justify-center">
+              <span className="text-white font-bold text-xl">WFC</span>
+            </div>
+          </div>
+          <h1 className="text-2xl font-bold">WorkFlow Connect</h1>
+          <p className="text-gray-500 mt-2">La plataforma que conecta proyectos con talento</p>
+        </div>
+        
         <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">Iniciar Sesión</CardTitle>
-            <CardDescription className="text-center">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl">Iniciar sesión</CardTitle>
+            <CardDescription>
               Ingresa tus credenciales para acceder a tu cuenta
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              
               <div className="space-y-2">
                 <Label htmlFor="email">Correo electrónico</Label>
                 <Input
@@ -65,6 +75,7 @@ const Login = () => {
                   required
                 />
               </div>
+              
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Contraseña</Label>
@@ -75,35 +86,30 @@ const Login = () => {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
-              <Button 
-                type="submit" 
+            </CardContent>
+            
+            <CardFooter className="flex flex-col">
+              <Button
                 className="w-full bg-wfc-purple hover:bg-wfc-purple-medium"
-                disabled={isSubmitting}
+                type="submit"
+                disabled={loading}
               >
-                {isSubmitting ? "Iniciando sesión..." : "Iniciar Sesión"}
+                {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
               </Button>
               
-              <div className="text-center text-sm mt-4">
-                <p>Para pruebas, usa:</p>
-                <p className="text-gray-500">Email: john@example.com</p>
-                <p className="text-gray-500">Contraseña: password123</p>
-              </div>
-            </form>
-          </CardContent>
-          <CardFooter>
-            <p className="text-sm text-center w-full">
-              ¿No tienes una cuenta?{' '}
-              <Link to="/register" className="text-wfc-purple hover:underline">
-                Regístrate
-              </Link>
-            </p>
-          </CardFooter>
+              <p className="mt-4 text-center text-sm">
+                ¿No tienes una cuenta?{' '}
+                <Link to="/register" className="text-wfc-purple hover:underline">
+                  Regístrate
+                </Link>
+              </p>
+            </CardFooter>
+          </form>
         </Card>
       </div>
     </div>

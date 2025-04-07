@@ -1,4 +1,5 @@
 
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +10,7 @@ import { ChatProvider } from "@/contexts/ChatContext";
 import { JobProvider } from "@/contexts/JobContext";
 import { DataProvider } from "@/contexts/DataContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { initializeFirebaseData } from "@/lib/initializeFirebase";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -24,7 +26,7 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Componente para rutas protegidas
+// Component for protected routes
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser, loading } = useAuth();
   
@@ -39,7 +41,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// Componente para rutas públicas (solo accesibles cuando no hay sesión)
+// Component for public-only routes (only accessible when not logged in)
 const PublicOnlyRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser, loading } = useAuth();
   
@@ -55,14 +57,19 @@ const PublicOnlyRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const AppRoutes = () => {
+  // Initialize Firebase data when the app loads
+  useEffect(() => {
+    initializeFirebaseData();
+  }, []);
+  
   return (
     <Routes>
-      {/* Rutas públicas */}
+      {/* Public routes */}
       <Route path="/" element={<Index />} />
       <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
       <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
       
-      {/* Rutas protegidas */}
+      {/* Protected routes */}
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/jobs" element={<ProtectedRoute><JobsPage /></ProtectedRoute>} />
       <Route path="/jobs/:jobId" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
@@ -72,7 +79,7 @@ const AppRoutes = () => {
       <Route path="/user/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
       <Route path="/create-job" element={<ProtectedRoute><CreateJobPage /></ProtectedRoute>} />
       
-      {/* Ruta 404 */}
+      {/* 404 route */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
