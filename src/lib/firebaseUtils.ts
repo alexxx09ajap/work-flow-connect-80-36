@@ -12,7 +12,8 @@ import {
   Timestamp,
   addDoc,
   arrayUnion,
-  arrayRemove
+  arrayRemove,
+  serverTimestamp
 } from "firebase/firestore";
 import { 
   createUserWithEmailAndPassword, 
@@ -25,8 +26,16 @@ import { auth, db, storage } from "./firebase";
 import { UserType } from "@/contexts/AuthContext";
 import { JobType, CommentType, ReplyType } from "@/contexts/JobContext";
 import { MessageType, ChatType } from "@/contexts/ChatContext";
+import { initializeFirebaseData } from "./initializeFirebase";
 
-// Authentication functions
+export const ensureFirebaseInitialized = async () => {
+  try {
+    await initializeFirebaseData();
+  } catch (error) {
+    console.error("Failed to initialize Firebase data:", error);
+  }
+};
+
 export const registerUser = async (email: string, password: string, name: string) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -34,6 +43,8 @@ export const registerUser = async (email: string, password: string, name: string
     
     // Update user profile with name
     await updateProfile(user, { displayName: name });
+    
+    const timestamp = serverTimestamp();
     
     // Create user document in Firestore
     await setDoc(doc(db, "users", user.uid), {
@@ -44,7 +55,7 @@ export const registerUser = async (email: string, password: string, name: string
       bio: "",
       skills: [],
       role: "freelancer",
-      joinedAt: Timestamp.now()
+      joinedAt: timestamp
     });
     
     return {
@@ -99,11 +110,19 @@ export const updateUserProfile = async (userId: string, data: Partial<UserType>)
   }
 };
 
-// Users functions
 export const getAllUsers = async () => {
   try {
     const usersSnapshot = await getDocs(collection(db, "users"));
-    return usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as UserType[];
+    return usersSnapshot.docs.map(doc => {
+      const data = doc.data();
+      // Convert Firestore timestamp to milliseconds if needed
+      const joinedAt = data.joinedAt?.toMillis ? data.joinedAt.toMillis() : Date.now();
+      return { 
+        id: doc.id, 
+        ...data, 
+        joinedAt 
+      };
+    }) as UserType[];
   } catch (error) {
     throw error;
   }
@@ -113,7 +132,14 @@ export const getUserById = async (userId: string) => {
   try {
     const userDoc = await getDoc(doc(db, "users", userId));
     if (userDoc.exists()) {
-      return { id: userDoc.id, ...userDoc.data() } as UserType;
+      const data = userDoc.data();
+      // Convert Firestore timestamp to milliseconds
+      const joinedAt = data.joinedAt?.toMillis ? data.joinedAt.toMillis() : Date.now();
+      return { 
+        id: userDoc.id, 
+        ...data, 
+        joinedAt 
+      } as UserType;
     }
     return null;
   } catch (error) {
@@ -121,18 +147,28 @@ export const getUserById = async (userId: string) => {
   }
 };
 
-// Jobs functions
 export const createJob = async (jobData: Omit<JobType, "id" | "timestamp" | "comments" | "likes">) => {
   try {
     const jobRef = collection(db, "jobs");
+    const timestamp = serverTimestamp();
+    
     const newJob = {
       ...jobData,
-      timestamp: Timestamp.now(),
+      timestamp,
       comments: [],
       likes: []
     };
+    
     const docRef = await addDoc(jobRef, newJob);
-    return { id: docRef.id, ...newJob };
+    
+    // Return a JobType with a number timestamp
+    return { 
+      id: docRef.id, 
+      ...jobData,
+      comments: [],
+      likes: [],
+      timestamp: Date.now() // Use current timestamp for immediate display
+    };
   } catch (error) {
     throw error;
   }
@@ -141,11 +177,16 @@ export const createJob = async (jobData: Omit<JobType, "id" | "timestamp" | "com
 export const getAllJobs = async () => {
   try {
     const jobsSnapshot = await getDocs(collection(db, "jobs"));
-    return jobsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      timestamp: doc.data().timestamp?.toMillis() || Date.now()
-    })) as JobType[];
+    return jobsSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        timestamp: data.timestamp?.toMillis ? data.timestamp.toMillis() : Date.now(),
+        comments: data.comments || [],
+        likes: data.likes || []
+      } as JobType;
+    });
   } catch (error) {
     throw error;
   }
@@ -159,7 +200,9 @@ export const getJobById = async (jobId: string) => {
       return { 
         id: jobDoc.id, 
         ...jobData,
-        timestamp: jobData.timestamp?.toMillis() || Date.now()
+        timestamp: jobData.timestamp?.toMillis ? jobData.timestamp.toMillis() : Date.now(),
+        comments: jobData.comments || [],
+        likes: jobData.likes || []
       } as JobType;
     }
     return null;
@@ -253,7 +296,6 @@ export const toggleJobLike = async (jobId: string, userId: string) => {
   }
 };
 
-// Saved Jobs functions
 export const toggleSavedJob = async (userId: string, jobId: string) => {
   try {
     const userRef = doc(db, "users", userId);
@@ -305,7 +347,6 @@ export const getSavedJobs = async (userId: string) => {
   }
 };
 
-// Chats functions
 export const getChats = async (userId: string) => {
   try {
     const chatsQuery = query(
@@ -379,9 +420,10 @@ export const sendMessage = async (chatId: string, senderId: string, content: str
   }
 };
 
-// Categories and skills
 export const getJobCategories = async () => {
   try {
+    await ensureFirebaseInitialized();
+    
     const categoriesDoc = await getDoc(doc(db, "metadata", "jobCategories"));
     if (categoriesDoc.exists()) {
       return categoriesDoc.data().categories || [];
@@ -394,6 +436,8 @@ export const getJobCategories = async () => {
 
 export const getSkillsList = async () => {
   try {
+    await ensureFirebaseInitialized();
+    
     const skillsDoc = await getDoc(doc(db, "metadata", "skills"));
     if (skillsDoc.exists()) {
       return skillsDoc.data().skills || [];
@@ -404,7 +448,6 @@ export const getSkillsList = async () => {
   }
 };
 
-// File upload helper
 export const uploadUserPhoto = async (userId: string, file: File) => {
   try {
     const storageRef = ref(storage, `users/${userId}/profile`);
@@ -421,3 +464,5 @@ export const uploadUserPhoto = async (userId: string, file: File) => {
     throw error;
   }
 };
+
+export { initializeFirebaseData };

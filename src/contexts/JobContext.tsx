@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { UserType } from './AuthContext';
 import { 
@@ -102,6 +101,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
   const createJob = async (jobData: Omit<JobType, 'id' | 'timestamp' | 'comments' | 'likes'>) => {
     try {
       const newJob = await createFirebaseJob(jobData);
+      // Add as a JobType after ensuring timestamp is a number
       setJobs(prevJobs => [...prevJobs, newJob as JobType]);
     } catch (error) {
       console.error("Error creating job:", error);

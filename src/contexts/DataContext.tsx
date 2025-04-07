@@ -9,6 +9,7 @@ import {
   getAllJobs as getFirebaseJobs
 } from '@/lib/firebaseUtils';
 
+// Make sure the UserType in DataContext matches or extends the AuthContext UserType
 export type UserType = {
   id: string;
   name: string;
@@ -18,7 +19,7 @@ export type UserType = {
   photoURL?: string;
   skills?: string[];
   hourlyRate?: number;
-  joinedAt: number;
+  joinedAt: number; // Adding joinedAt as a timestamp (in milliseconds)
 };
 
 export type CommentType = {
@@ -61,7 +62,19 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       // Load users
       const usersData = await getFirebaseUsers();
-      setUsers(usersData);
+      // Convert Firebase users to DataContext UserType
+      const convertedUsers = usersData.map(user => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        bio: user.bio,
+        photoURL: user.photoURL,
+        skills: user.skills,
+        hourlyRate: user.hourlyRate || 0,
+        joinedAt: user.joinedAt || Date.now()
+      }));
+      setUsers(convertedUsers);
       
       // Load jobs
       const jobsData = await getFirebaseJobs();
