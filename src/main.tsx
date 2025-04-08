@@ -20,7 +20,7 @@ initializeFirebaseData().then(() => {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+    <ThemeProvider>
       <AuthProvider>
         <DataProvider>
           <JobProvider>

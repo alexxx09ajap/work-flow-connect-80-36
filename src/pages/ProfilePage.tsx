@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
@@ -15,6 +15,7 @@ import { toast } from '@/components/ui/use-toast';
 import { X, Camera } from 'lucide-react';
 import { useJobs } from '@/contexts/JobContext';
 import { Link } from 'react-router-dom';
+import { JobType } from '@/contexts/JobContext';
 
 const ProfilePage = () => {
   const { currentUser, updateUserProfile } = useAuth();
@@ -22,16 +23,33 @@ const ProfilePage = () => {
   const { jobs, getSavedJobs } = useJobs();
   const [isUpdating, setIsUpdating] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [userJobs, setUserJobs] = useState<JobType[]>([]);
+  const [savedJobs, setSavedJobs] = useState<JobType[]>([]);
   
   const [profileForm, setProfileForm] = useState({
     name: currentUser?.name || '',
     bio: currentUser?.bio || '',
     skills: currentUser?.skills || [],
   });
-  
-  // Filtrar propuestas del usuario y propuestas guardadas
-  const userJobs = jobs.filter(job => job.userId === currentUser?.id);
-  const savedJobs = currentUser ? getSavedJobs(currentUser.id) : [];
+
+  useEffect(() => {
+    // When jobs data is loaded, filter user jobs
+    if (Array.isArray(jobs)) {
+      setUserJobs(jobs.filter(job => job.userId === currentUser?.id));
+    }
+    
+    // Load saved jobs
+    const loadSavedJobs = async () => {
+      if (currentUser) {
+        const saved = await getSavedJobs(currentUser.id);
+        if (Array.isArray(saved)) {
+          setSavedJobs(saved);
+        }
+      }
+    };
+    
+    loadSavedJobs();
+  }, [jobs, currentUser, getSavedJobs]);
   
   const handleUpdateProfile = async () => {
     if (!currentUser) return;
