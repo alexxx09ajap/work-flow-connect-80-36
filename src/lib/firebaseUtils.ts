@@ -119,10 +119,16 @@ export const getAllUsers = async () => {
       const joinedAt = data.joinedAt?.toMillis ? data.joinedAt.toMillis() : Date.now();
       return { 
         id: doc.id, 
-        ...data, 
+        name: data.name || "",
+        email: data.email || "",
+        role: data.role || "freelancer",
+        bio: data.bio || "",
+        skills: data.skills || [],
+        photoURL: data.photoURL || null,
+        hourlyRate: data.hourlyRate,
         joinedAt 
-      };
-    }) as UserType[];
+      } as UserType;
+    });
   } catch (error) {
     throw error;
   }
@@ -136,9 +142,15 @@ export const getUserById = async (userId: string) => {
       // Convert Firestore timestamp to milliseconds
       const joinedAt = data.joinedAt?.toMillis ? data.joinedAt.toMillis() : Date.now();
       return { 
-        id: userDoc.id, 
-        ...data, 
-        joinedAt 
+        id: userDoc.id,
+        name: data.name || "",
+        email: data.email || "",
+        role: data.role || "freelancer",
+        bio: data.bio || "",
+        skills: data.skills || [],
+        photoURL: data.photoURL || null,
+        hourlyRate: data.hourlyRate,
+        joinedAt
       } as UserType;
     }
     return null;
@@ -349,14 +361,18 @@ export const getSavedJobs = async (userId: string) => {
 
 export const getChats = async (userId: string) => {
   try {
+    console.log(`Fetching chats for user: ${userId}`);
     const chatsQuery = query(
       collection(db, "chats"),
       where("participants", "array-contains", userId)
     );
     
     const chatsSnapshot = await getDocs(chatsQuery);
-    const chats = await Promise.all(chatsSnapshot.docs.map(async (chatDoc) => {
+    console.log(`Found ${chatsSnapshot.docs.length} chats for user ${userId}`);
+    
+    const chats = chatsSnapshot.docs.map(chatDoc => {
       const chatData = chatDoc.data();
+      console.log(`Chat ${chatDoc.id} data:`, chatData);
       
       // Get the last message
       let lastMessage = null;
@@ -372,10 +388,11 @@ export const getChats = async (userId: string) => {
         isGroup: chatData.isGroup || false,
         lastMessage
       } as ChatType;
-    }));
+    });
     
     return chats;
   } catch (error) {
+    console.error("Error fetching chats:", error);
     throw error;
   }
 };
@@ -392,15 +409,19 @@ export const createChat = async (participantIds: string[], name = "") => {
       isGroup
     };
     
+    console.log("Creating new chat:", { ...newChat, participantIds });
     const docRef = await addDoc(chatRef, newChat);
+    console.log(`Created chat with ID: ${docRef.id}`);
     return { id: docRef.id, ...newChat } as ChatType;
   } catch (error) {
+    console.error("Error creating chat:", error);
     throw error;
   }
 };
 
 export const sendMessage = async (chatId: string, senderId: string, content: string) => {
   try {
+    console.log(`Sending message to chat ${chatId} from user ${senderId}: ${content}`);
     const chatRef = doc(db, "chats", chatId);
     
     const newMessage: MessageType = {
@@ -414,8 +435,41 @@ export const sendMessage = async (chatId: string, senderId: string, content: str
       messages: arrayUnion(newMessage)
     });
     
+    console.log("Message sent successfully");
     return newMessage;
   } catch (error) {
+    console.error("Error sending message:", error);
+    throw error;
+  }
+};
+
+export const addParticipantToChat = async (chatId: string, participantId: string) => {
+  try {
+    const chatRef = doc(db, "chats", chatId);
+    const chatDoc = await getDoc(chatRef);
+    
+    if (!chatDoc.exists()) throw new Error("Chat not found");
+    
+    // Update the participants array
+    await updateDoc(chatRef, {
+      participants: arrayUnion(participantId)
+    });
+    
+    // Add a system message
+    const systemMessage: MessageType = {
+      id: `msg_${Date.now()}`,
+      senderId: "system",
+      content: "Un nuevo participante se ha unido al chat",
+      timestamp: Date.now()
+    };
+    
+    await updateDoc(chatRef, {
+      messages: arrayUnion(systemMessage)
+    });
+    
+    return true;
+  } catch (error) {
+    console.error("Error adding participant to chat:", error);
     throw error;
   }
 };
@@ -460,6 +514,37 @@ export const uploadUserPhoto = async (userId: string, file: File) => {
     });
     
     return downloadURL;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updateJob = async (jobId: string, jobData: Partial<JobType>) => {
+  try {
+    const jobRef = doc(db, "jobs", jobId);
+    await updateDoc(jobRef, jobData);
+    
+    // Retorna el trabajo actualizado
+    const updatedJob = await getDoc(jobRef);
+    if (!updatedJob.exists()) throw new Error("Job not found after update");
+    
+    const data = updatedJob.data();
+    return {
+      id: updatedJob.id,
+      ...data,
+      timestamp: data.timestamp?.toMillis ? data.timestamp.toMillis() : Date.now(),
+      comments: data.comments || [],
+      likes: data.likes || []
+    } as JobType;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const deleteJob = async (jobId: string) => {
+  try {
+    await deleteDoc(doc(db, "jobs", jobId));
+    return true;
   } catch (error) {
     throw error;
   }
