@@ -3,7 +3,9 @@ import { UserType } from './AuthContext';
 import { 
   getAllJobs, 
   getJobById, 
-  createJob as createFirebaseJob, 
+  createJob as createFirebaseJob,
+  updateJob as updateFirebaseJob,
+  deleteJob as deleteFirebaseJob,
   addCommentToJob, 
   addReplyToComment as addFirebaseReplyToComment,
   toggleJobLike as toggleFirebaseJobLike,
@@ -45,13 +47,15 @@ export type JobType = {
   timestamp: number;
   status: 'open' | 'in-progress' | 'completed';
   comments: CommentType[];
-  likes: string[]; // Array de IDs de usuarios que dieron like
+  likes: string[]; // Array de IDs de usuarios que dieron like;
 };
 
 type JobContextType = {
   jobs: JobType[];
   loading: boolean;
   createJob: (jobData: Omit<JobType, 'id' | 'timestamp' | 'comments' | 'likes'>) => Promise<void>;
+  updateJob: (jobId: string, jobData: Partial<JobType>) => Promise<JobType>;
+  deleteJob: (jobId: string) => Promise<boolean>;
   addComment: (jobId: string, content: string, user: UserType) => Promise<void>;
   addReplyToComment: (jobId: string, commentId: string, content: string, user: UserType) => Promise<void>;
   getJob: (jobId: string) => JobType | undefined;
@@ -81,7 +85,6 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [savedJobs, setSavedJobs] = useState<string[]>([]);
 
-  // Load jobs on mount
   const loadJobs = async () => {
     setLoading(true);
     try {
@@ -101,10 +104,40 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
   const createJob = async (jobData: Omit<JobType, 'id' | 'timestamp' | 'comments' | 'likes'>) => {
     try {
       const newJob = await createFirebaseJob(jobData);
-      // Add as a JobType after ensuring timestamp is a number
       setJobs(prevJobs => [...prevJobs, newJob as JobType]);
+      return newJob;
     } catch (error) {
       console.error("Error creating job:", error);
+      throw error;
+    }
+  };
+
+  const updateJob = async (jobId: string, jobData: Partial<JobType>) => {
+    try {
+      const updatedJob = await updateFirebaseJob(jobId, jobData);
+      
+      setJobs(prevJobs => prevJobs.map(job => 
+        job.id === jobId ? updatedJob : job
+      ));
+      
+      return updatedJob;
+    } catch (error) {
+      console.error("Error updating job:", error);
+      throw error;
+    }
+  };
+
+  const deleteJob = async (jobId: string) => {
+    try {
+      const success = await deleteFirebaseJob(jobId);
+      
+      if (success) {
+        setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
+      }
+      
+      return success;
+    } catch (error) {
+      console.error("Error deleting job:", error);
       throw error;
     }
   };
@@ -207,6 +240,8 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
         jobs,
         loading,
         createJob,
+        updateJob,
+        deleteJob,
         addComment,
         addReplyToComment,
         getJob,

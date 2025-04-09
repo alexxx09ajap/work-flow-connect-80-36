@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { JobType } from './JobContext';
 import {
@@ -13,7 +14,7 @@ export type UserType = {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: "freelancer" | "client";
   skills?: string[];
   bio?: string;
   photoURL?: string;
@@ -66,7 +67,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: user.role as "freelancer" | "client",
         bio: user.bio,
         photoURL: user.photoURL,
         skills: user.skills,

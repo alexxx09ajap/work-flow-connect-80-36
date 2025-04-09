@@ -465,4 +465,35 @@ export const uploadUserPhoto = async (userId: string, file: File) => {
   }
 };
 
+export const updateJob = async (jobId: string, jobData: Partial<JobType>) => {
+  try {
+    const jobRef = doc(db, "jobs", jobId);
+    await updateDoc(jobRef, jobData);
+    
+    // Retorna el trabajo actualizado
+    const updatedJob = await getDoc(jobRef);
+    if (!updatedJob.exists()) throw new Error("Job not found after update");
+    
+    const data = updatedJob.data();
+    return {
+      id: updatedJob.id,
+      ...data,
+      timestamp: data.timestamp?.toMillis ? data.timestamp.toMillis() : Date.now(),
+      comments: data.comments || [],
+      likes: data.likes || []
+    } as JobType;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const deleteJob = async (jobId: string) => {
+  try {
+    await deleteDoc(doc(db, "jobs", jobId));
+    return true;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export { initializeFirebaseData };
