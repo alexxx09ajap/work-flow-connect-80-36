@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { JobType } from './JobContext';
 import {
@@ -14,7 +13,7 @@ export type UserType = {
   id: string;
   name: string;
   email: string;
-  role: "freelancer" | "client";
+  role: string;
   skills?: string[];
   bio?: string;
   photoURL?: string;
@@ -65,14 +64,14 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       // Convert Firebase users to DataContext UserType
       const convertedUsers = usersData.map(user => ({
         id: user.id,
-        name: user.name || "",
-        email: user.email || "",
-        role: user.role as "freelancer" | "client" || "freelancer",
+        name: user.name,
+        email: user.email,
+        role: user.role,
         bio: user.bio,
         photoURL: user.photoURL,
         skills: user.skills,
-        hourlyRate: user.hourlyRate,
-        joinedAt: user.joinedAt
+        hourlyRate: user.hourlyRate || 0,
+        joinedAt: user.joinedAt || Date.now()
       }));
       setUsers(convertedUsers);
       

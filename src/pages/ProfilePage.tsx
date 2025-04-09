@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,36 +12,21 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
-import { X, Camera, Edit, Trash2, AlertTriangle } from 'lucide-react';
+import { X, Camera } from 'lucide-react';
 import { useJobs } from '@/contexts/JobContext';
 import { Link } from 'react-router-dom';
 import { JobType } from '@/contexts/JobContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import EditJobForm from '@/components/EditJobForm';
 
 const ProfilePage = () => {
   const { currentUser, updateUserProfile } = useAuth();
-  const { skillsList, loadData } = useData();
-  const { jobs, getSavedJobs, updateJob, deleteJob, loadJobs } = useJobs();
-  
+  const { skillsList } = useData();
+  const { jobs, getSavedJobs } = useJobs();
   const [isUpdating, setIsUpdating] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [userJobs, setUserJobs] = useState<JobType[]>([]);
   const [savedJobs, setSavedJobs] = useState<JobType[]>([]);
   const [selectedSkill, setSelectedSkill] = useState('');
-  const [editingJob, setEditingJob] = useState<JobType | null>(null);
-  const [isSubmittingJob, setIsSubmittingJob] = useState(false);
   
   const [profileForm, setProfileForm] = useState({
     name: currentUser?.name || '',
@@ -67,62 +53,6 @@ const ProfilePage = () => {
     loadSavedJobs();
   }, [jobs, currentUser, getSavedJobs]);
   
-  const handleEditJob = (job: JobType) => {
-    setEditingJob(job);
-  };
-  
-  const handleCancelEdit = () => {
-    setEditingJob(null);
-  };
-  
-  const handleUpdateJob = async (jobData: Partial<JobType>) => {
-    if (!editingJob) return;
-    
-    setIsSubmittingJob(true);
-    try {
-      await updateJob(editingJob.id, jobData);
-      
-      // Recargar datos
-      await loadJobs();
-      await loadData();
-      
-      setEditingJob(null);
-      
-      toast({
-        title: "Propuesta actualizada",
-        description: "Los cambios han sido guardados correctamente"
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo actualizar la propuesta"
-      });
-    } finally {
-      setIsSubmittingJob(false);
-    }
-  };
-  
-  const handleDeleteJob = async (jobId: string) => {
-    try {
-      await deleteJob(jobId);
-      
-      // Actualizar la lista de trabajos después de eliminar
-      setUserJobs(userJobs.filter(job => job.id !== jobId));
-      
-      toast({
-        title: "Propuesta eliminada",
-        description: "La propuesta ha sido eliminada correctamente"
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo eliminar la propuesta"
-      });
-    }
-  };
-
   const handleUpdateProfile = async () => {
     if (!currentUser) return;
     
@@ -216,6 +146,7 @@ const ProfilePage = () => {
           
           <TabsContent value="profile" className="mt-6">
             <div className="grid md:grid-cols-3 gap-6">
+              {/* Información básica */}
               <div className="md:col-span-2">
                 <Card>
                   <CardHeader>
@@ -309,6 +240,7 @@ const ProfilePage = () => {
                 </Card>
               </div>
               
+              {/* Foto de perfil y estadísticas */}
               <div className="space-y-6">
                 <Card>
                   <CardHeader>
@@ -399,91 +331,33 @@ const ProfilePage = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {editingJob ? (
-                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                        <h3 className="font-medium dark:text-white mb-4">Editar propuesta</h3>
-                        <EditJobForm 
-                          job={editingJob}
-                          onSubmit={handleUpdateJob}
-                          onCancel={handleCancelEdit}
-                          isSubmitting={isSubmittingJob}
-                        />
-                      </div>
-                    ) : (
-                      userJobs.map((job) => (
-                        <div 
-                          key={job.id} 
-                          className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-wfc-purple dark:hover:border-wfc-purple"
-                        >
-                          <div className="flex flex-col md:flex-row justify-between">
-                            <div>
-                              <h3 className="font-medium dark:text-white">
-                                <Link to={`/jobs/${job.id}`} className="hover:text-wfc-purple">
-                                  {job.title}
-                                </Link>
-                              </h3>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Publicado el {formatDate(job.timestamp)} • {job.comments.length} comentarios
-                              </p>
-                            </div>
-                            <div className="mt-2 md:mt-0">
-                              <Badge className={`
-                                ${job.status === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
-                                  job.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 
-                                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}
-                              `}>
-                                {job.status === 'open' ? 'Abierto' : 
-                                  job.status === 'in-progress' ? 'En progreso' : 
-                                  'Completado'}
-                              </Badge>
-                            </div>
+                    {userJobs.map((job) => (
+                      <div 
+                        key={job.id} 
+                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-wfc-purple cursor-pointer transition-colors dark:hover:border-wfc-purple"
+                        onClick={() => window.location.href = `/jobs/${job.id}`}
+                      >
+                        <div className="flex flex-col md:flex-row justify-between">
+                          <div>
+                            <h3 className="font-medium dark:text-white">{job.title}</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              Publicado el {formatDate(job.timestamp)} • {job.comments.length} comentarios
+                            </p>
                           </div>
-                          
-                          <div className="flex mt-4 space-x-3">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => handleEditJob(job)}
-                              className="text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white dark:text-blue-400 dark:border-blue-400 dark:hover:bg-blue-800"
-                            >
-                              <Edit className="h-4 w-4 mr-1" /> Editar
-                            </Button>
-                            
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  className="text-red-600 border-red-600 hover:bg-red-600 hover:text-white dark:text-red-400 dark:border-red-400 dark:hover:bg-red-800"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-1" /> Eliminar
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent className="dark:bg-gray-800 dark:border-gray-700 dark:text-white">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle className="dark:text-white flex items-center">
-                                    <AlertTriangle className="h-5 w-5 mr-2 text-red-500" />
-                                    Eliminar propuesta
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription className="dark:text-gray-300">
-                                    ¿Estás seguro de que quieres eliminar esta propuesta? Esta acción no se puede deshacer.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel className="dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={() => handleDeleteJob(job.id)}
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    Eliminar
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                          <div className="mt-2 md:mt-0">
+                            <Badge className={`
+                              ${job.status === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
+                                job.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 
+                                'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}
+                            `}>
+                              {job.status === 'open' ? 'Abierto' : 
+                                job.status === 'in-progress' ? 'En progreso' : 
+                                'Completado'}
+                            </Badge>
                           </div>
                         </div>
-                      ))
-                    )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
