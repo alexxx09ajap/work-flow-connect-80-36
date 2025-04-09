@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { UserType } from './AuthContext';
 import { 
@@ -53,7 +54,7 @@ export type JobType = {
 type JobContextType = {
   jobs: JobType[];
   loading: boolean;
-  createJob: (jobData: Omit<JobType, 'id' | 'timestamp' | 'comments' | 'likes'>) => Promise<void>;
+  createJob: (jobData: Omit<JobType, 'id' | 'timestamp' | 'comments' | 'likes'>) => Promise<JobType>;
   updateJob: (jobId: string, jobData: Partial<JobType>) => Promise<JobType>;
   deleteJob: (jobId: string) => Promise<boolean>;
   addComment: (jobId: string, content: string, user: UserType) => Promise<void>;
@@ -104,8 +105,9 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
   const createJob = async (jobData: Omit<JobType, 'id' | 'timestamp' | 'comments' | 'likes'>) => {
     try {
       const newJob = await createFirebaseJob(jobData);
-      setJobs(prevJobs => [...prevJobs, newJob as JobType]);
-      return newJob;
+      const typedNewJob = newJob as JobType;
+      setJobs(prevJobs => [...prevJobs, typedNewJob]);
+      return typedNewJob;
     } catch (error) {
       console.error("Error creating job:", error);
       throw error;

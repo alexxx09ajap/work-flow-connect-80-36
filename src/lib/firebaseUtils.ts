@@ -121,8 +121,8 @@ export const getAllUsers = async () => {
         id: doc.id, 
         ...data, 
         joinedAt 
-      };
-    }) as UserType[];
+      } as UserType;
+    });
   } catch (error) {
     throw error;
   }
@@ -416,6 +416,37 @@ export const sendMessage = async (chatId: string, senderId: string, content: str
     
     return newMessage;
   } catch (error) {
+    throw error;
+  }
+};
+
+export const addParticipantToChat = async (chatId: string, participantId: string) => {
+  try {
+    const chatRef = doc(db, "chats", chatId);
+    const chatDoc = await getDoc(chatRef);
+    
+    if (!chatDoc.exists()) throw new Error("Chat not found");
+    
+    // Update the participants array
+    await updateDoc(chatRef, {
+      participants: arrayUnion(participantId)
+    });
+    
+    // Add a system message
+    const systemMessage: MessageType = {
+      id: `msg_${Date.now()}`,
+      senderId: "system",
+      content: "Un nuevo participante se ha unido al chat",
+      timestamp: Date.now()
+    };
+    
+    await updateDoc(chatRef, {
+      messages: arrayUnion(systemMessage)
+    });
+    
+    return true;
+  } catch (error) {
+    console.error("Error adding participant to chat:", error);
     throw error;
   }
 };

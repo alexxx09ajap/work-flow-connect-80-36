@@ -71,8 +71,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         bio: user.bio,
         photoURL: user.photoURL,
         skills: user.skills,
-        hourlyRate: user.hourlyRate || 0,
-        joinedAt: user.joinedAt || Date.now()
+        hourlyRate: user.hourlyRate,
+        joinedAt: user.joinedAt
       }));
       setUsers(convertedUsers);
       

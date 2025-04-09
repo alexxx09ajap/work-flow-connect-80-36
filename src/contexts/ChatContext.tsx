@@ -4,7 +4,8 @@ import { useAuth } from './AuthContext';
 import { 
   getChats as getFirebaseChats,
   createChat as createFirebaseChat,
-  sendMessage as sendFirebaseMessage
+  sendMessage as sendFirebaseMessage,
+  addParticipantToChat as addFirebaseParticipantToChat
 } from '@/lib/firebaseUtils';
 
 export type MessageType = {
@@ -29,10 +30,12 @@ interface ChatContextType {
   setActiveChat: (chat: ChatType | null) => void;
   sendMessage: (chatId: string, content: string) => void;
   createChat: (participantIds: string[], name?: string) => void;
+  createPrivateChat: (participantId: string) => Promise<void>;
   getChat: (chatId: string) => ChatType | undefined;
   loadingChats: boolean;
   onlineUsers: string[]; // IDs de usuarios online
   loadChats: () => Promise<void>;
+  addParticipantToChat: (chatId: string, participantId: string) => Promise<boolean>;
 }
 
 const ChatContext = createContext<ChatContextType | null>(null);
@@ -121,6 +124,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     }
   };
 
+  // Function to create a regular chat (can be group or 1:1)
   const createChat = async (participantIds: string[], name = '') => {
     if (!currentUser) return;
     
@@ -139,6 +143,80 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     }
   };
 
+  // New function specifically for creating 1:1 private chats
+  const createPrivateChat = async (participantId: string) => {
+    if (!currentUser || participantId === currentUser.id) return;
+    
+    try {
+      // Check if a private chat already exists with this user
+      const existingChat = chats.find(
+        chat => !chat.isGroup && 
+        chat.participants.length === 2 && 
+        chat.participants.includes(currentUser.id) && 
+        chat.participants.includes(participantId)
+      );
+      
+      if (existingChat) {
+        // If chat exists, just set it as active
+        setActiveChat(existingChat);
+        return;
+      }
+      
+      // Create new private chat
+      const participants = [currentUser.id, participantId];
+      const newChat = await createFirebaseChat(participants);
+      
+      setChats(prevChats => [...prevChats, newChat]);
+      setActiveChat(newChat);
+    } catch (error) {
+      console.error("Error creating private chat:", error);
+    }
+  };
+
+  // New function to add participants to an existing chat
+  const addParticipantToChat = async (chatId: string, participantId: string) => {
+    try {
+      // Check if the chat exists and is a group chat
+      const chat = chats.find(c => c.id === chatId);
+      if (!chat) return false;
+      
+      // Check if user is already in the chat
+      if (chat.participants.includes(participantId)) return false;
+      
+      // Add participant to Firebase
+      await addFirebaseParticipantToChat(chatId, participantId);
+      
+      // Update local state
+      setChats(prevChats => {
+        return prevChats.map(chat => {
+          if (chat.id === chatId) {
+            return {
+              ...chat,
+              participants: [...chat.participants, participantId]
+            };
+          }
+          return chat;
+        });
+      });
+      
+      // Update active chat if needed
+      if (activeChat?.id === chatId) {
+        setActiveChat(prevChat => {
+          if (!prevChat) return null;
+          return {
+            ...prevChat,
+            participants: [...prevChat.participants, participantId]
+          };
+        });
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error adding participant:", error);
+      return false;
+    }
+  };
+
   return (
     <ChatContext.Provider
       value={{
@@ -147,10 +225,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         setActiveChat,
         sendMessage,
         createChat,
+        createPrivateChat,
         getChat,
         loadingChats,
         onlineUsers,
-        loadChats
+        loadChats,
+        addParticipantToChat
       }}
     >
       {children}
