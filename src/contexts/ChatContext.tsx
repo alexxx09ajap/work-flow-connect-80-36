@@ -7,6 +7,15 @@ import {
   sendMessage as sendFirebaseMessage,
   addParticipantToChat as addFirebaseParticipantToChat
 } from '@/lib/firebaseUtils';
+import { 
+  collection, 
+  query, 
+  where, 
+  onSnapshot,
+  doc 
+} from "firebase/firestore";
+import { db } from '@/lib/firebase';
+import { toast } from '@/components/ui/use-toast';
 
 export type MessageType = {
   id: string;
@@ -61,6 +70,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [activeChat, setActiveChat] = useState<ChatType | null>(null);
   const [loadingChats, setLoadingChats] = useState(true);
   const [onlineUsers] = useState<string[]>(MOCK_ONLINE_USERS);
+  const [unsubscribers, setUnsubscribers] = useState<(() => void)[]>([]);
 
   const loadChats = async () => {
     if (!currentUser) {
@@ -71,18 +81,88 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   
     setLoadingChats(true);
     try {
+      console.log("Loading chats for user:", currentUser.id);
       const userChats = await getFirebaseChats(currentUser.id);
       setChats(userChats);
+      console.log("Chats loaded:", userChats.length);
+      
+      // Setup real-time listeners for each chat
+      setupChatListeners();
     } catch (error) {
       console.error("Error loading chats:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron cargar los chats. Por favor, inténtalo de nuevo."
+      });
     } finally {
       setLoadingChats(false);
     }
   };
 
+  // Setup real-time listeners for user's chats
+  const setupChatListeners = () => {
+    if (!currentUser) return;
+    
+    // Clean up any existing listeners
+    unsubscribers.forEach(unsubscribe => unsubscribe());
+    setUnsubscribers([]);
+    
+    // Create a query for chats where the current user is a participant
+    const chatsQuery = query(
+      collection(db, "chats"),
+      where("participants", "array-contains", currentUser.id)
+    );
+    
+    // Create a real-time listener
+    const unsubscribe = onSnapshot(chatsQuery, (snapshot) => {
+      const updatedChats: ChatType[] = [];
+      
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        
+        // Get the last message if there are messages
+        let lastMessage = null;
+        if (data.messages && data.messages.length > 0) {
+          lastMessage = data.messages[data.messages.length - 1];
+        }
+        
+        updatedChats.push({
+          id: doc.id,
+          name: data.name || "",
+          participants: data.participants || [],
+          messages: data.messages || [],
+          isGroup: data.isGroup || false,
+          lastMessage
+        });
+      });
+      
+      console.log("Real-time chat update:", updatedChats.length);
+      setChats(updatedChats);
+      
+      // Update active chat if needed
+      if (activeChat) {
+        const updatedActiveChat = updatedChats.find(chat => chat.id === activeChat.id);
+        if (updatedActiveChat) {
+          setActiveChat(updatedActiveChat);
+        }
+      }
+    }, (error) => {
+      console.error("Error in chat listener:", error);
+    });
+    
+    setUnsubscribers([unsubscribe]);
+    return unsubscribe;
+  };
+
   // Load chats when user changes
   useEffect(() => {
     loadChats();
+    
+    // Cleanup function to unsubscribe from all listeners
+    return () => {
+      unsubscribers.forEach(unsubscribe => unsubscribe());
+    };
   }, [currentUser]);
 
   const getChat = (chatId: string) => {
@@ -93,34 +173,18 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     if (!currentUser || !content.trim()) return;
     
     try {
+      console.log("Sending message:", { chatId, content });
       const newMessage = await sendFirebaseMessage(chatId, currentUser.id, content);
       
-      setChats(prevChats => {
-        return prevChats.map(chat => {
-          if (chat.id === chatId) {
-            return {
-              ...chat,
-              messages: [...chat.messages, newMessage],
-              lastMessage: newMessage
-            };
-          }
-          return chat;
-        });
-      });
-      
-      // If the active chat is the one we're sending a message to, update it
-      if (activeChat?.id === chatId) {
-        setActiveChat(prevChat => {
-          if (!prevChat) return null;
-          return {
-            ...prevChat,
-            messages: [...prevChat.messages, newMessage],
-            lastMessage: newMessage
-          };
-        });
-      }
+      console.log("Message sent successfully:", newMessage);
+      // Note: The message will be updated through the real-time listener
     } catch (error) {
       console.error("Error sending message:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo enviar el mensaje. Por favor, inténtalo de nuevo."
+      });
     }
   };
 
@@ -135,11 +199,17 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     
     try {
       const newChat = await createFirebaseChat(participantIds, name);
+      console.log("New chat created:", newChat);
       
-      setChats(prevChats => [...prevChats, newChat]);
+      // The new chat will be added through the real-time listener
       setActiveChat(newChat);
     } catch (error) {
       console.error("Error creating chat:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo crear el chat. Por favor, inténtalo de nuevo."
+      });
     }
   };
 
@@ -165,11 +235,17 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       // Create new private chat
       const participants = [currentUser.id, participantId];
       const newChat = await createFirebaseChat(participants);
+      console.log("New private chat created:", newChat);
       
-      setChats(prevChats => [...prevChats, newChat]);
+      // Chat will be added through the real-time listener
       setActiveChat(newChat);
     } catch (error) {
       console.error("Error creating private chat:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo crear el chat privado. Por favor, inténtalo de nuevo."
+      });
     }
   };
 
@@ -185,34 +261,17 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       
       // Add participant to Firebase
       await addFirebaseParticipantToChat(chatId, participantId);
+      console.log(`Participant ${participantId} added to chat ${chatId}`);
       
-      // Update local state
-      setChats(prevChats => {
-        return prevChats.map(chat => {
-          if (chat.id === chatId) {
-            return {
-              ...chat,
-              participants: [...chat.participants, participantId]
-            };
-          }
-          return chat;
-        });
-      });
-      
-      // Update active chat if needed
-      if (activeChat?.id === chatId) {
-        setActiveChat(prevChat => {
-          if (!prevChat) return null;
-          return {
-            ...prevChat,
-            participants: [...prevChat.participants, participantId]
-          };
-        });
-      }
-      
+      // The chat will be updated through the real-time listener
       return true;
     } catch (error) {
       console.error("Error adding participant:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo añadir el participante. Por favor, inténtalo de nuevo."
+      });
       return false;
     }
   };

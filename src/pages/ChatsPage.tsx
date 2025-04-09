@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useChat } from '@/contexts/ChatContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,7 +20,8 @@ import {
   Search, 
   ChevronLeft, 
   ChevronRight,
-  Info
+  Info,
+  Loader2
 } from 'lucide-react';
 import { ChatGroupForm } from '@/components/ChatGroupForm';
 import { UserSelectDialog } from '@/components/UserSelectDialog';
@@ -34,7 +35,9 @@ const ChatsPage = () => {
     sendMessage, 
     onlineUsers, 
     createPrivateChat,
-    addParticipantToChat 
+    addParticipantToChat,
+    loadChats,
+    loadingChats
   } = useChat();
   const { currentUser } = useAuth();
   const { getUserById } = useData();
@@ -44,16 +47,25 @@ const ChatsPage = () => {
   const [isAddingParticipant, setIsAddingParticipant] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Auto-scroll to bottom of messages when new message arrives
+  // Scroll to bottom whenever messages change
   useEffect(() => {
-    if (activeChat) {
-      const messagesContainer = document.getElementById('messages-container');
-      if (messagesContainer) {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      }
+    scrollToBottom();
+  }, [activeChat?.messages?.length]);
+  
+  // Force reload chats when the component mounts
+  useEffect(() => {
+    // Only reload if we have a current user
+    if (currentUser) {
+      console.log("ChatsPage mounted, reloading chats");
+      loadChats();
     }
-  }, [activeChat?.messages.length]);
+  }, []);
+  
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
   
   // Function to get chat name
   const getChatName = (chat) => {
@@ -206,7 +218,12 @@ const ChatsPage = () => {
               </div>
               
               <ScrollArea className="flex-1">
-                {filteredChats.length === 0 ? (
+                {loadingChats ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-wfc-purple mb-2" />
+                    <p className="text-gray-500">Cargando conversaciones...</p>
+                  </div>
+                ) : filteredChats.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center p-4">
                     {searchQuery ? (
                       <p className="text-gray-500">No se encontraron conversaciones</p>
@@ -283,6 +300,24 @@ const ChatsPage = () => {
                   </div>
                 )}
               </ScrollArea>
+              
+              <div className="p-4 border-t">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => loadChats()}
+                  disabled={loadingChats}
+                >
+                  {loadingChats ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Actualizando...
+                    </>
+                  ) : (
+                    <>Actualizar conversaciones</>
+                  )}
+                </Button>
+              </div>
             </Card>
           )}
           
@@ -392,14 +427,14 @@ const ChatsPage = () => {
                                   <Avatar className="h-8 w-8 mr-2 mt-1">
                                     <AvatarImage src={sender?.photoURL} />
                                     <AvatarFallback className="bg-wfc-purple-medium text-white">
-                                      {sender?.name?.charAt(0).toUpperCase()}
+                                      {sender?.name?.charAt(0).toUpperCase() || '?'}
                                     </AvatarFallback>
                                   </Avatar>
                                 )}
                                 
                                 <div className={`max-w-[80%]`}>
                                   {!isCurrentUser && activeChat.isGroup && (
-                                    <p className="text-xs text-gray-500 mb-1">{sender?.name}</p>
+                                    <p className="text-xs text-gray-500 mb-1">{sender?.name || 'Usuario'}</p>
                                   )}
                                   <div 
                                     className={`rounded-lg px-4 py-2 inline-block
@@ -419,6 +454,8 @@ const ChatsPage = () => {
                           </React.Fragment>
                         );
                       })}
+                      {/* This div helps to scroll to the bottom when new messages are added */}
+                      <div ref={messagesEndRef} />
                     </div>
                   )}
                 </ScrollArea>

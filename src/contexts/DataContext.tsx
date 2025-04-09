@@ -65,9 +65,9 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       // Convert Firebase users to DataContext UserType
       const convertedUsers = usersData.map(user => ({
         id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role as "freelancer" | "client",
+        name: user.name || "",
+        email: user.email || "",
+        role: user.role as "freelancer" | "client" || "freelancer",
         bio: user.bio,
         photoURL: user.photoURL,
         skills: user.skills,
