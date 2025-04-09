@@ -4,14 +4,14 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Firebase configuration with the provided keys
+// Firebase configuration with the updated keys
 const firebaseConfig = {
-  apiKey: "AIzaSyDGghUreQ4_M4S8N-wyq0WKQlNZZrP1HGE",
-  authDomain: "workflow-connect.firebaseapp.com",
-  projectId: "workflow-connect",
-  storageBucket: "workflow-connect.firebasestorage.app",
-  messagingSenderId: "716001366128",
-  appId: "1:716001366128:web:3062bfa117e1862c0d64b5"
+  apiKey: "AIzaSyCLbrnzHU72CoJXOnht9AhlLJKUrqbtlaY",
+  authDomain: "freelancer-555a9.firebaseapp.com",
+  projectId: "freelancer-555a9",
+  storageBucket: "freelancer-555a9.firebasestorage.app",
+  messagingSenderId: "680164060170",
+  appId: "1:680164060170:web:e9931bae80370ffd03c3f3"
 };
 
 // Initialize Firebase
