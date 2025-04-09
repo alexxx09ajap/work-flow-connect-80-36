@@ -101,10 +101,10 @@ const CreateJobPage = () => {
       <div className="container py-10">
         <Card>
           <CardContent className="p-8">
-            <h1 className="text-2xl font-semibold mb-6">Crear una nueva propuesta</h1>
+            <h1 className="text-2xl font-semibold mb-6 dark:text-white">Crear una nueva propuesta</h1>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="title" className="mb-1 block">Título de la propuesta*</Label>
+                <Label htmlFor="title" className="mb-1 block dark:text-gray-200">Título de la propuesta*</Label>
                 <Input
                   type="text"
                   id="title"
@@ -112,11 +112,12 @@ const CreateJobPage = () => {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   required
+                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                 />
               </div>
               
               <div>
-                <Label htmlFor="description" className="mb-1 block">Descripción*</Label>
+                <Label htmlFor="description" className="mb-1 block dark:text-gray-200">Descripción*</Label>
                 <Textarea
                   id="description"
                   placeholder="Describe detalladamente lo que necesitas..."
@@ -124,18 +125,19 @@ const CreateJobPage = () => {
                   onChange={(e) => setDescription(e.target.value)}
                   rows={5}
                   required
+                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                 />
               </div>
               
               <div>
-                <Label htmlFor="category" className="mb-1 block">Categoría*</Label>
+                <Label htmlFor="category" className="mb-1 block dark:text-gray-200">Categoría*</Label>
                 <Select value={category} onValueChange={setCategory} required>
-                  <SelectTrigger>
+                  <SelectTrigger className="dark:bg-gray-800 dark:border-gray-700 dark:text-white">
                     <SelectValue placeholder="Selecciona una categoría" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
                     {jobCategories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
+                      <SelectItem key={cat} value={cat} className="dark:text-white dark:focus:text-white dark:focus:bg-gray-700">
                         {cat}
                       </SelectItem>
                     ))}
@@ -144,17 +146,17 @@ const CreateJobPage = () => {
               </div>
               
               <div>
-                <Label htmlFor="skills" className="mb-1 block">Habilidades requeridas</Label>
+                <Label htmlFor="skills" className="mb-1 block dark:text-gray-200">Habilidades requeridas</Label>
                 <div className="flex space-x-2 mb-2">
                   <Select value={currentSkill} onValueChange={setCurrentSkill}>
-                    <SelectTrigger className="flex-1">
+                    <SelectTrigger className="flex-1 dark:bg-gray-800 dark:border-gray-700 dark:text-white">
                       <SelectValue placeholder="Selecciona las habilidades necesarias" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
                       {skillsList
                         .filter(skill => !selectedSkills.includes(skill))
                         .map((skill) => (
-                          <SelectItem key={skill} value={skill}>
+                          <SelectItem key={skill} value={skill} className="dark:text-white dark:focus:text-white dark:focus:bg-gray-700">
                             {skill}
                           </SelectItem>
                       ))}
@@ -165,6 +167,7 @@ const CreateJobPage = () => {
                     onClick={handleAddSkill}
                     disabled={!currentSkill}
                     variant="outline"
+                    className="dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:bg-gray-700"
                   >
                     Agregar
                   </Button>
@@ -173,12 +176,12 @@ const CreateJobPage = () => {
                 {selectedSkills.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-3">
                     {selectedSkills.map(skill => (
-                      <Badge key={skill} variant="outline" className="flex items-center space-x-1">
+                      <Badge key={skill} variant="outline" className="flex items-center space-x-1 dark:bg-gray-700 dark:text-white">
                         <span>{skill}</span>
                         <button 
                           type="button" 
                           onClick={() => handleRemoveSkill(skill)}
-                          className="ml-1 text-gray-500 hover:text-gray-700"
+                          className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -189,7 +192,7 @@ const CreateJobPage = () => {
               </div>
               
               <div>
-                <Label htmlFor="budget" className="mb-1 block">Presupuesto (USD)*</Label>
+                <Label htmlFor="budget" className="mb-1 block dark:text-gray-200">Presupuesto (USD)*</Label>
                 <Input
                   type="number"
                   id="budget"
@@ -198,6 +201,7 @@ const CreateJobPage = () => {
                   value={budget}
                   onChange={(e) => setBudget(e.target.value)}
                   required
+                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                 />
               </div>
               
@@ -206,6 +210,7 @@ const CreateJobPage = () => {
                   type="button" 
                   variant="outline" 
                   onClick={() => navigate('/jobs')}
+                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:bg-gray-700"
                 >
                   Cancelar
                 </Button>

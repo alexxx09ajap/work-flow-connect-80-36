@@ -16,6 +16,7 @@ import { X, Camera } from 'lucide-react';
 import { useJobs } from '@/contexts/JobContext';
 import { Link } from 'react-router-dom';
 import { JobType } from '@/contexts/JobContext';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ProfilePage = () => {
   const { currentUser, updateUserProfile } = useAuth();
@@ -25,6 +26,7 @@ const ProfilePage = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [userJobs, setUserJobs] = useState<JobType[]>([]);
   const [savedJobs, setSavedJobs] = useState<JobType[]>([]);
+  const [selectedSkill, setSelectedSkill] = useState('');
   
   const [profileForm, setProfileForm] = useState({
     name: currentUser?.name || '',
@@ -93,6 +95,7 @@ const ProfilePage = () => {
       ...profileForm,
       skills: [...profileForm.skills, skill]
     });
+    setSelectedSkill('');
   };
   
   const handleRemoveSkill = (skill: string) => {
@@ -147,46 +150,48 @@ const ProfilePage = () => {
               <div className="md:col-span-2">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Información de perfil</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="dark:text-white">Información de perfil</CardTitle>
+                    <CardDescription className="dark:text-gray-300">
                       Actualiza tu información para que los clientes te conozcan mejor.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Nombre</Label>
+                      <Label htmlFor="name" className="dark:text-gray-200">Nombre</Label>
                       <Input
                         id="name"
                         value={profileForm.name}
                         onChange={(e) => setProfileForm({...profileForm, name: e.target.value})}
+                        className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="email">Correo electrónico</Label>
+                      <Label htmlFor="email" className="dark:text-gray-200">Correo electrónico</Label>
                       <Input
                         id="email"
                         value={currentUser.email}
                         disabled
+                        className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
                       />
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
                         No se puede cambiar el correo electrónico
                       </p>
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="bio">Biografía</Label>
+                      <Label htmlFor="bio" className="dark:text-gray-200">Biografía</Label>
                       <Textarea
                         id="bio"
                         placeholder="Cuéntanos sobre ti, tu experiencia y las áreas en las que trabajas"
                         value={profileForm.bio}
                         onChange={(e) => setProfileForm({...profileForm, bio: e.target.value})}
-                        className="min-h-[120px]"
+                        className="min-h-[120px] dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label>Habilidades</Label>
+                      <Label className="dark:text-gray-200">Habilidades</Label>
                       <div className="flex flex-wrap gap-2 mb-2">
                         {profileForm.skills.map((skill, index) => (
                           <Badge key={index} className="bg-wfc-purple-medium text-white hover:bg-wfc-purple-medium">
@@ -202,24 +207,25 @@ const ProfilePage = () => {
                       </div>
                       
                       <div className="flex flex-wrap gap-2">
-                        <select 
-                          className="w-full p-2 border border-gray-300 rounded-md"
-                          onChange={(e) => {
-                            if (e.target.value) {
-                              handleAddSkill(e.target.value);
-                              e.target.value = '';
+                        <Select value={selectedSkill} onValueChange={handleAddSkill}>
+                          <SelectTrigger className="w-full dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+                            <SelectValue placeholder="Seleccionar habilidad" />
+                          </SelectTrigger>
+                          <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                            {skillsList
+                              .filter(skill => !profileForm.skills.includes(skill))
+                              .map((skill, index) => (
+                                <SelectItem 
+                                  key={index} 
+                                  value={skill}
+                                  className="dark:text-white dark:focus:text-white dark:focus:bg-gray-700"
+                                >
+                                  {skill}
+                                </SelectItem>
+                              ))
                             }
-                          }}
-                        >
-                          <option value="">Seleccionar habilidad</option>
-                          {skillsList
-                            .filter(skill => !profileForm.skills.includes(skill))
-                            .map((skill, index) => (
-                            <option key={index} value={skill}>
-                              {skill}
-                            </option>
-                          ))}
-                        </select>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                     
@@ -238,7 +244,7 @@ const ProfilePage = () => {
               <div className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Foto de perfil</CardTitle>
+                    <CardTitle className="dark:text-white">Foto de perfil</CardTitle>
                   </CardHeader>
                   <CardContent className="flex flex-col items-center">
                     <Avatar className="h-24 w-24 mb-4 relative group">
@@ -264,12 +270,12 @@ const ProfilePage = () => {
                     />
                     
                     <Label htmlFor="profile-photo" className="cursor-pointer">
-                      <Button variant="outline" className="w-full" type="button">
+                      <Button variant="outline" className="w-full dark:bg-gray-800 dark:border-gray-700 dark:text-white" type="button">
                         Cambiar foto
                       </Button>
                     </Label>
                     
-                    <p className="text-xs text-gray-500 mt-2 text-center">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
                       Imagen PNG, JPG o GIF, máximo 2MB
                     </p>
                   </CardContent>
@@ -277,25 +283,25 @@ const ProfilePage = () => {
                 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Estadísticas</CardTitle>
+                    <CardTitle className="dark:text-white">Estadísticas</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Propuestas publicadas</span>
-                        <span className="font-medium">{userJobs.length}</span>
+                        <span className="text-gray-600 dark:text-gray-300">Propuestas publicadas</span>
+                        <span className="font-medium dark:text-white">{userJobs.length}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Propuestas guardadas</span>
-                        <span className="font-medium">{savedJobs.length}</span>
+                        <span className="text-gray-600 dark:text-gray-300">Propuestas guardadas</span>
+                        <span className="font-medium dark:text-white">{savedJobs.length}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Calificación</span>
-                        <span className="font-medium">5.0 ⭐</span>
+                        <span className="text-gray-600 dark:text-gray-300">Calificación</span>
+                        <span className="font-medium dark:text-white">5.0 ⭐</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Miembro desde</span>
-                        <span className="font-medium">Apr 2025</span>
+                        <span className="text-gray-600 dark:text-gray-300">Miembro desde</span>
+                        <span className="font-medium dark:text-white">Apr 2025</span>
                       </div>
                     </div>
                   </CardContent>
@@ -307,15 +313,15 @@ const ProfilePage = () => {
           <TabsContent value="proposals" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Mis Propuestas</CardTitle>
-                <CardDescription>
+                <CardTitle className="dark:text-white">Mis Propuestas</CardTitle>
+                <CardDescription className="dark:text-gray-300">
                   Propuestas de trabajo que has publicado
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {userJobs.length === 0 ? (
                   <div className="text-center py-6">
-                    <p className="text-gray-500">Aún no has publicado ninguna propuesta</p>
+                    <p className="text-gray-500 dark:text-gray-400">Aún no has publicado ninguna propuesta</p>
                     <Button 
                       className="mt-4 bg-wfc-purple hover:bg-wfc-purple-medium"
                       onClick={() => window.location.href = '/create-job'}
@@ -328,21 +334,21 @@ const ProfilePage = () => {
                     {userJobs.map((job) => (
                       <div 
                         key={job.id} 
-                        className="border border-gray-200 rounded-lg p-4 hover:border-wfc-purple cursor-pointer transition-colors"
+                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-wfc-purple cursor-pointer transition-colors dark:hover:border-wfc-purple"
                         onClick={() => window.location.href = `/jobs/${job.id}`}
                       >
                         <div className="flex flex-col md:flex-row justify-between">
                           <div>
-                            <h3 className="font-medium">{job.title}</h3>
-                            <p className="text-sm text-gray-500">
+                            <h3 className="font-medium dark:text-white">{job.title}</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
                               Publicado el {formatDate(job.timestamp)} • {job.comments.length} comentarios
                             </p>
                           </div>
                           <div className="mt-2 md:mt-0">
                             <Badge className={`
-                              ${job.status === 'open' ? 'bg-green-100 text-green-800' : 
-                                job.status === 'in-progress' ? 'bg-blue-100 text-blue-800' : 
-                                'bg-gray-100 text-gray-800'}
+                              ${job.status === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
+                                job.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 
+                                'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}
                             `}>
                               {job.status === 'open' ? 'Abierto' : 
                                 job.status === 'in-progress' ? 'En progreso' : 
@@ -361,15 +367,15 @@ const ProfilePage = () => {
           <TabsContent value="saved" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Propuestas Guardadas</CardTitle>
-                <CardDescription>
+                <CardTitle className="dark:text-white">Propuestas Guardadas</CardTitle>
+                <CardDescription className="dark:text-gray-300">
                   Propuestas de trabajo que has guardado para revisar más tarde
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {savedJobs.length === 0 ? (
                   <div className="text-center py-6">
-                    <p className="text-gray-500">Aún no has guardado ninguna propuesta</p>
+                    <p className="text-gray-500 dark:text-gray-400">Aún no has guardado ninguna propuesta</p>
                     <Button 
                       className="mt-4 bg-wfc-purple hover:bg-wfc-purple-medium"
                       onClick={() => window.location.href = '/jobs'}
@@ -381,22 +387,22 @@ const ProfilePage = () => {
                   <div className="space-y-4">
                     {savedJobs.map((job) => (
                       <Link key={job.id} to={`/jobs/${job.id}`}>
-                        <div className="border border-gray-200 rounded-lg p-4 hover:border-wfc-purple cursor-pointer transition-colors">
+                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-wfc-purple cursor-pointer transition-colors dark:hover:border-wfc-purple">
                           <div className="flex flex-col md:flex-row justify-between">
                             <div>
-                              <h3 className="font-medium">{job.title}</h3>
-                              <p className="text-sm text-gray-500">
+                              <h3 className="font-medium dark:text-white">{job.title}</h3>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
                                 {job.userName} • {formatDate(job.timestamp)}
                               </p>
                             </div>
                             <div className="mt-2 md:mt-0 flex items-center">
-                              <Badge className="bg-purple-100 text-purple-800 mr-2">
+                              <Badge className="bg-purple-100 text-purple-800 mr-2 dark:bg-purple-900 dark:text-purple-200">
                                 {job.category}
                               </Badge>
                               <Badge className={`
-                                ${job.status === 'open' ? 'bg-green-100 text-green-800' : 
-                                  job.status === 'in-progress' ? 'bg-blue-100 text-blue-800' : 
-                                  'bg-gray-100 text-gray-800'}
+                                ${job.status === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
+                                  job.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 
+                                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}
                               `}>
                                 {job.status === 'open' ? 'Abierto' : 
                                   job.status === 'in-progress' ? 'En progreso' : 
@@ -404,17 +410,17 @@ const ProfilePage = () => {
                               </Badge>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-700 mt-2 line-clamp-2">
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mt-2 line-clamp-2">
                             {job.description}
                           </p>
                           <div className="mt-2 flex flex-wrap gap-1">
                             {job.skills.slice(0, 3).map((skill, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
+                              <Badge key={index} variant="outline" className="text-xs dark:bg-gray-700 dark:text-white dark:border-gray-600">
                                 {skill}
                               </Badge>
                             ))}
                             {job.skills.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="outline" className="text-xs dark:bg-gray-700 dark:text-white dark:border-gray-600">
                                 +{job.skills.length - 3} más
                               </Badge>
                             )}

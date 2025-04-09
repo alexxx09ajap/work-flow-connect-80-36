@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { JobType } from './JobContext';
 import {
@@ -14,12 +13,12 @@ export type UserType = {
   id: string;
   name: string;
   email: string;
-  role: 'freelancer' | 'client';
+  role: string;
+  skills?: string[];
   bio?: string;
   photoURL?: string;
-  skills?: string[];
   hourlyRate?: number;
-  joinedAt: number; // Adding joinedAt as a timestamp (in milliseconds)
+  joinedAt?: number;
 };
 
 export type CommentType = {

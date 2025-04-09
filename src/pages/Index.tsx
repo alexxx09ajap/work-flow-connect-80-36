@@ -7,7 +7,7 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col bg-wfc-background">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
         <div className="container-custom flex items-center justify-between py-4">
           {/* Logo */}
           <Link to="/" className="flex items-center">
@@ -16,7 +16,7 @@ const Index = () => {
           
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-4">
-            <Link to="/login" className="text-gray-700 hover:text-wfc-purple">Iniciar Sesión</Link>
+            <Link to="/login" className="text-gray-700 hover:text-wfc-purple dark:text-gray-200 dark:hover:text-wfc-purple">Iniciar Sesión</Link>
             <Link to="/register">
               <Button variant="default" className="bg-wfc-purple hover:bg-wfc-purple-medium">
                 Registrarse
@@ -31,7 +31,7 @@ const Index = () => {
                 Registrarse
               </Button>
             </Link>
-            <Link to="/login" className="text-sm text-gray-700 hover:text-wfc-purple">
+            <Link to="/login" className="text-sm text-gray-700 hover:text-wfc-purple dark:text-gray-200 dark:hover:text-wfc-purple">
               Iniciar Sesión
             </Link>
           </div>
@@ -76,37 +76,37 @@ const Index = () => {
       {/* Features Section */}
       <section className="py-16 bg-white dark:bg-gray-800">
         <div className="container-custom">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-12 text-wfc-purple dark:text-wfc-purple-medium">
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-12 text-wfc-purple dark:text-wfc-purple-light">
             Todo lo que necesitas en un solo lugar
           </h2>
           
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-gray-50 rounded-lg p-6 text-center">
-              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-wfc-purple/10 text-wfc-purple mb-4">
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center shadow-sm">
+              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-wfc-purple/10 text-wfc-purple mb-4 dark:bg-wfc-purple/20">
                 <Briefcase className="h-6 w-6" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">Propuestas de trabajo</h3>
-              <p className="text-gray-600">
+              <h3 className="text-xl font-semibold mb-3 dark:text-white">Propuestas de trabajo</h3>
+              <p className="text-gray-600 dark:text-gray-300">
                 Publica tus proyectos o encuentra oportunidades que se ajusten a tus habilidades.
               </p>
             </div>
             
-            <div className="bg-gray-50 rounded-lg p-6 text-center">
-              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-wfc-purple/10 text-wfc-purple mb-4">
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center shadow-sm">
+              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-wfc-purple/10 text-wfc-purple mb-4 dark:bg-wfc-purple/20">
                 <MessageCircle className="h-6 w-6" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">Mensajería integrada</h3>
-              <p className="text-gray-600">
+              <h3 className="text-xl font-semibold mb-3 dark:text-white">Mensajería integrada</h3>
+              <p className="text-gray-600 dark:text-gray-300">
                 Comunícate fácilmente con clientes o freelancers a través de nuestro sistema de chat.
               </p>
             </div>
             
-            <div className="bg-gray-50 rounded-lg p-6 text-center">
-              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-wfc-purple/10 text-wfc-purple mb-4">
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center shadow-sm">
+              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-wfc-purple/10 text-wfc-purple mb-4 dark:bg-wfc-purple/20">
                 <Users className="h-6 w-6" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">Perfiles profesionales</h3>
-              <p className="text-gray-600">
+              <h3 className="text-xl font-semibold mb-3 dark:text-white">Perfiles profesionales</h3>
+              <p className="text-gray-600 dark:text-gray-300">
                 Crea tu perfil destacando tus habilidades y experiencia para atraer más oportunidades.
               </p>
             </div>
@@ -115,7 +115,7 @@ const Index = () => {
       </section>
       
       {/* CTA Section */}
-      <section className="py-16 bg-wfc-background">
+      <section className="py-16 bg-wfc-background dark:bg-gray-900">
         <div className="container-custom">
           <div className="bg-wfc-purple rounded-lg p-8 md:p-12 text-white text-center">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">
@@ -134,9 +134,9 @@ const Index = () => {
       </section>
       
       {/* Benefits Section */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-white dark:bg-gray-800">
         <div className="container-custom">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-12 dark:text-white">
             Por qué elegir WorkFlowConnect
           </h2>
           
@@ -144,8 +144,8 @@ const Index = () => {
             <div className="flex items-start">
               <CheckCircle className="h-5 w-5 text-wfc-purple mr-3 mt-1 flex-shrink-0" />
               <div>
-                <h3 className="font-medium mb-1">Sin comisiones</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-medium mb-1 dark:text-white">Sin comisiones</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   No cobramos comisiones por los proyectos que completes.
                 </p>
               </div>
@@ -154,8 +154,8 @@ const Index = () => {
             <div className="flex items-start">
               <CheckCircle className="h-5 w-5 text-wfc-purple mr-3 mt-1 flex-shrink-0" />
               <div>
-                <h3 className="font-medium mb-1">Pagos seguros</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-medium mb-1 dark:text-white">Pagos seguros</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   Sistema de pagos seguro y protegido para todas las transacciones.
                 </p>
               </div>
@@ -164,8 +164,8 @@ const Index = () => {
             <div className="flex items-start">
               <CheckCircle className="h-5 w-5 text-wfc-purple mr-3 mt-1 flex-shrink-0" />
               <div>
-                <h3 className="font-medium mb-1">Soporte 24/7</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-medium mb-1 dark:text-white">Soporte 24/7</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   Equipo de soporte disponible para ayudarte cuando lo necesites.
                 </p>
               </div>
@@ -174,8 +174,8 @@ const Index = () => {
             <div className="flex items-start">
               <CheckCircle className="h-5 w-5 text-wfc-purple mr-3 mt-1 flex-shrink-0" />
               <div>
-                <h3 className="font-medium mb-1">Comunidad global</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-medium mb-1 dark:text-white">Comunidad global</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   Conecta con profesionales de todo el mundo en nuestra plataforma.
                 </p>
               </div>
@@ -185,7 +185,7 @@ const Index = () => {
       </section>
       
       {/* Footer */}
-      <footer className="bg-gray-800 text-white py-12">
+      <footer className="bg-gray-800 text-white py-12 dark:bg-gray-900">
         <div className="container-custom">
           <div className="grid md:grid-cols-4 gap-8">
             <div>

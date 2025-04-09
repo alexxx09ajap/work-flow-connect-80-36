@@ -99,4 +99,28 @@
   .container-custom {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
+  
+  /* Fix for text visibility in dark mode */
+  .dark .bg-gray-50 {
+    @apply bg-gray-800 text-gray-200;
+  }
+  
+  .dark .text-gray-600 {
+    @apply text-gray-300;
+  }
+  
+  .dark .text-gray-700 {
+    @apply text-gray-200;
+  }
+
+  /* Arreglar los selects y inputs en modo oscuro */
+  .dark select,
+  .dark .dark-select {
+    @apply bg-gray-800 border-gray-700 text-gray-200;
+  }
+  
+  /* Fix for feature cards in dark mode */
+  .dark .bg-gray-50 {
+    @apply bg-gray-800;
+  }
 }
