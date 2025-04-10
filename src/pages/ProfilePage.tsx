@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
-import { X, Camera, Edit, Trash2, AlertTriangle } from 'lucide-react';
+import { X, Camera, Edit, Trash2, AlertTriangle, Upload } from 'lucide-react';
 import { useJobs } from '@/contexts/JobContext';
 import { Link } from 'react-router-dom';
 import { JobType } from '@/contexts/JobContext';
@@ -45,7 +44,6 @@ const ProfilePage = () => {
   const [isSubmittingJob, setIsSubmittingJob] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   
-  // Add file input reference to programmatically click it
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [profileForm, setProfileForm] = useState({
@@ -55,12 +53,10 @@ const ProfilePage = () => {
   });
 
   useEffect(() => {
-    // When jobs data is loaded, filter user jobs
     if (Array.isArray(jobs)) {
       setUserJobs(jobs.filter(job => job.userId === currentUser?.id));
     }
     
-    // Load saved jobs
     const loadSavedJobs = async () => {
       if (currentUser) {
         const saved = await getSavedJobs(currentUser.id);
@@ -88,7 +84,6 @@ const ProfilePage = () => {
     try {
       await updateJob(editingJob.id, jobData);
       
-      // Recargar datos
       await loadJobs();
       await loadData();
       
@@ -113,7 +108,6 @@ const ProfilePage = () => {
     try {
       await deleteJob(jobId);
       
-      // Actualizar la lista de trabajos después de eliminar
       setUserJobs(userJobs.filter(job => job.id !== jobId));
       
       toast({
@@ -171,22 +165,18 @@ const ProfilePage = () => {
     });
   };
   
-  // Improved file input handler
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setSelectedImage(file);
       
-      // Create a preview URL for the selected image
       const objectUrl = URL.createObjectURL(file);
       setPreviewImage(objectUrl);
       
-      // Clean up the object URL when component unmounts or when a new file is selected
       return () => URL.revokeObjectURL(objectUrl);
     }
   };
   
-  // Function to trigger file input click programmatically
   const triggerFileInput = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
@@ -194,19 +184,20 @@ const ProfilePage = () => {
   };
   
   const handleUploadImage = async () => {
-    if (!selectedImage) return;
+    if (!selectedImage || !currentUser) return;
     
     setIsUploadingPhoto(true);
     try {
-      await uploadProfilePhoto(selectedImage);
+      const photoURL = await uploadProfilePhoto(selectedImage);
       
       toast({
         title: "Foto actualizada",
         description: "Tu foto de perfil ha sido actualizada correctamente"
       });
       
-      // Reset selected image after successful upload
       setSelectedImage(null);
+      
+      console.log("Upload successful:", photoURL);
     } catch (error) {
       console.error('Error uploading image:', error);
       toast({
@@ -377,12 +368,12 @@ const ProfilePage = () => {
                     
                     <div className="space-y-2 w-full">
                       <Button 
-                        variant="outline" 
-                        className="w-full dark:bg-gray-800 dark:border-gray-700 dark:text-white" 
+                        variant="fileUpload" 
+                        className="w-full dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:bg-wfc-purple dark:hover:text-white" 
                         type="button"
                         onClick={triggerFileInput}
                       >
-                        Elegir foto
+                        <Camera className="h-4 w-4 mr-1" /> Elegir foto
                       </Button>
                       
                       {selectedImage && (
@@ -391,7 +382,7 @@ const ProfilePage = () => {
                           onClick={handleUploadImage}
                           disabled={isUploadingPhoto}
                         >
-                          {isUploadingPhoto ? "Subiendo..." : "Subir foto"}
+                          {isUploadingPhoto ? "Subiendo..." : <><Upload className="h-4 w-4 mr-1" /> Subir foto</>}
                         </Button>
                       )}
                     </div>
