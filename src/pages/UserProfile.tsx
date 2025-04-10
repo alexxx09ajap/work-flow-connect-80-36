@@ -37,7 +37,9 @@ const UserProfile = () => {
     });
   };
 
-  const formatDate = (timestamp: number) => {
+  const formatDate = (timestamp?: number) => {
+    if (!timestamp) return "Fecha no disponible";
+    
     const date = new Date(timestamp);
     return date.toLocaleDateString('es-ES', {
       day: '2-digit',
@@ -89,10 +91,15 @@ const UserProfile = () => {
               </div>
               
               <div className="space-y-6">
-                {user.bio && (
+                {user.bio ? (
                   <div>
                     <h3 className="text-lg font-semibold mb-2">Biografía</h3>
                     <p className="text-gray-700">{user.bio}</p>
+                  </div>
+                ) : (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Biografía</h3>
+                    <p className="text-gray-500 italic">Este usuario no ha agregado una biografía.</p>
                   </div>
                 )}
                 
@@ -118,7 +125,7 @@ const UserProfile = () => {
                   </div>
                   <div>
                     <h4 className="text-sm text-gray-600 mb-1">Miembro desde</h4>
-                    <p>Abril 2025</p>
+                    <p>{user.joinedAt ? formatDate(user.joinedAt) : "Abril 2025"}</p>
                   </div>
                 </div>
               </div>
