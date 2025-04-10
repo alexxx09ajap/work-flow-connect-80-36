@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
@@ -8,7 +7,8 @@ import {
   registerUser, 
   loginUser, 
   logoutUser, 
-  updateUserProfile as updateFirebaseUserProfile 
+  updateUserProfile as updateFirebaseUserProfile,
+  uploadUserPhoto
 } from "@/lib/firebaseUtils";
 
 export type UserType = {
@@ -20,6 +20,8 @@ export type UserType = {
   skills?: string[];
   role: 'freelancer' | 'client';
   savedJobs?: string[];
+  hourlyRate?: number;
+  joinedAt?: number;
 };
 
 interface AuthContextType {
@@ -29,6 +31,7 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUserProfile: (data: Partial<UserType>) => Promise<void>;
+  uploadProfilePhoto: (file: File) => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -167,6 +170,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const uploadProfilePhoto = async (file: File) => {
+    if (!currentUser) throw new Error('No hay usuario autenticado');
+    
+    try {
+      const photoURL = await uploadUserPhoto(currentUser.id, file);
+      
+      // Update currentUser state with new photoURL
+      setCurrentUser(prev => prev ? { ...prev, photoURL } : null);
+      
+      toast({
+        title: "Foto actualizada",
+        description: "Tu foto de perfil ha sido actualizada",
+      });
+      
+      return photoURL;
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al subir la foto de perfil"
+      });
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider 
       value={{ 
@@ -175,7 +203,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         login, 
         register, 
         logout,
-        updateUserProfile
+        updateUserProfile,
+        uploadProfilePhoto
       }}
     >
       {children}

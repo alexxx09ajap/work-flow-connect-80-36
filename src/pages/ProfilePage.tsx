@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,17 +31,19 @@ import {
 import EditJobForm from '@/components/EditJobForm';
 
 const ProfilePage = () => {
-  const { currentUser, updateUserProfile } = useAuth();
+  const { currentUser, updateUserProfile, uploadProfilePhoto } = useAuth();
   const { skillsList, loadData } = useData();
   const { jobs, getSavedJobs, updateJob, deleteJob, loadJobs } = useJobs();
   
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [userJobs, setUserJobs] = useState<JobType[]>([]);
   const [savedJobs, setSavedJobs] = useState<JobType[]>([]);
   const [selectedSkill, setSelectedSkill] = useState('');
   const [editingJob, setEditingJob] = useState<JobType | null>(null);
   const [isSubmittingJob, setIsSubmittingJob] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   
   const [profileForm, setProfileForm] = useState({
     name: currentUser?.name || '',
@@ -128,20 +131,10 @@ const ProfilePage = () => {
     
     setIsUpdating(true);
     try {
-      // Simulamos la carga de la imagen de perfil
-      let photoURL = currentUser.photoURL;
-      
-      if (selectedImage) {
-        // En un caso real, aquí subiríamos la imagen a un servicio de almacenamiento
-        // y obtendríamos la URL de la imagen
-        photoURL = URL.createObjectURL(selectedImage);
-      }
-      
       await updateUserProfile({
         name: profileForm.name,
         bio: profileForm.bio,
         skills: profileForm.skills,
-        photoURL
       });
       
       toast({
@@ -177,11 +170,26 @@ const ProfilePage = () => {
   
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedImage(e.target.files[0]);
-      toast({
-        title: "Imagen seleccionada",
-        description: "Haz clic en 'Guardar cambios' para confirmar"
-      });
+      const file = e.target.files[0];
+      setSelectedImage(file);
+      setPreviewImage(URL.createObjectURL(file));
+    }
+  };
+  
+  const handleUploadImage = async () => {
+    if (!selectedImage) return;
+    
+    setIsUploadingPhoto(true);
+    try {
+      await uploadProfilePhoto(selectedImage);
+      
+      // Reset selected image after successful upload
+      setSelectedImage(null);
+      setPreviewImage(null);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+    } finally {
+      setIsUploadingPhoto(false);
     }
   };
 
@@ -317,7 +325,7 @@ const ProfilePage = () => {
                   <CardContent className="flex flex-col items-center">
                     <Avatar className="h-24 w-24 mb-4 relative group">
                       <AvatarImage 
-                        src={selectedImage ? URL.createObjectURL(selectedImage) : currentUser.photoURL} 
+                        src={previewImage || currentUser.photoURL} 
                         alt={currentUser.name} 
                       />
                       <AvatarFallback className="bg-wfc-purple-medium text-white text-2xl">
@@ -337,11 +345,27 @@ const ProfilePage = () => {
                       onChange={handleImageChange}
                     />
                     
-                    <Label htmlFor="profile-photo" className="cursor-pointer">
-                      <Button variant="outline" className="w-full dark:bg-gray-800 dark:border-gray-700 dark:text-white" type="button">
-                        Cambiar foto
-                      </Button>
-                    </Label>
+                    <div className="space-y-2 w-full">
+                      <Label htmlFor="profile-photo" className="cursor-pointer">
+                        <Button 
+                          variant="outline" 
+                          className="w-full dark:bg-gray-800 dark:border-gray-700 dark:text-white" 
+                          type="button"
+                        >
+                          Elegir foto
+                        </Button>
+                      </Label>
+                      
+                      {selectedImage && (
+                        <Button 
+                          className="w-full bg-wfc-purple hover:bg-wfc-purple-medium"
+                          onClick={handleUploadImage}
+                          disabled={isUploadingPhoto}
+                        >
+                          {isUploadingPhoto ? "Subiendo..." : "Subir foto"}
+                        </Button>
+                      )}
+                    </div>
                     
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
                       Imagen PNG, JPG o GIF, máximo 2MB
@@ -369,7 +393,9 @@ const ProfilePage = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-300">Miembro desde</span>
-                        <span className="font-medium dark:text-white">Apr 2025</span>
+                        <span className="font-medium dark:text-white">
+                          {currentUser.joinedAt ? formatDate(currentUser.joinedAt) : "Apr 2025"}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
