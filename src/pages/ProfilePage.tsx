@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
@@ -44,6 +44,9 @@ const ProfilePage = () => {
   const [editingJob, setEditingJob] = useState<JobType | null>(null);
   const [isSubmittingJob, setIsSubmittingJob] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  
+  // Add file input reference to programmatically click it
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [profileForm, setProfileForm] = useState({
     name: currentUser?.name || '',
@@ -168,11 +171,25 @@ const ProfilePage = () => {
     });
   };
   
+  // Improved file input handler
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setSelectedImage(file);
-      setPreviewImage(URL.createObjectURL(file));
+      
+      // Create a preview URL for the selected image
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewImage(objectUrl);
+      
+      // Clean up the object URL when component unmounts or when a new file is selected
+      return () => URL.revokeObjectURL(objectUrl);
+    }
+  };
+  
+  // Function to trigger file input click programmatically
+  const triggerFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
     }
   };
   
@@ -183,11 +200,20 @@ const ProfilePage = () => {
     try {
       await uploadProfilePhoto(selectedImage);
       
+      toast({
+        title: "Foto actualizada",
+        description: "Tu foto de perfil ha sido actualizada correctamente"
+      });
+      
       // Reset selected image after successful upload
       setSelectedImage(null);
-      setPreviewImage(null);
     } catch (error) {
       console.error('Error uploading image:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo subir la foto de perfil"
+      });
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -332,29 +358,32 @@ const ProfilePage = () => {
                         {currentUser.name?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                       
-                      <label htmlFor="profile-photo" className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                      <div 
+                        className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        onClick={triggerFileInput}
+                      >
                         <Camera className="text-white h-10 w-10" />
-                      </label>
+                      </div>
                     </Avatar>
                     
                     <input
                       type="file"
                       id="profile-photo"
+                      ref={fileInputRef}
                       className="hidden"
                       accept="image/*"
                       onChange={handleImageChange}
                     />
                     
                     <div className="space-y-2 w-full">
-                      <Label htmlFor="profile-photo" className="cursor-pointer">
-                        <Button 
-                          variant="outline" 
-                          className="w-full dark:bg-gray-800 dark:border-gray-700 dark:text-white" 
-                          type="button"
-                        >
-                          Elegir foto
-                        </Button>
-                      </Label>
+                      <Button 
+                        variant="outline" 
+                        className="w-full dark:bg-gray-800 dark:border-gray-700 dark:text-white" 
+                        type="button"
+                        onClick={triggerFileInput}
+                      >
+                        Elegir foto
+                      </Button>
                       
                       {selectedImage && (
                         <Button 
