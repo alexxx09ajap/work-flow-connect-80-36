@@ -178,16 +178,22 @@ const ProfilePage = () => {
   };
   
   const triggerFileInput = () => {
+    console.log("Activando selección de archivo");
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
   
   const handleUploadImage = async () => {
-    if (!selectedImage || !currentUser) return;
+    if (!selectedImage || !currentUser) {
+      console.log("No hay imagen seleccionada o usuario no autenticado");
+      return;
+    }
     
+    console.log("Iniciando subida de imagen");
     setIsUploadingPhoto(true);
     try {
+      console.log("Llamando a uploadProfilePhoto con la imagen seleccionada");
       const photoURL = await uploadProfilePhoto(selectedImage);
       
       toast({
@@ -197,9 +203,9 @@ const ProfilePage = () => {
       
       setSelectedImage(null);
       
-      console.log("Upload successful:", photoURL);
+      console.log("Subida exitosa:", photoURL);
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error('Error al subir la imagen:', error);
       toast({
         variant: "destructive",
         title: "Error",

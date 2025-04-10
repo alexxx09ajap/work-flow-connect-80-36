@@ -504,17 +504,29 @@ export const getSkillsList = async () => {
 
 export const uploadUserPhoto = async (userId: string, file: File) => {
   try {
+    console.log(`Iniciando la subida de foto para el usuario: ${userId}`);
+    // Crear una referencia al lugar donde se guardará la imagen en Firebase Storage
     const storageRef = ref(storage, `users/${userId}/profile`);
-    await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(storageRef);
     
-    // Update user profile with photo URL
+    // Subir el archivo al storage
+    console.log("Subiendo archivo a Firebase Storage...");
+    await uploadBytes(storageRef, file);
+    
+    // Obtener la URL de descarga del archivo subido
+    console.log("Obteniendo URL de la imagen...");
+    const downloadURL = await getDownloadURL(storageRef);
+    console.log("URL obtenida:", downloadURL);
+    
+    // Actualizar el perfil del usuario con la URL de la foto
+    console.log("Actualizando documento del usuario con la nueva URL...");
     await updateDoc(doc(db, "users", userId), {
       photoURL: downloadURL
     });
     
+    console.log("Proceso de subida completado con éxito");
     return downloadURL;
   } catch (error) {
+    console.error("Error al subir la foto:", error);
     throw error;
   }
 };

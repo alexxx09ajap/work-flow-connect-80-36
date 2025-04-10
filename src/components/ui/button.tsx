@@ -19,9 +19,9 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        // Add file upload button variant with purple hover
+        // Mejorar el estilo del botón de subida de archivos con efectos de hover más visibles
         fileUpload: 
-          "border border-input bg-background hover:bg-wfc-purple hover:text-white hover:border-wfc-purple transition-all",
+          "border border-input bg-background hover:bg-wfc-purple hover:text-white hover:border-wfc-purple transition-all duration-200 ease-in-out",
       },
       size: {
         default: "h-10 px-4 py-2",

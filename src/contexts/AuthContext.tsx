@@ -52,12 +52,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Listen for auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          // Get user data from Firestore
           const userDoc = await getDoc(doc(db, "users", user.uid));
           if (userDoc.exists()) {
             setCurrentUser({
@@ -65,7 +63,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               ...userDoc.data() as Omit<UserType, "id">
             });
           } else {
-            // If no Firestore document, create basic user object
             setCurrentUser({
               id: user.uid,
               name: user.displayName || "",
@@ -174,9 +171,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!currentUser) throw new Error('No hay usuario autenticado');
     
     try {
+      console.log("Iniciando proceso de subida de foto de perfil");
       const photoURL = await uploadUserPhoto(currentUser.id, file);
       
-      // Update currentUser state with new photoURL
       setCurrentUser(prev => prev ? { ...prev, photoURL } : null);
       
       toast({
@@ -184,8 +181,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         description: "Tu foto de perfil ha sido actualizada",
       });
       
+      console.log("Foto de perfil actualizada correctamente:", photoURL);
       return photoURL;
     } catch (error) {
+      console.error("Error en uploadProfilePhoto:", error);
       toast({
         variant: "destructive",
         title: "Error",
