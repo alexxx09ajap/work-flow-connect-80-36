@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useChat } from '@/contexts/ChatContext';
@@ -49,30 +48,34 @@ const ChatsPage = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Scroll to bottom whenever messages change
   useEffect(() => {
     scrollToBottom();
   }, [activeChat?.messages?.length]);
   
-  // Force reload chats when the component mounts
   useEffect(() => {
-    // Only reload if we have a current user
     if (currentUser) {
-      console.log("ChatsPage mounted, reloading chats");
+      console.log("ChatsPage mounted, loading chats");
       loadChats();
+      
+      const refreshInterval = setInterval(() => {
+        if (currentUser) {
+          console.log("Auto-refreshing chats");
+          loadChats();
+        }
+      }, 15000);
+      
+      return () => clearInterval(refreshInterval);
     }
-  }, []);
+  }, [currentUser]);
   
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
   
-  // Function to get chat name
   const getChatName = (chat) => {
     if (chat.name) return chat.name;
     
     if (!chat.isGroup && currentUser) {
-      // For private chats, show the other user's name
       const otherUserId = chat.participants.find((id) => id !== currentUser.id);
       if (otherUserId) {
         const otherUser = getUserById(otherUserId);
@@ -83,7 +86,6 @@ const ChatsPage = () => {
     return 'Chat';
   };
   
-  // Function to get chat avatar
   const getChatAvatar = (chat) => {
     if (!chat.isGroup && currentUser) {
       const otherUserId = chat.participants.find((id) => id !== currentUser.id);
@@ -95,7 +97,6 @@ const ChatsPage = () => {
     return undefined;
   };
   
-  // For showing the initial in avatar fallback
   const getAvatarFallback = (chat) => {
     const name = getChatName(chat);
     return name.charAt(0).toUpperCase();
@@ -164,7 +165,6 @@ const ChatsPage = () => {
   return (
     <MainLayout>
       <div className="h-[calc(100vh-8rem)] flex">
-        {/* Chat list sidebar with toggle */}
         <div className={`relative transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'w-0 opacity-0' : 'w-full md:w-80 lg:w-96'}`}>
           {!sidebarCollapsed && (
             <Card className="h-full flex flex-col">
@@ -321,7 +321,6 @@ const ChatsPage = () => {
             </Card>
           )}
           
-          {/* Sidebar toggle button */}
           <button 
             onClick={toggleSidebar}
             className="absolute -right-4 top-1/2 transform -translate-y-1/2 bg-wfc-purple text-white rounded-full h-8 w-8 flex items-center justify-center shadow-md z-10 hover:bg-wfc-purple-medium transition-colors"
@@ -331,12 +330,10 @@ const ChatsPage = () => {
           </button>
         </div>
         
-        {/* Chat area */}
         <div className={`flex-1 transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'ml-0' : 'ml-4'}`}>
           <Card className="h-full flex flex-col">
             {activeChat ? (
               <>
-                {/* Chat header */}
                 <div className="p-4 border-b flex items-center space-x-3">
                   {sidebarCollapsed && (
                     <Button 
@@ -366,7 +363,6 @@ const ChatsPage = () => {
                     </p>
                   </div>
                   
-                  {/* Add participant button for group chats */}
                   {activeChat.isGroup && (
                     <TooltipProvider>
                       <Tooltip>
@@ -385,7 +381,6 @@ const ChatsPage = () => {
                   )}
                 </div>
                 
-                {/* Messages */}
                 <ScrollArea id="messages-container" className="flex-1 p-4">
                   {activeChat.messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
@@ -399,7 +394,6 @@ const ChatsPage = () => {
                         const isSystemMessage = message.senderId === "system";
                         const sender = isSystemMessage ? null : getUserById(message.senderId);
                         
-                        // Check if we should display a date separator
                         const showDateSeparator = index === 0 || 
                           new Date(message.timestamp).toDateString() !== 
                           new Date(messages[index - 1].timestamp).toDateString();
@@ -454,13 +448,11 @@ const ChatsPage = () => {
                           </React.Fragment>
                         );
                       })}
-                      {/* This div helps to scroll to the bottom when new messages are added */}
                       <div ref={messagesEndRef} />
                     </div>
                   )}
                 </ScrollArea>
                 
-                {/* Message input area */}
                 <div className="p-4 border-t">
                   <div className="flex space-x-2">
                     <Input
@@ -524,7 +516,6 @@ const ChatsPage = () => {
         </div>
       </div>
       
-      {/* Group chat creation modal */}
       <Dialog open={isCreatingGroup} onOpenChange={setIsCreatingGroup}>
         <DialogContent>
           <DialogHeader>
@@ -534,7 +525,6 @@ const ChatsPage = () => {
         </DialogContent>
       </Dialog>
       
-      {/* User selection for private chat */}
       <UserSelectDialog 
         open={isSelectingUser} 
         onOpenChange={setIsSelectingUser}
@@ -542,7 +532,6 @@ const ChatsPage = () => {
         onUserSelect={handleCreatePrivateChat}
       />
       
-      {/* Add participant to group chat */}
       {activeChat && (
         <UserSelectDialog 
           open={isAddingParticipant} 

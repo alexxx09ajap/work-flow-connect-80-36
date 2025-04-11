@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useData } from '@/contexts/DataContext';
@@ -18,7 +17,7 @@ const UserProfile = () => {
   const { getUserById } = useData();
   const { jobs } = useJobs();
   const { currentUser } = useAuth();
-  const { createChat } = useChat();
+  const { createPrivateChat, findExistingPrivateChat } = useChat();
   
   const user = userId ? getUserById(userId) : undefined;
   
@@ -28,13 +27,25 @@ const UserProfile = () => {
   const handleContactClick = () => {
     if (!currentUser || !user) return;
     
-    // Crear chat privado
-    createChat([currentUser.id, user.id]);
-    navigate('/chats');
-    toast({
-      title: "Chat iniciado",
-      description: `Has iniciado una conversación con ${user.name}`
-    });
+    // Comprobar si ya existe un chat con el usuario y navegar a él
+    const existingChat = findExistingPrivateChat(user.id);
+    
+    if (existingChat) {
+      // Si ya existe un chat, navegamos a él
+      navigate('/chats');
+      toast({
+        title: "Chat existente",
+        description: `Abriendo la conversación con ${user.name}`
+      });
+    } else {
+      // Si no existe, creamos uno nuevo
+      createPrivateChat(user.id);
+      navigate('/chats');
+      toast({
+        title: "Chat iniciado",
+        description: `Has iniciado una conversación con ${user.name}`
+      });
+    }
   };
 
   const formatDate = (timestamp?: number) => {

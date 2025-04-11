@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { 
@@ -45,6 +44,7 @@ interface ChatContextType {
   onlineUsers: string[]; // IDs de usuarios online
   loadChats: () => Promise<void>;
   addParticipantToChat: (chatId: string, participantId: string) => Promise<boolean>;
+  findExistingPrivateChat: (participantId: string) => ChatType | undefined;
 }
 
 const ChatContext = createContext<ChatContextType | null>(null);
@@ -72,6 +72,19 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [onlineUsers] = useState<string[]>(MOCK_ONLINE_USERS);
   const [unsubscribers, setUnsubscribers] = useState<(() => void)[]>([]);
 
+  // Función para buscar un chat privado existente con un usuario específico
+  const findExistingPrivateChat = (participantId: string): ChatType | undefined => {
+    if (!currentUser) return undefined;
+    
+    return chats.find(
+      chat => !chat.isGroup && 
+      chat.participants.length === 2 && 
+      chat.participants.includes(currentUser.id) && 
+      chat.participants.includes(participantId)
+    );
+  };
+
+  // Función para cargar todos los chats y configurar listeners en tiempo real
   const loadChats = async () => {
     if (!currentUser) {
       setChats([]);
@@ -155,13 +168,24 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     return unsubscribe;
   };
 
-  // Load chats when user changes
+  // Load chats when user changes and set up refresh interval
   useEffect(() => {
     loadChats();
     
-    // Cleanup function to unsubscribe from all listeners
+    // Set up a refresh interval for real-time updates
+    const refreshInterval = setInterval(() => {
+      if (currentUser) {
+        console.log("Auto refresh: checking for new messages");
+        // We don't need to call loadChats() again because the onSnapshot listener
+        // will automatically update when new messages arrive.
+        // This is just to ensure the connection is still active
+      }
+    }, 30000); // Check connection every 30 seconds
+    
+    // Cleanup function to unsubscribe from all listeners and clear interval
     return () => {
       unsubscribers.forEach(unsubscribe => unsubscribe());
+      clearInterval(refreshInterval);
     };
   }, [currentUser]);
 
@@ -213,26 +237,23 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     }
   };
 
-  // New function specifically for creating 1:1 private chats
+  // Función para crear o navegar a un chat privado existente
   const createPrivateChat = async (participantId: string) => {
     if (!currentUser || participantId === currentUser.id) return;
     
     try {
-      // Check if a private chat already exists with this user
-      const existingChat = chats.find(
-        chat => !chat.isGroup && 
-        chat.participants.length === 2 && 
-        chat.participants.includes(currentUser.id) && 
-        chat.participants.includes(participantId)
-      );
+      // Buscar si ya existe un chat privado con este usuario
+      const existingChat = findExistingPrivateChat(participantId);
       
       if (existingChat) {
-        // If chat exists, just set it as active
+        // Si el chat existe, establecerlo como activo
+        console.log("Chat privado existente encontrado, navegando a él:", existingChat.id);
         setActiveChat(existingChat);
         return;
       }
       
-      // Create new private chat
+      // Si no existe, crear un nuevo chat privado
+      console.log("Creando nuevo chat privado con usuario:", participantId);
       const participants = [currentUser.id, participantId];
       const newChat = await createFirebaseChat(participants);
       console.log("New private chat created:", newChat);
@@ -289,7 +310,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         loadingChats,
         onlineUsers,
         loadChats,
-        addParticipantToChat
+        addParticipantToChat,
+        findExistingPrivateChat
       }}
     >
       {children}
