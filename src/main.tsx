@@ -1,4 +1,13 @@
 
+/**
+ * Application Entry Point
+ * 
+ * This is the main entry point for the React application that:
+ * - Initializes Firebase data
+ * - Sets up global providers
+ * - Renders the main App component to the DOM
+ */
+
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
@@ -18,6 +27,7 @@ initializeFirebaseData().then(() => {
   console.error("Firebase initialization failed:", error);
 });
 
+// Render the application to the DOM
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider>

@@ -1,3 +1,16 @@
+/**
+ * Firebase Utilities
+ * 
+ * This file contains utility functions for interacting with Firebase services:
+ * - Authentication (register, login, logout)
+ * - Users CRUD operations
+ * - Jobs CRUD operations
+ * - Chat functions (messages, creating chats)
+ * - File uploads
+ * 
+ * This is where most of the database interaction logic is implemented.
+ */
+
 import { 
   collection, 
   doc, 
@@ -28,6 +41,7 @@ import { JobType, CommentType, ReplyType } from "@/contexts/JobContext";
 import { MessageType, ChatType } from "@/contexts/ChatContext";
 import { initializeFirebaseData } from "./initializeFirebase";
 
+// Helper function to ensure Firebase is initialized
 export const ensureFirebaseInitialized = async () => {
   try {
     await initializeFirebaseData();
@@ -36,6 +50,11 @@ export const ensureFirebaseInitialized = async () => {
   }
 };
 
+// User Authentication Functions
+/**
+ * Register a new user
+ * Creates auth user and Firestore user document
+ */
 export const registerUser = async (email: string, password: string, name: string) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -72,6 +91,10 @@ export const registerUser = async (email: string, password: string, name: string
   }
 };
 
+/**
+ * Login an existing user
+ * Authenticates and retrieves user data
+ */
 export const loginUser = async (email: string, password: string) => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -92,6 +115,9 @@ export const loginUser = async (email: string, password: string) => {
   }
 };
 
+/**
+ * Log out the current user
+ */
 export const logoutUser = async () => {
   try {
     await signOut(auth);
@@ -100,6 +126,10 @@ export const logoutUser = async () => {
   }
 };
 
+// User Profile Functions
+/**
+ * Update a user's profile information
+ */
 export const updateUserProfile = async (userId: string, data: Partial<UserType>) => {
   try {
     const userRef = doc(db, "users", userId);
@@ -110,6 +140,9 @@ export const updateUserProfile = async (userId: string, data: Partial<UserType>)
   }
 };
 
+/**
+ * Get all users from the database
+ */
 export const getAllUsers = async () => {
   try {
     const usersSnapshot = await getDocs(collection(db, "users"));
@@ -134,6 +167,9 @@ export const getAllUsers = async () => {
   }
 };
 
+/**
+ * Get a specific user by their ID
+ */
 export const getUserById = async (userId: string) => {
   try {
     const userDoc = await getDoc(doc(db, "users", userId));
@@ -159,6 +195,10 @@ export const getUserById = async (userId: string) => {
   }
 };
 
+// Job Functions
+/**
+ * Create a new job listing
+ */
 export const createJob = async (jobData: Omit<JobType, "id" | "timestamp" | "comments" | "likes">) => {
   try {
     const jobRef = collection(db, "jobs");
@@ -186,6 +226,9 @@ export const createJob = async (jobData: Omit<JobType, "id" | "timestamp" | "com
   }
 };
 
+/**
+ * Get all job listings
+ */
 export const getAllJobs = async () => {
   try {
     const jobsSnapshot = await getDocs(collection(db, "jobs"));
@@ -204,6 +247,9 @@ export const getAllJobs = async () => {
   }
 };
 
+/**
+ * Get a specific job by its ID
+ */
 export const getJobById = async (jobId: string) => {
   try {
     const jobDoc = await getDoc(doc(db, "jobs", jobId));
@@ -223,6 +269,9 @@ export const getJobById = async (jobId: string) => {
   }
 };
 
+/**
+ * Add a comment to a job
+ */
 export const addCommentToJob = async (jobId: string, content: string, user: UserType) => {
   try {
     const commentId = `comment_${Date.now()}`;
@@ -248,6 +297,9 @@ export const addCommentToJob = async (jobId: string, content: string, user: User
   }
 };
 
+/**
+ * Add a reply to a comment
+ */
 export const addReplyToComment = async (jobId: string, commentId: string, content: string, user: UserType) => {
   try {
     // First get the job to find the comment
@@ -288,6 +340,9 @@ export const addReplyToComment = async (jobId: string, commentId: string, conten
   }
 };
 
+/**
+ * Toggle the like status for a job
+ */
 export const toggleJobLike = async (jobId: string, userId: string) => {
   try {
     const jobRef = doc(db, "jobs", jobId);
@@ -308,6 +363,9 @@ export const toggleJobLike = async (jobId: string, userId: string) => {
   }
 };
 
+/**
+ * Toggle whether a job is saved by a user
+ */
 export const toggleSavedJob = async (userId: string, jobId: string) => {
   try {
     const userRef = doc(db, "users", userId);
@@ -328,6 +386,9 @@ export const toggleSavedJob = async (userId: string, jobId: string) => {
   }
 };
 
+/**
+ * Get all jobs saved by a user
+ */
 export const getSavedJobs = async (userId: string) => {
   try {
     const userDoc = await getDoc(doc(db, "users", userId));
@@ -359,6 +420,11 @@ export const getSavedJobs = async (userId: string) => {
   }
 };
 
+// Chat Functions
+/**
+ * Get all chats for a specific user
+ * This is the initial chat loading function
+ */
 export const getChats = async (userId: string) => {
   try {
     console.log(`Fetching chats for user: ${userId}`);
@@ -397,6 +463,10 @@ export const getChats = async (userId: string) => {
   }
 };
 
+/**
+ * Create a new chat
+ * Used for both private and group chats
+ */
 export const createChat = async (participantIds: string[], name = "") => {
   try {
     const isGroup = participantIds.length > 2 || !!name;
@@ -419,6 +489,10 @@ export const createChat = async (participantIds: string[], name = "") => {
   }
 };
 
+/**
+ * Send a message to a chat
+ * The message will be updated in real-time through Firebase listeners
+ */
 export const sendMessage = async (chatId: string, senderId: string, content: string) => {
   try {
     console.log(`Sending message to chat ${chatId} from user ${senderId}: ${content}`);
@@ -443,6 +517,10 @@ export const sendMessage = async (chatId: string, senderId: string, content: str
   }
 };
 
+/**
+ * Add a participant to an existing chat
+ * Typically used for group chats
+ */
 export const addParticipantToChat = async (chatId: string, participantId: string) => {
   try {
     const chatRef = doc(db, "chats", chatId);
@@ -474,6 +552,10 @@ export const addParticipantToChat = async (chatId: string, participantId: string
   }
 };
 
+// Metadata Functions
+/**
+ * Get all job categories
+ */
 export const getJobCategories = async () => {
   try {
     await ensureFirebaseInitialized();
@@ -488,6 +570,9 @@ export const getJobCategories = async () => {
   }
 };
 
+/**
+ * Get the list of available skills
+ */
 export const getSkillsList = async () => {
   try {
     await ensureFirebaseInitialized();
@@ -502,6 +587,10 @@ export const getSkillsList = async () => {
   }
 };
 
+// File Upload Functions
+/**
+ * Upload a user profile photo
+ */
 export const uploadUserPhoto = async (userId: string, file: File) => {
   try {
     console.log(`Iniciando la subida de foto para el usuario: ${userId}`);
@@ -531,6 +620,10 @@ export const uploadUserPhoto = async (userId: string, file: File) => {
   }
 };
 
+// Job Management Functions
+/**
+ * Update an existing job
+ */
 export const updateJob = async (jobId: string, jobData: Partial<JobType>) => {
   try {
     const jobRef = doc(db, "jobs", jobId);
@@ -553,6 +646,9 @@ export const updateJob = async (jobId: string, jobData: Partial<JobType>) => {
   }
 };
 
+/**
+ * Delete a job
+ */
 export const deleteJob = async (jobId: string) => {
   try {
     await deleteDoc(doc(db, "jobs", jobId));

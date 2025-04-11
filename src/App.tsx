@@ -1,4 +1,14 @@
 
+/**
+ * Main Application Component
+ * 
+ * This is the entry point for the React application that contains:
+ * - Global providers (Theme, Auth, Data, Jobs, Chat)
+ * - Routing configuration using React Router
+ * - Protected routes implementation
+ * - Public routes configuration
+ */
+
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -12,6 +22,7 @@ import { DataProvider } from "@/contexts/DataContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { initializeFirebaseData } from "@/lib/initializeFirebase";
 
+// Import page components
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -24,9 +35,14 @@ import UserProfile from "./pages/UserProfile";
 import CreateJobPage from "./pages/CreateJobPage";
 import NotFound from "./pages/NotFound";
 
+// Initialize React Query client
 const queryClient = new QueryClient();
 
-// Component for protected routes
+/**
+ * Protected Route Component
+ * Ensures the user is authenticated before accessing the route
+ * Redirects to login if not authenticated
+ */
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser, loading } = useAuth();
   
@@ -41,7 +57,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// Component for public-only routes (only accessible when not logged in)
+/**
+ * Public Only Route Component
+ * Only accessible when not logged in
+ * Redirects to dashboard if already authenticated
+ */
 const PublicOnlyRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser, loading } = useAuth();
   
@@ -56,6 +76,10 @@ const PublicOnlyRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+/**
+ * App Routes Component
+ * Contains all the routes and their access protection
+ */
 const AppRoutes = () => {
   // Initialize Firebase data when the app loads
   useEffect(() => {
@@ -69,7 +93,7 @@ const AppRoutes = () => {
       <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
       <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
       
-      {/* Protected routes */}
+      {/* Protected routes - require authentication */}
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/jobs" element={<ProtectedRoute><JobsPage /></ProtectedRoute>} />
       <Route path="/jobs/:jobId" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
@@ -85,6 +109,10 @@ const AppRoutes = () => {
   );
 };
 
+/**
+ * Main App Component
+ * Sets up all providers and global configuration
+ */
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>

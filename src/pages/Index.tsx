@@ -1,3 +1,15 @@
+/**
+ * Landing Page Component
+ * 
+ * This is the main landing page of the application that is shown to non-authenticated users.
+ * It contains:
+ * - Header with navigation
+ * - Hero section
+ * - Features section
+ * - Call-to-action section
+ * - Benefits section
+ * - Footer
+ */
 
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,7 +18,7 @@ import { Briefcase, MessageCircle, Users, CheckCircle } from 'lucide-react';
 const Index = () => {
   return (
     <div className="min-h-screen flex flex-col bg-wfc-background">
-      {/* Header */}
+      {/* Header with navigation links */}
       <header className="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
         <div className="container-custom flex items-center justify-between py-4">
           {/* Logo */}
@@ -38,7 +50,7 @@ const Index = () => {
         </div>
       </header>
       
-      {/* Hero Section */}
+      {/* Hero Section with main call-to-action */}
       <section className="py-16 md:py-24 bg-gradient-to-r from-wfc-purple to-wfc-magenta text-white">
         <div className="container-custom">
           <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -73,7 +85,7 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Features Section */}
+      {/* Features Section highlighting platform capabilities */}
       <section className="py-16 bg-white dark:bg-gray-800">
         <div className="container-custom">
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-12 text-wfc-purple dark:text-wfc-purple-light">
@@ -114,7 +126,7 @@ const Index = () => {
         </div>
       </section>
       
-      {/* CTA Section */}
+      {/* CTA Section encouraging sign up */}
       <section className="py-16 bg-wfc-background dark:bg-gray-900">
         <div className="container-custom">
           <div className="bg-wfc-purple rounded-lg p-8 md:p-12 text-white text-center">
@@ -133,7 +145,7 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Benefits Section */}
+      {/* Benefits Section listing advantages */}
       <section className="py-16 bg-white dark:bg-gray-800">
         <div className="container-custom">
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-12 dark:text-white">
@@ -184,7 +196,7 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Footer */}
+      {/* Footer with links and copyright */}
       <footer className="bg-gray-800 text-white py-12 dark:bg-gray-900">
         <div className="container-custom">
           <div className="grid md:grid-cols-4 gap-8">

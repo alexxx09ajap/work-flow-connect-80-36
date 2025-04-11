@@ -1,3 +1,16 @@
+/**
+ * User Profile Page Component
+ * 
+ * This page shows the profile of another user including:
+ * - User's personal information and profile photo
+ * - User's bio and skills
+ * - Button to contact/chat with the user
+ * - List of job proposals posted by the user
+ * 
+ * It handles the logic for either creating a new chat or navigating to an existing chat
+ * when the "Contact" button is clicked.
+ */
+
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useData } from '@/contexts/DataContext';
@@ -19,26 +32,31 @@ const UserProfile = () => {
   const { currentUser } = useAuth();
   const { createPrivateChat, findExistingPrivateChat } = useChat();
   
+  // Get user data from the ID in the URL
   const user = userId ? getUserById(userId) : undefined;
   
-  // Filtrar propuestas del usuario
+  // Filter job proposals from this user
   const userJobs = jobs.filter(job => job.userId === userId);
   
+  /**
+   * Handle the "Contact" button click
+   * This function either opens an existing chat or creates a new one
+   */
   const handleContactClick = () => {
     if (!currentUser || !user) return;
     
-    // Comprobar si ya existe un chat con el usuario y navegar a él
+    // Check if a chat already exists with this user
     const existingChat = findExistingPrivateChat(user.id);
     
     if (existingChat) {
-      // Si ya existe un chat, navegamos a él
+      // If a chat exists, navigate to it
       navigate('/chats');
       toast({
         title: "Chat existente",
         description: `Abriendo la conversación con ${user.name}`
       });
     } else {
-      // Si no existe, creamos uno nuevo
+      // If not, create a new one
       createPrivateChat(user.id);
       navigate('/chats');
       toast({
@@ -48,6 +66,7 @@ const UserProfile = () => {
     }
   };
 
+  // Helper function to format timestamps
   const formatDate = (timestamp?: number) => {
     if (!timestamp) return "Fecha no disponible";
     
@@ -59,6 +78,7 @@ const UserProfile = () => {
     });
   };
 
+  // Display message if user not found
   if (!user) {
     return (
       <MainLayout>
@@ -76,10 +96,11 @@ const UserProfile = () => {
   return (
     <MainLayout>
       <div className="space-y-8">
-        {/* Perfil del usuario */}
+        {/* User profile card */}
         <Card>
           <CardContent className="p-6">
             <div className="grid gap-6 md:grid-cols-[200px_1fr]">
+              {/* Profile photo and contact button */}
               <div className="flex flex-col items-center text-center">
                 <Avatar className="h-32 w-32">
                   <AvatarImage src={user.photoURL} alt={user.name} />
@@ -89,7 +110,7 @@ const UserProfile = () => {
                 </Avatar>
                 <h2 className="text-xl font-bold mt-4">{user.name}</h2>
                 
-                {/* Solo mostrar botón de contacto si no es el usuario actual */}
+                {/* Only show contact button if not the current user */}
                 {currentUser && currentUser.id !== userId && (
                   <Button 
                     className="mt-4 w-full bg-wfc-purple hover:bg-wfc-purple-medium"
@@ -101,6 +122,7 @@ const UserProfile = () => {
                 )}
               </div>
               
+              {/* User information */}
               <div className="space-y-6">
                 {user.bio ? (
                   <div>
@@ -144,7 +166,7 @@ const UserProfile = () => {
           </CardContent>
         </Card>
         
-        {/* Propuestas del usuario */}
+        {/* User's job proposals */}
         <Card>
           <CardHeader>
             <CardTitle>Propuestas de {user.name}</CardTitle>
