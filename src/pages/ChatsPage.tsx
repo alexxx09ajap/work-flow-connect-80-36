@@ -54,17 +54,8 @@ const ChatsPage = () => {
   
   useEffect(() => {
     if (currentUser) {
-      console.log("ChatsPage mounted, loading chats");
+      console.log("ChatsPage montada, iniciando conexión en tiempo real");
       loadChats();
-      
-      const refreshInterval = setInterval(() => {
-        if (currentUser) {
-          console.log("Auto-refreshing chats");
-          loadChats();
-        }
-      }, 15000);
-      
-      return () => clearInterval(refreshInterval);
     }
   }, [currentUser]);
   
@@ -314,7 +305,7 @@ const ChatsPage = () => {
                       Actualizando...
                     </>
                   ) : (
-                    <>Actualizar conversaciones</>
+                    <>Actualizar conexión</>
                   )}
                 </Button>
               </div>
