@@ -157,11 +157,11 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       console.log("Actualización en tiempo real:", updatedChats.length, "chats");
       setChats(updatedChats);
       
-      // Actualizar el chat activo si es necesario
+      // IMPORTANTE: Aquí está la mejora clave - actualizar el chat activo después de cada cambio
       if (activeChat) {
         const updatedActiveChat = updatedChats.find(chat => chat.id === activeChat.id);
-        if (updatedActiveChat && JSON.stringify(updatedActiveChat) !== JSON.stringify(activeChat)) {
-          console.log("Actualizando chat activo con nuevos mensajes");
+        if (updatedActiveChat) {
+          console.log("Actualizando chat activo con nuevos mensajes en tiempo real");
           setActiveChat(updatedActiveChat);
         }
       }
@@ -178,6 +178,18 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     console.log("Listener en tiempo real configurado correctamente");
     return unsubscribe;
   };
+
+  // Observar cambios en activeChat y asegurarnos de que se mantenga actualizado
+  useEffect(() => {
+    if (activeChat && chats.length > 0) {
+      // Buscar la versión más actualizada del chat activo en el arreglo de chats
+      const refreshedChat = chats.find(chat => chat.id === activeChat.id);
+      if (refreshedChat && JSON.stringify(refreshedChat) !== JSON.stringify(activeChat)) {
+        console.log("Actualizando chat activo con datos más recientes");
+        setActiveChat(refreshedChat);
+      }
+    }
+  }, [chats]);
 
   // Configurar y limpiar listeners cuando cambia el usuario
   useEffect(() => {
@@ -204,7 +216,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       const newMessage = await sendFirebaseMessage(chatId, currentUser.id, content);
       console.log("Mensaje enviado correctamente:", newMessage);
       
-      // No necesitamos actualizar manualmente el estado aquí
       // El listener de onSnapshot detectará el cambio y actualizará el estado
     } catch (error) {
       console.error("Error al enviar mensaje:", error);
