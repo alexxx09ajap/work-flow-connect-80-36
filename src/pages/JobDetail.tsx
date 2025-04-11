@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/Layout/MainLayout';
@@ -21,7 +20,7 @@ const JobDetail = () => {
   const navigate = useNavigate();
   const { getJob, addComment, toggleSavedJob, toggleLike, savedJobs } = useJobs();
   const { currentUser } = useAuth();
-  const { createChat } = useChat();
+  const { findExistingPrivateChat, createPrivateChat } = useChat();
   const { getUserById } = useData();
   const [commentText, setCommentText] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
@@ -45,16 +44,34 @@ const JobDetail = () => {
     );
   }
 
-  const handleContactClick = () => {
-    if (!currentUser || !jobOwner) return;
+  const handleContactClick = async () => {
+    if (!currentUser || !job) return;
     
-    // Crear chat privado con el dueño de la propuesta
-    createChat([currentUser.id, job.userId]);
-    navigate('/chats');
-    toast({
-      title: "Chat iniciado",
-      description: `Has iniciado una conversación con ${jobOwner.name}`
-    });
+    try {
+      const existingChat = findExistingPrivateChat(job.userId);
+      
+      if (existingChat) {
+        navigate('/chats');
+        toast({
+          title: "Chat existente",
+          description: `Continuando conversación con ${jobOwner?.name || 'usuario'}`
+        });
+      } else {
+        await createPrivateChat(job.userId);
+        navigate('/chats');
+        toast({
+          title: "Chat iniciado",
+          description: `Has iniciado una conversación con ${jobOwner?.name || 'usuario'}`
+        });
+      }
+    } catch (error) {
+      console.error("Error al iniciar chat:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo iniciar el chat. Inténtalo de nuevo."
+      });
+    }
   };
 
   const handleSubmitComment = async () => {
@@ -117,7 +134,6 @@ const JobDetail = () => {
   return (
     <MainLayout>
       <div className="space-y-6">
-        {/* Cabecera */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-gray-200">
           <div>
             <h1 className="text-2xl font-bold">{job.title}</h1>
@@ -162,9 +178,7 @@ const JobDetail = () => {
         </div>
         
         <div className="grid md:grid-cols-3 gap-6">
-          {/* Contenido principal */}
           <div className="md:col-span-2 space-y-6">
-            {/* Descripción */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Descripción</CardTitle>
@@ -190,7 +204,6 @@ const JobDetail = () => {
               </CardContent>
             </Card>
             
-            {/* Comentarios */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Comentarios</CardTitle>
@@ -207,7 +220,6 @@ const JobDetail = () => {
                   </div>
                 )}
                 
-                {/* Formulario de comentario */}
                 {currentUser && job.status === 'open' && (
                   <div className="space-y-4">
                     <Separator />
@@ -231,9 +243,7 @@ const JobDetail = () => {
             </Card>
           </div>
           
-          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Detalles de la propuesta */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Detalles de la propuesta</CardTitle>
@@ -262,7 +272,6 @@ const JobDetail = () => {
               </CardContent>
             </Card>
             
-            {/* Información del cliente */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Cliente</CardTitle>
