@@ -11,10 +11,11 @@ const userModel = {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     
-    // Usando name en lugar de username para ser consistente con la estructura de la BD
+    // Usado name en lugar de username para ser consistente con la estructura de la BD
+    // Usado photoURL en lugar de avatar y isOnline en lugar de status
     const result = await db.query(
-      'INSERT INTO "Users" (name, email, password, "photoURL", status, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, email, "photoURL", role, "createdAt"',
-      [username, email, hashedPassword, avatar || null, 'online', 'client']
+      'INSERT INTO "Users" (name, email, password, "photoURL", "isOnline", role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, email, "photoURL", role, "createdAt"',
+      [username, email, hashedPassword, avatar || null, true, 'client']
     );
     
     return result.rows[0];

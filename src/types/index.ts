@@ -2,11 +2,12 @@
 // User related types
 export interface User {
   _id: string;
-  username: string;
+  username?: string;
   email: string;
   avatar?: string;
   photoURL?: string;
-  status: 'online' | 'offline';
+  status?: 'online' | 'offline';
+  isOnline?: boolean;
   id?: string; // For compatibility with existing code
   name?: string; // For compatibility with existing code
   role?: string; // For compatibility with existing code
