@@ -15,7 +15,8 @@ import { Loader2 } from 'lucide-react';
 
 const JobDetail = () => {
   const { jobId } = useParams();
-  const { getJobById } = useJobs();
+  const jobsContext = useJobs();
+  const { getJobById } = jobsContext;
   const { currentUser } = useAuth();
   const { getUserById } = useData();
   const chat = useChat();

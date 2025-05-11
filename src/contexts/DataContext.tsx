@@ -4,6 +4,8 @@ import { JobType, UserType } from '@/types';
 import { userService } from '@/services/api';
 import { mockJobs, JOB_CATEGORIES, SKILLS_LIST } from '@/lib/mockData';
 
+export type { UserType };
+
 export interface DataContextType {
   users: UserType[];
   getUserById: (userId: string) => UserType | undefined;
@@ -41,13 +43,14 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       // Transform backend user data to match our frontend UserType
       const transformedUsers: UserType[] = userData.map((user: any) => ({
         id: user.id.toString(),
-        name: user.username,
+        name: user.username || user.name, // Support both username and name
         email: user.email,
-        role: "freelancer", // Default role, could be different based on your backend
-        photoURL: user.avatar,
-        joinedAt: new Date(user.created_at).getTime()
+        role: user.role || "freelancer", // Default role, could be different based on your backend
+        photoURL: user.avatar || user.photoURL,
+        joinedAt: user.created_at ? new Date(user.created_at).getTime() : Date.now()
       }));
       
+      console.log("Loaded users:", transformedUsers);
       setUsers(transformedUsers);
       
       // For now, we're still using mock data for jobs

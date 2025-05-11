@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search } from 'lucide-react';
-import { UserType } from '@/contexts/DataContext';
+import { UserType } from '@/types';
 
 interface UserSelectDialogProps {
   open: boolean;
@@ -30,6 +30,7 @@ export const UserSelectDialog = ({
   const [searchQuery, setSearchQuery] = useState('');
   
   const allUsers = getAllUsers();
+  console.log("Available users for chat:", allUsers);
   
   // Filter users: exclude current user, exclude specified users, and filter by name
   const filteredUsers = allUsers.filter(user => 
