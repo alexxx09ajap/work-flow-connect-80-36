@@ -9,7 +9,7 @@ const authController = {
   // Register a new user
   async register(req, res) {
     try {
-      const { username, email, password } = req.body;
+      const { username, email, password, role } = req.body;
       
       // Check if email or username exists
       const existingUser = await userModel.findByEmail(email);
@@ -22,7 +22,7 @@ const authController = {
         username,
         email,
         password,
-        status: 'online'
+        role: role || 'client' // Usar el rol proporcionado o client por defecto
       });
       
       // Generate JWT token

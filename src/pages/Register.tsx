@@ -14,7 +14,7 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [userRole, setUserRole] = useState('freelancer');
+  const [userRole, setUserRole] = useState('client');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -41,7 +41,7 @@ const Register = () => {
     
     try {
       setLoading(true);
-      await register(email, password, name);
+      await register(email, password, name, userRole);
       // Registration successful, user will be redirected to dashboard by the auth provider
     } catch (error) {
       console.error('Error de registro:', error);
@@ -128,7 +128,7 @@ const Register = () => {
               <div className="space-y-2">
                 <Label>Tipo de cuenta</Label>
                 <RadioGroup 
-                  defaultValue="freelancer" 
+                  defaultValue="client" 
                   value={userRole} 
                   onValueChange={setUserRole}
                   className="flex space-x-4 mt-1"

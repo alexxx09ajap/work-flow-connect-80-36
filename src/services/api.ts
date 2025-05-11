@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 
 // Create axios instance with base URL
@@ -20,8 +21,8 @@ export const authService = {
     return response.data;
   },
   
-  register: async (username: string, email: string, password: string) => {
-    const response = await api.post('/auth/register', { username, email, password });
+  register: async (username: string, email: string, password: string, role: string = 'client') => {
+    const response = await api.post('/auth/register', { username, email, password, role });
     return response.data;
   },
   

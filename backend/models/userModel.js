@@ -14,7 +14,7 @@ const userModel = {
     // Usado name en lugar de username para ser consistente con la estructura de la BD
     // Usado photoURL en lugar de avatar y isOnline en lugar de status
     const result = await db.query(
-      'INSERT INTO "Users" (name, email, password, "photoURL", "isOnline", role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, email, "photoURL", role, "createdAt"',
+      'INSERT INTO "Users" (id, name, email, password, "photoURL", "isOnline", role, "createdAt", "updatedAt") VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id, name, email, "photoURL", role, "createdAt"',
       [username, email, hashedPassword, avatar || null, true, 'client']
     );
     
@@ -42,7 +42,7 @@ const userModel = {
       'SELECT id, name, email, "photoURL" as avatar, "isOnline" as status, "lastSeen", "createdAt" FROM "Users" WHERE id != $1',
       [userId]
     );
-    return result.rows;
+    return result.rows; // Cambiado de result.rows[0] a result.rows para devolver todas las filas
   },
   
   // Update user status
