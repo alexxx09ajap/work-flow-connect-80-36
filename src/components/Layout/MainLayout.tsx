@@ -48,6 +48,10 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     { path: '/profile', label: 'Perfil', icon: <User className="h-5 w-5" /> },
   ];
   
+  const handleNavigation = (path: string) => {
+    navigate(path);
+  };
+
   const isActive = (path: string) => location.pathname === path;
 
   return (
@@ -96,11 +100,11 @@ const MainLayout = ({ children }: MainLayoutProps) => {
           <div className="flex-1 overflow-y-auto py-4 px-3">
             <nav className="space-y-1">
               {navLinks.map((link) => (
-                <Link
+                <button
                   key={link.path}
-                  to={link.path}
+                  onClick={() => handleNavigation(link.path)}
                   className={`
-                    flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
+                    w-full flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
                     ${isActive(link.path) 
                       ? 'bg-sidebar-accent text-sidebar-accent-foreground' 
                       : 'text-sidebar-foreground hover:bg-sidebar-accent/50'}
@@ -109,19 +113,19 @@ const MainLayout = ({ children }: MainLayoutProps) => {
                 >
                   {link.icon}
                   {(!sidebarCollapsed || isMobile) && <span className="ml-3">{link.label}</span>}
-                </Link>
+                </button>
               ))}
               
-              <Link
-                to="/jobs/create"
+              <button
+                onClick={() => handleNavigation('/jobs/create')}
                 className={`
-                  flex items-center px-3 py-2 mt-4 rounded-md text-sm font-medium bg-sidebar-primary text-sidebar-primary-foreground hover:bg-wfc-purple-medium transition-colors
+                  w-full flex items-center px-3 py-2 mt-4 rounded-md text-sm font-medium bg-sidebar-primary text-sidebar-primary-foreground hover:bg-wfc-purple-medium transition-colors
                   ${sidebarCollapsed && !isMobile ? 'justify-center' : ''}
                 `}
               >
                 <Plus className="h-5 w-5" />
                 {(!sidebarCollapsed || isMobile) && <span className="ml-3">Nueva propuesta</span>}
-              </Link>
+              </button>
             </nav>
           </div>
           

@@ -32,10 +32,65 @@ async function initDb() {
     `;
     
     const existingTables = await pool.query(checkTablesQuery);
-    const tableNames = existingTables.rows.map(row => row.table_name);
+    const tableNames = existingTables.rows.map(row => row.table_name.toLowerCase());
     
     // Log detected tables
     console.log('Detected tables:', tableNames);
+    
+    // Check if tables are missing and create them if needed
+    const missingTables = [];
+    if (!tableNames.includes('chats')) {
+      missingTables.push('Chats');
+    }
+    if (!tableNames.includes('chatparticipants')) {
+      missingTables.push('ChatParticipants');
+    }
+    if (!tableNames.includes('messages')) {
+      missingTables.push('Messages');
+    }
+    
+    if (missingTables.length > 0) {
+      console.log(`Missing tables detected: ${missingTables.join(', ')}. Creating them...`);
+      
+      // Create missing tables
+      const createTablesSQL = `
+        -- Chats Table
+        CREATE TABLE IF NOT EXISTS "Chats" (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name VARCHAR(255),
+          "isGroup" BOOLEAN DEFAULT FALSE,
+          "lastMessageAt" TIMESTAMP,
+          "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        -- Chat Participants Table (Many-to-Many)
+        CREATE TABLE IF NOT EXISTS "ChatParticipants" (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          "userId" UUID REFERENCES "Users"(id) ON DELETE CASCADE,
+          "chatId" UUID REFERENCES "Chats"(id) ON DELETE CASCADE,
+          "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE("userId", "chatId")
+        );
+        
+        -- Messages Table
+        CREATE TABLE IF NOT EXISTS "Messages" (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          content TEXT NOT NULL,
+          read BOOLEAN DEFAULT FALSE,
+          "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          "chatId" UUID REFERENCES "Chats"(id) ON DELETE SET NULL,
+          "userId" UUID REFERENCES "Users"(id) ON DELETE SET NULL
+        );
+      `;
+      
+      await pool.query(createTablesSQL);
+      console.log('Missing tables created successfully');
+    } else {
+      console.log('All required tables exist');
+    }
     
     // Close the connection
     await pool.end();

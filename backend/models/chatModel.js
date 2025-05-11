@@ -4,29 +4,44 @@ const db = require('../config/database');
 const chatModel = {
   // Get all chats for a user
   async findByUserId(userId) {
-    const result = await db.query(`
-      SELECT c.* FROM "Chats" c
-      JOIN "ChatParticipants" cp ON c.id = cp."chatId"
-      WHERE cp."userId" = $1
-      ORDER BY c."updatedAt" DESC
-    `, [userId]);
-    
-    return result.rows;
+    try {
+      const result = await db.query(`
+        SELECT c.* FROM "Chats" c
+        JOIN "ChatParticipants" cp ON c.id = cp."chatId"
+        WHERE cp."userId" = $1
+        ORDER BY c."updatedAt" DESC
+      `, [userId]);
+      
+      return result.rows;
+    } catch (error) {
+      console.error('Error in findByUserId:', error);
+      return [];
+    }
   },
   
   // Get a chat by ID
   async findById(chatId) {
-    const result = await db.query('SELECT * FROM "Chats" WHERE id = $1', [chatId]);
-    return result.rows[0];
+    try {
+      const result = await db.query('SELECT * FROM "Chats" WHERE id = $1', [chatId]);
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error in findById:', error);
+      return null;
+    }
   },
   
   // Check if a user is participant in a chat
   async isParticipant(chatId, userId) {
-    const result = await db.query(
-      'SELECT 1 FROM "ChatParticipants" WHERE "chatId" = $1 AND "userId" = $2',
-      [chatId, userId]
-    );
-    return result.rows.length > 0;
+    try {
+      const result = await db.query(
+        'SELECT 1 FROM "ChatParticipants" WHERE "chatId" = $1 AND "userId" = $2',
+        [chatId, userId]
+      );
+      return result.rows.length > 0;
+    } catch (error) {
+      console.error('Error in isParticipant:', error);
+      return false;
+    }
   },
   
   // Create a new private chat
@@ -74,6 +89,7 @@ const chatModel = {
       return chatId;
     } catch (err) {
       await client.query('ROLLBACK');
+      console.error('Error in createPrivateChat:', err);
       throw err;
     } finally {
       client.release();
@@ -107,6 +123,7 @@ const chatModel = {
       return chatId;
     } catch (err) {
       await client.query('ROLLBACK');
+      console.error('Error in createGroupChat:', err);
       throw err;
     } finally {
       client.release();
@@ -115,43 +132,64 @@ const chatModel = {
   
   // Add participant to chat
   async addParticipant(chatId, userId) {
-    await db.query(
-      'INSERT INTO "ChatParticipants" (id, "chatId", "userId", "createdAt", "updatedAt") VALUES (gen_random_uuid(), $1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT DO NOTHING',
-      [chatId, userId]
-    );
+    try {
+      await db.query(
+        'INSERT INTO "ChatParticipants" (id, "chatId", "userId", "createdAt", "updatedAt") VALUES (gen_random_uuid(), $1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT DO NOTHING',
+        [chatId, userId]
+      );
+    } catch (error) {
+      console.error('Error in addParticipant:', error);
+    }
   },
   
   // Remove participant from chat
   async removeParticipant(chatId, userId) {
-    await db.query(
-      'DELETE FROM "ChatParticipants" WHERE "chatId" = $1 AND "userId" = $2',
-      [chatId, userId]
-    );
+    try {
+      await db.query(
+        'DELETE FROM "ChatParticipants" WHERE "chatId" = $1 AND "userId" = $2',
+        [chatId, userId]
+      );
+    } catch (error) {
+      console.error('Error in removeParticipant:', error);
+    }
   },
   
   // Get all participants of a chat
   async getParticipants(chatId) {
-    const result = await db.query(`
-      SELECT u.id, u.name, u.email, u."photoURL", u."isOnline"
-      FROM "Users" u
-      JOIN "ChatParticipants" cp ON u.id = cp."userId"
-      WHERE cp."chatId" = $1
-    `, [chatId]);
-    
-    return result.rows;
+    try {
+      const result = await db.query(`
+        SELECT u.id, u.name, u.email, u."photoURL", u."isOnline"
+        FROM "Users" u
+        JOIN "ChatParticipants" cp ON u.id = cp."userId"
+        WHERE cp."chatId" = $1
+      `, [chatId]);
+      
+      return result.rows;
+    } catch (error) {
+      console.error('Error in getParticipants:', error);
+      return [];
+    }
   },
   
   // Update last message of a chat
   async updateLastMessage(chatId) {
-    await db.query(
-      'UPDATE "Chats" SET "lastMessageAt" = CURRENT_TIMESTAMP, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $1',
-      [chatId]
-    );
+    try {
+      await db.query(
+        'UPDATE "Chats" SET "lastMessageAt" = CURRENT_TIMESTAMP, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $1',
+        [chatId]
+      );
+    } catch (error) {
+      console.error('Error in updateLastMessage:', error);
+    }
   },
   
   // Delete a chat
   async delete(chatId) {
-    await db.query('DELETE FROM "Chats" WHERE id = $1', [chatId]);
+    try {
+      await db.query('DELETE FROM "Chats" WHERE id = $1', [chatId]);
+    } catch (error) {
+      console.error('Error in delete:', error);
+    }
   }
 };
 
