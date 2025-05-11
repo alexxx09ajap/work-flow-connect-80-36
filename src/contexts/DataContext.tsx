@@ -1,28 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { JobType } from './JobContext';
+import { JobType, UserType } from '@/types';
 import { userService } from '@/services/api';
-import { MOCK_JOBS, JOB_CATEGORIES, SKILLS_LIST } from '@/lib/mockData';
-
-// Make sure the UserType in DataContext matches or extends the AuthContext UserType
-export type UserType = {
-  id: string;
-  name: string;
-  email: string;
-  role: "freelancer" | "client";
-  skills?: string[];
-  bio?: string;
-  photoURL?: string;
-  hourlyRate?: number;
-  joinedAt?: number;
-};
-
-export type CommentType = {
-  id: string;
-  userId: string;
-  text: string;
-  timestamp: number;
-};
+import { mockJobs, JOB_CATEGORIES, SKILLS_LIST } from '@/lib/mockData';
 
 export interface DataContextType {
   users: UserType[];
@@ -47,7 +27,7 @@ export const useData = () => {
 
 export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const [users, setUsers] = useState<UserType[]>([]);
-  const [jobs, setJobs] = useState<JobType[]>(MOCK_JOBS);
+  const [jobs, setJobs] = useState<JobType[]>(mockJobs);
   const [loading, setLoading] = useState(false);
   const [jobCategories, setJobCategories] = useState<string[]>(JOB_CATEGORIES);
   const [skillsList, setSkillsList] = useState<string[]>(SKILLS_LIST);
@@ -71,7 +51,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       setUsers(transformedUsers);
       
       // For now, we're still using mock data for jobs
-      setJobs(MOCK_JOBS);
+      setJobs(mockJobs);
       setJobCategories(JOB_CATEGORIES);
       setSkillsList(SKILLS_LIST);
     } catch (error) {

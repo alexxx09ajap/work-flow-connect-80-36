@@ -1,8 +1,8 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { toast } from '@/components/ui/use-toast';
-import { MOCK_JOBS } from '@/lib/mockData'; 
-import { JobType } from '@/types';
+import { mockJobs } from '@/lib/mockData'; 
+import { JobType, UserType } from '@/types';
 
 export type ReplyType = {
   id: string;
@@ -56,7 +56,7 @@ interface JobProviderProps {
 }
 
 export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
-  const [jobs, setJobs] = useState<JobType[]>(MOCK_JOBS);
+  const [jobs, setJobs] = useState<JobType[]>(mockJobs);
   const [loading, setLoading] = useState(false);
   const [savedJobs, setSavedJobs] = useState<string[]>([]);
 
@@ -64,7 +64,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
     setLoading(true);
     try {
       // For now we're using mock data, but in the future we can fetch from the backend
-      setJobs(MOCK_JOBS);
+      setJobs(mockJobs);
     } catch (error) {
       console.error("Error loading jobs:", error);
     } finally {
@@ -94,7 +94,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
       setJobs(prevJobs => [...prevJobs, newJob]);
       
       // In a real scenario, this would be saved to the database
-      MOCK_JOBS.push(newJob);
+      mockJobs.push(newJob);
       
       return newJob;
     } catch (error) {
@@ -127,9 +127,9 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
       );
       
       // In a real scenario, this would update the database
-      const mockJobIndex = MOCK_JOBS.findIndex(job => job.id === jobId);
+      const mockJobIndex = mockJobs.findIndex(job => job.id === jobId);
       if (mockJobIndex !== -1) {
-        MOCK_JOBS[mockJobIndex] = updatedJob;
+        mockJobs[mockJobIndex] = updatedJob;
       }
       
       return updatedJob;
@@ -148,9 +148,9 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
       setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
       
       // In a real scenario, this would delete from the database
-      const mockJobIndex = MOCK_JOBS.findIndex(job => job.id === jobId);
+      const mockJobIndex = mockJobs.findIndex(job => job.id === jobId);
       if (mockJobIndex !== -1) {
-        MOCK_JOBS.splice(mockJobIndex, 1);
+        mockJobs.splice(mockJobIndex, 1);
       }
       
       return true;
@@ -179,14 +179,17 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
       // Update local state
       setJobs(prevJobs => prevJobs.map(job => 
         job.id === jobId 
-          ? { ...job, comments: [...job.comments, newComment] }
+          ? { ...job, comments: [...(job.comments || []), newComment] }
           : job
       ));
       
       // In a real scenario, this would update the database
-      const mockJobIndex = MOCK_JOBS.findIndex(job => job.id === jobId);
+      const mockJobIndex = mockJobs.findIndex(job => job.id === jobId);
       if (mockJobIndex !== -1) {
-        MOCK_JOBS[mockJobIndex].comments.push(newComment);
+        if (!mockJobs[mockJobIndex].comments) {
+          mockJobs[mockJobIndex].comments = [];
+        }
+        mockJobs[mockJobIndex].comments.push(newComment);
       }
     } catch (error) {
       console.error("Error adding comment:", error);
@@ -215,7 +218,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
         
         return {
           ...job,
-          comments: job.comments.map(comment => 
+          comments: (job.comments || []).map(comment => 
             comment.id === commentId
               ? { ...comment, replies: [...comment.replies, newReply] }
               : comment
@@ -224,11 +227,11 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
       }));
       
       // In a real scenario, this would update the database
-      const mockJobIndex = MOCK_JOBS.findIndex(job => job.id === jobId);
-      if (mockJobIndex !== -1) {
-        const commentIndex = MOCK_JOBS[mockJobIndex].comments.findIndex(c => c.id === commentId);
+      const mockJobIndex = mockJobs.findIndex(job => job.id === jobId);
+      if (mockJobIndex !== -1 && mockJobs[mockJobIndex].comments) {
+        const commentIndex = mockJobs[mockJobIndex].comments.findIndex(c => c.id === commentId);
         if (commentIndex !== -1) {
-          MOCK_JOBS[mockJobIndex].comments[commentIndex].replies.push(newReply);
+          mockJobs[mockJobIndex].comments[commentIndex].replies.push(newReply);
         }
       }
     } catch (error) {
@@ -288,25 +291,30 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
       setJobs(prevJobs => prevJobs.map(job => {
         if (job.id !== jobId) return job;
         
-        const userLiked = job.likes.includes(userId);
+        const likes = job.likes || [];
+        const userLiked = likes.includes(userId);
         
         return {
           ...job,
           likes: userLiked
-            ? job.likes.filter(id => id !== userId)
-            : [...job.likes, userId]
+            ? likes.filter(id => id !== userId)
+            : [...likes, userId]
         };
       }));
       
       // In a real scenario, this would update the database
-      const mockJobIndex = MOCK_JOBS.findIndex(job => job.id === jobId);
+      const mockJobIndex = mockJobs.findIndex(job => job.id === jobId);
       if (mockJobIndex !== -1) {
-        const userLiked = MOCK_JOBS[mockJobIndex].likes.includes(userId);
+        if (!mockJobs[mockJobIndex].likes) {
+          mockJobs[mockJobIndex].likes = [];
+        }
+        
+        const userLiked = mockJobs[mockJobIndex].likes.includes(userId);
         
         if (userLiked) {
-          MOCK_JOBS[mockJobIndex].likes = MOCK_JOBS[mockJobIndex].likes.filter(id => id !== userId);
+          mockJobs[mockJobIndex].likes = mockJobs[mockJobIndex].likes.filter(id => id !== userId);
         } else {
-          MOCK_JOBS[mockJobIndex].likes.push(userId);
+          mockJobs[mockJobIndex].likes.push(userId);
         }
       }
     } catch (error) {

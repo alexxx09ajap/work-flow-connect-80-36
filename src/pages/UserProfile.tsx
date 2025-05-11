@@ -1,8 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
+import { UserType } from '@/types';
 import MainLayout from '@/components/Layout/MainLayout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -16,7 +18,7 @@ const UserProfile = () => {
   const { getUserById } = useData();
   const { currentUser } = useAuth();
   const { createPrivateChat } = useChat();
-  const [profileUser, setProfileUser] = useState(null);
+  const [profileUser, setProfileUser] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
@@ -24,7 +26,7 @@ const UserProfile = () => {
       setIsLoading(true);
       if (userId) {
         const user = getUserById(userId);
-        setProfileUser(user);
+        setProfileUser(user || null);
       }
       setIsLoading(false);
     };
@@ -108,4 +110,3 @@ const UserProfile = () => {
 };
 
 export default UserProfile;
-

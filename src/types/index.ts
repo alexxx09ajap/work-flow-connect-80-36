@@ -13,7 +13,8 @@ export interface User {
   lastSeen?: Date;
   createdAt?: Date;
   updatedAt?: Date;
-  joinedAt?: number; // Added to match what's used in ProfilePage
+  joinedAt?: number;
+  location?: string; // Agregando la propiedad location
 }
 
 export interface AuthState {
@@ -46,6 +47,21 @@ export interface MessageType {
   chatId: string;
   timestamp: string;
   read: boolean;
+}
+
+// Job type definition
+export interface JobType {
+  id: string;
+  title: string;
+  description: string;
+  budget: number;
+  category: string;
+  skills: string[];
+  status: 'open' | 'in progress' | 'completed';
+  userId: string;
+  timestamp?: number;
+  comments?: any[];
+  likes?: string[];
 }
 
 // Type aliases to avoid circular dependencies

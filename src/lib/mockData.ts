@@ -1,3 +1,4 @@
+
 import { JobType, UserType } from "@/types";
 
 export const mockUsers: UserType[] = [
@@ -53,7 +54,7 @@ export const mockUsers: UserType[] = [
   }
 ];
 
-// Update job objects to match JobType interface by removing createdAt
+// Jobs data
 export const mockJobs: JobType[] = [
   {
     id: '1',
@@ -105,4 +106,40 @@ export const mockJobs: JobType[] = [
     status: 'in progress',
     userId: '105'
   }
+];
+
+// Categorías de trabajos
+export const JOB_CATEGORIES = [
+  'Diseño Web',
+  'Desarrollo Móvil',
+  'Ciencia de Datos',
+  'Diseño UI/UX',
+  'Gestión de Proyectos',
+  'Desarrollo Frontend',
+  'Desarrollo Backend',
+  'Marketing Digital'
+];
+
+// Lista de habilidades
+export const SKILLS_LIST = [
+  'HTML',
+  'CSS',
+  'JavaScript',
+  'React',
+  'Node.js',
+  'Python',
+  'Swift',
+  'Kotlin',
+  'Java',
+  'UI Design',
+  'UX Design',
+  'Figma',
+  'Adobe XD',
+  'Project Management',
+  'Agile',
+  'Scrum',
+  'Machine Learning',
+  'TensorFlow',
+  'Data Analysis',
+  'Leadership'
 ];
