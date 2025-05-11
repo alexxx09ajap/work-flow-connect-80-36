@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useChat } from '@/contexts/ChatContext';
 import { useData } from '@/contexts/DataContext';
-import { UserType } from '@/contexts/AuthContext';
+import { UserType } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Check, X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';

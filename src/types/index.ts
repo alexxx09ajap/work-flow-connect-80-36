@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -12,6 +13,7 @@ export interface User {
   lastSeen?: Date;
   createdAt?: Date;
   updatedAt?: Date;
+  joinedAt?: number; // Added to match what's used in ProfilePage
 }
 
 export interface AuthState {
@@ -41,3 +43,6 @@ export interface MessageType {
   senderName: string;
   read: boolean;
 }
+
+// Type aliases to avoid circular dependencies
+export type UserType = User;
