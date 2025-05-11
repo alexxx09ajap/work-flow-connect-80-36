@@ -91,7 +91,7 @@ const UserProfile = () => {
               </Avatar>
               <h2 className="text-xl font-semibold flex items-center">
                 {profileUser.name}
-                {profileUser.isVerified && (
+                {(profileUser as any).isVerified && (
                   <Verified className="ml-1 h-4 w-4 text-blue-500" />
                 )}
               </h2>

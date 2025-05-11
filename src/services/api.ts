@@ -71,8 +71,13 @@ export const userService = {
 
 export const chatService = {
   getChats: async () => {
-    const response = await api.get('/chats');
-    return response.data;
+    try {
+      const response = await api.get('/chats');
+      return response.data;
+    } catch (err) {
+      console.error("Error fetching chats:", err);
+      return [];
+    }
   },
   
   createPrivateChat: async (userId: string) => {
@@ -107,8 +112,8 @@ export const messageService = {
     return response.data;
   },
   
-  sendMessage: async (chatId: string, text: string) => {
-    const response = await api.post('/messages', { chatId, text });
+  sendMessage: async (chatId: string, content: string) => {
+    const response = await api.post('/messages', { chatId, content });
     return response.data;
   },
   
@@ -159,7 +164,7 @@ export const fileService = {
   },
   
   getFileUrl: (fileId: string) => {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('token');
     return `http://localhost:5000/api/files/${fileId}?token=${token}`;
   }
 };

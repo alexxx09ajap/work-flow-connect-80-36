@@ -1,45 +1,27 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import { CommentType, JobType } from '@/types';
+import { jobService } from '@/lib/jobService';
 import { useAuth } from './AuthContext';
-import { toast } from '@/components/ui/use-toast';
-import { mockJobs } from '@/lib/mockData'; 
-import { JobType, UserType } from '@/types';
+import { useToast } from '@/components/ui/use-toast';
 
-export type ReplyType = {
-  id: string;
-  commentId: string;
-  userId: string;
-  userName: string;
-  userPhoto?: string;
-  content: string;
-  timestamp: number;
-};
+export type { JobType };
 
-export type CommentType = {
-  id: string;
-  jobId: string;
-  userId: string;
-  userName: string;
-  userPhoto?: string;
-  content: string;
-  timestamp: number;
-  replies: ReplyType[];
-};
-
-export type JobContextType = {
+export interface JobContextType {
   jobs: JobType[];
+  userJobs: JobType[];
+  filteredJobs: JobType[];
+  setFilteredJobs: (jobs: JobType[]) => void;
+  popularJobs: JobType[];
+  getJobById: (id: string) => JobType | undefined;
   loading: boolean;
-  createJob: (jobData: Omit<JobType, 'id' | 'timestamp' | 'comments' | 'likes'>) => Promise<JobType>;
-  updateJob: (jobId: string, jobData: Partial<JobType>) => Promise<JobType>;
-  deleteJob: (jobId: string) => Promise<boolean>;
-  addComment: (jobId: string, content: string, user: UserType) => Promise<void>;
-  addReplyToComment: (jobId: string, commentId: string, content: string, user: UserType) => Promise<void>;
-  getJob: (jobId: string) => JobType | undefined;
-  toggleSavedJob: (jobId: string, userId: string) => void;
-  getSavedJobs: (userId: string) => Promise<JobType[]>;
-  toggleLike: (jobId: string, userId: string) => void;
-  savedJobs: string[]; // Array of saved job IDs by the current user
-  loadJobs: () => Promise<void>; // Add method to refresh jobs
-};
+  addComment: (jobId: string, comment: string) => void;
+  addReply: (commentId: string, reply: string) => void;
+  refreshJobs: () => Promise<void>;
+  saveJob: (jobId: string) => Promise<void>;
+  unsaveJob: (jobId: string) => Promise<void>;
+  savedJobs: JobType[];
+  deleteComment: (commentId: string) => void;
+}
 
 const JobContext = createContext<JobContextType | null>(null);
 
@@ -51,295 +33,161 @@ export const useJobs = () => {
   return context;
 };
 
-interface JobProviderProps {
-  children: ReactNode;
-}
-
-export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
-  const [jobs, setJobs] = useState<JobType[]>(mockJobs);
+export const JobProvider = ({ children }: { children: React.ReactNode }) => {
+  const [jobs, setJobs] = useState<JobType[]>([]);
+  const [userJobs, setUserJobs] = useState<JobType[]>([]);
+  const [filteredJobs, setFilteredJobs] = useState<JobType[]>([]);
+  const [popularJobs, setPopularJobs] = useState<JobType[]>([]);
+  const [savedJobs, setSavedJobs] = useState<JobType[]>([]);
   const [loading, setLoading] = useState(false);
-  const [savedJobs, setSavedJobs] = useState<string[]>([]);
+  const { currentUser } = useAuth();
+  const { toast } = useToast();
 
-  const loadJobs = async () => {
+  useEffect(() => {
+    refreshJobs();
+  }, [currentUser]);
+
+  const refreshJobs = async () => {
     setLoading(true);
     try {
-      // For now we're using mock data, but in the future we can fetch from the backend
-      setJobs(mockJobs);
+      const allJobs = await jobService.getAllJobs();
+      setJobs(allJobs);
+
+      if (currentUser) {
+        const userJobsData = await jobService.getJobsByUserId(currentUser.id);
+        setUserJobs(userJobsData);
+
+        const savedJobsData = await jobService.getSavedJobs(currentUser.id);
+        setSavedJobs(savedJobsData);
+      }
+
+      const popularJobsData = await jobService.getPopularJobs();
+      setPopularJobs(popularJobsData);
     } catch (error) {
-      console.error("Error loading jobs:", error);
+      console.error("Error fetching jobs:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load jobs."
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadJobs();
-  }, []);
-
-  const createJob = async (jobData: Omit<JobType, 'id' | 'timestamp' | 'comments' | 'likes'>) => {
-    try {
-      // Simulate delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Create a new job with unique ID
-      const newJob: JobType = {
-        id: `job${Date.now()}`,
-        ...jobData,
-        timestamp: Date.now(),
-        comments: [],
-        likes: []
-      };
-      
-      // Update local state
-      setJobs(prevJobs => [...prevJobs, newJob]);
-      
-      // In a real scenario, this would be saved to the database
-      mockJobs.push(newJob);
-      
-      return newJob;
-    } catch (error) {
-      console.error("Error creating job:", error);
-      throw error;
-    }
+  const getJobById = (id: string) => {
+    return jobs.find(job => job.id === id);
   };
 
-  const updateJob = async (jobId: string, jobData: Partial<JobType>) => {
+  const addComment = async (jobId: string, comment: string) => {
     try {
-      // Simulate delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Find the job to update
-      const jobIndex = jobs.findIndex(job => job.id === jobId);
-      
-      if (jobIndex === -1) {
-        throw new Error('Job not found');
-      }
-      
-      // Update the job
-      const updatedJob = {
-        ...jobs[jobIndex],
-        ...jobData
-      };
-      
-      // Update local state
-      setJobs(prevJobs => 
-        prevJobs.map(job => job.id === jobId ? updatedJob : job)
-      );
-      
-      // In a real scenario, this would update the database
-      const mockJobIndex = mockJobs.findIndex(job => job.id === jobId);
-      if (mockJobIndex !== -1) {
-        mockJobs[mockJobIndex] = updatedJob;
-      }
-      
-      return updatedJob;
-    } catch (error) {
-      console.error("Error updating job:", error);
-      throw error;
-    }
-  };
-
-  const deleteJob = async (jobId: string) => {
-    try {
-      // Simulate delay
-      await new Promise(resolve => setTimeout(resolve, 600));
-      
-      // Remove job from local state
-      setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
-      
-      // In a real scenario, this would delete from the database
-      const mockJobIndex = mockJobs.findIndex(job => job.id === jobId);
-      if (mockJobIndex !== -1) {
-        mockJobs.splice(mockJobIndex, 1);
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("Error deleting job:", error);
-      throw error;
-    }
-  };
-
-  const addComment = async (jobId: string, content: string, user: UserType) => {
-    try {
-      // Simulate delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const newComment: CommentType = {
-        id: `comment_${Date.now()}`,
-        jobId,
-        userId: user.id,
-        userName: user.name,
-        userPhoto: user.photoURL,
-        content,
-        timestamp: Date.now(),
-        replies: []
-      };
-      
-      // Update local state
-      setJobs(prevJobs => prevJobs.map(job => 
-        job.id === jobId 
-          ? { ...job, comments: [...(job.comments || []), newComment] }
-          : job
-      ));
-      
-      // In a real scenario, this would update the database
-      const mockJobIndex = mockJobs.findIndex(job => job.id === jobId);
-      if (mockJobIndex !== -1) {
-        if (!mockJobs[mockJobIndex].comments) {
-          mockJobs[mockJobIndex].comments = [];
-        }
-        mockJobs[mockJobIndex].comments.push(newComment);
-      }
+      await jobService.addComment(jobId, comment);
+      await refreshJobs();
+      toast({
+        title: "Comment added",
+        description: "Your comment has been added successfully."
+      });
     } catch (error) {
       console.error("Error adding comment:", error);
-      throw error;
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add comment."
+      });
     }
   };
 
-  const addReplyToComment = async (jobId: string, commentId: string, content: string, user: UserType) => {
+  const deleteComment = async (commentId: string) => {
     try {
-      // Simulate delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const newReply: ReplyType = {
-        id: `reply_${Date.now()}`,
-        commentId,
-        userId: user.id,
-        userName: user.name,
-        userPhoto: user.photoURL,
-        content,
-        timestamp: Date.now()
-      };
-      
-      // Update local state
-      setJobs(prevJobs => prevJobs.map(job => {
-        if (job.id !== jobId) return job;
-        
-        return {
-          ...job,
-          comments: (job.comments || []).map(comment => 
-            comment.id === commentId
-              ? { ...comment, replies: [...comment.replies, newReply] }
-              : comment
-          )
-        };
-      }));
-      
-      // In a real scenario, this would update the database
-      const mockJobIndex = mockJobs.findIndex(job => job.id === jobId);
-      if (mockJobIndex !== -1 && mockJobs[mockJobIndex].comments) {
-        const commentIndex = mockJobs[mockJobIndex].comments.findIndex(c => c.id === commentId);
-        if (commentIndex !== -1) {
-          mockJobs[mockJobIndex].comments[commentIndex].replies.push(newReply);
-        }
-      }
+      await jobService.deleteComment(commentId);
+      await refreshJobs();
+      toast({
+        title: "Comment deleted",
+        description: "Your comment has been deleted successfully."
+      });
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete comment."
+      });
+    }
+  };
+
+  const addReply = async (commentId: string, reply: string) => {
+    try {
+      await jobService.addReply(commentId, reply);
+      await refreshJobs();
+      toast({
+        title: "Reply added",
+        description: "Your reply has been added successfully."
+      });
     } catch (error) {
       console.error("Error adding reply:", error);
-      throw error;
-    }
-  };
-
-  const getJob = (jobId: string) => {
-    return jobs.find(job => job.id === jobId);
-  };
-
-  const toggleSavedJob = (jobId: string, userId: string) => {
-    try {
-      // Check if job is already saved
-      const isJobSaved = savedJobs.includes(jobId);
-      
-      // Update local state
-      setSavedJobs(prev => {
-        if (isJobSaved) {
-          return prev.filter(id => id !== jobId);
-        } else {
-          return [...prev, jobId];
-        }
-      });
-      
-      // Notify user
       toast({
-        title: isJobSaved ? "Proposal removed from saved" : "Proposal saved",
-        description: isJobSaved 
-          ? "The proposal has been removed from your saved items" 
-          : "The proposal has been added to your saved items"
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add reply."
+      });
+    }
+  };
+
+  const saveJob = async (jobId: string) => {
+    try {
+      await jobService.saveJob(jobId);
+      await refreshJobs();
+      toast({
+        title: "Job saved",
+        description: "This job has been saved to your list."
       });
     } catch (error) {
-      console.error("Error toggling saved job:", error);
+      console.error("Error saving job:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save job."
+      });
     }
   };
 
-  const getSavedJobs = async (userId: string) => {
+  const unsaveJob = async (jobId: string) => {
     try {
-      // Simulate delay
-      await new Promise(resolve => setTimeout(resolve, 700));
-      
-      // Filter saved jobs
-      const savedJobsList = jobs.filter(job => savedJobs.includes(job.id));
-      
-      return savedJobsList;
+      await jobService.unsaveJob(jobId);
+      await refreshJobs();
+      toast({
+        title: "Job unsaved",
+        description: "This job has been removed from your saved list."
+      });
     } catch (error) {
-      console.error("Error getting saved jobs:", error);
-      return [];
+      console.error("Error unsaving job:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to unsave job."
+      });
     }
   };
 
-  const toggleLike = (jobId: string, userId: string) => {
-    try {
-      // Update local state
-      setJobs(prevJobs => prevJobs.map(job => {
-        if (job.id !== jobId) return job;
-        
-        const likes = job.likes || [];
-        const userLiked = likes.includes(userId);
-        
-        return {
-          ...job,
-          likes: userLiked
-            ? likes.filter(id => id !== userId)
-            : [...likes, userId]
-        };
-      }));
-      
-      // In a real scenario, this would update the database
-      const mockJobIndex = mockJobs.findIndex(job => job.id === jobId);
-      if (mockJobIndex !== -1) {
-        if (!mockJobs[mockJobIndex].likes) {
-          mockJobs[mockJobIndex].likes = [];
-        }
-        
-        const userLiked = mockJobs[mockJobIndex].likes.includes(userId);
-        
-        if (userLiked) {
-          mockJobs[mockJobIndex].likes = mockJobs[mockJobIndex].likes.filter(id => id !== userId);
-        } else {
-          mockJobs[mockJobIndex].likes.push(userId);
-        }
-      }
-    } catch (error) {
-      console.error("Error toggling like:", error);
-    }
+  const value: JobContextType = {
+    jobs,
+    userJobs,
+    filteredJobs,
+    setFilteredJobs,
+    popularJobs,
+    getJobById,
+    loading,
+    addComment,
+    addReply,
+    refreshJobs,
+    saveJob,
+    unsaveJob,
+    savedJobs,
+    deleteComment
   };
 
   return (
-    <JobContext.Provider
-      value={{
-        jobs,
-        loading,
-        createJob,
-        updateJob,
-        deleteJob,
-        addComment,
-        addReplyToComment,
-        getJob,
-        toggleSavedJob,
-        getSavedJobs,
-        toggleLike,
-        savedJobs,
-        loadJobs
-      }}
-    >
+    <JobContext.Provider value={value}>
       {children}
     </JobContext.Provider>
   );

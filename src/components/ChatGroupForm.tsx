@@ -33,7 +33,7 @@ export const ChatGroupForm = ({ onClose }: { onClose: () => void }) => {
     setSelectedUsers(prev => prev.filter(user => user.id !== userId));
   };
   
-  const handleCreateGroup = () => {
+  const handleCreateGroup = async () => {
     if (selectedUsers.length < 1) {
       toast({
         variant: "destructive",
@@ -47,7 +47,7 @@ export const ChatGroupForm = ({ onClose }: { onClose: () => void }) => {
     const participantIds = selectedUsers.map(user => user.id);
     
     // Crear el chat grupal
-    createChat(participantIds, groupName || undefined);
+    await createChat(participantIds, groupName || "Nuevo grupo");
     
     toast({
       title: "Chat creado",

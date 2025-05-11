@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
-import { useChat } from '@/contexts/ChatContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -41,6 +40,7 @@ export const UserSelectDialog = ({
   
   const handleSelectUser = (user: UserType) => {
     if (onUserSelect) {
+      console.log("Selected user for chat:", user);
       onUserSelect(user.id);
       onOpenChange(false);
     }

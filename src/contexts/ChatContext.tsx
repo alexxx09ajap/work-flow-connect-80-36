@@ -1,8 +1,10 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { ChatType, MessageType, UserType } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import io, { Socket } from 'socket.io-client';
+import { chatService } from '@/services/api';
 
 // Context Type
 export interface ChatContextType {
@@ -123,20 +125,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoadingChats(true);
     
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch('http://localhost:5000/api/chats', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error loading chats');
-      }
-      
-      const data = await response.json();
-      setChats(data);
+      const chatsData = await chatService.getChats();
+      console.log("Loaded chats:", chatsData);
+      setChats(chatsData);
     } catch (error) {
       console.error('Error loading chats:', error);
       toast({
@@ -154,28 +145,23 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentUser) return;
     
     try {
-      const token = localStorage.getItem('token');
+      // Create the chat based on whether it's a group or private chat
+      const isGroup = participantIds.length > 1 || name;
+      let newChat;
       
-      const response = await fetch('http://localhost:5000/api/chats', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          participants: participantIds,
-          name: name || '',
-          isGroup: participantIds.length > 1
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error creating chat');
+      if (isGroup) {
+        newChat = await chatService.createGroupChat(name || "Nuevo grupo", participantIds);
+      } else {
+        newChat = await chatService.createPrivateChat(participantIds[0]);
       }
       
-      const newChat = await response.json();
+      console.log("Created chat:", newChat);
       
-      setChats((prev) => [...prev, newChat]);
+      // Add the new chat to the state
+      setChats(prev => [...prev, newChat]);
+      
+      // Set as active chat
+      setActiveChat(newChat);
       
       return newChat;
     } catch (error) {
@@ -194,7 +180,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Filter for non-group chats that include both the current user and the target user
     return chats.find(chat => 
-      !chat.isGroup && chat.participants.includes(userId) && chat.participants.includes(currentUser.id)
+      !chat.isGroup && 
+      chat.participants && 
+      chat.participants.includes(userId) && 
+      chat.participants.includes(currentUser.id)
     );
   };
 
@@ -203,25 +192,30 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentUser || !socket) return;
     
     try {
-      const token = localStorage.getItem('token');
+      const message = await chatService.sendMessage(chatId, content);
       
-      const response = await fetch('http://localhost:5000/api/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          chatId,
-          content
-        })
-      });
+      console.log("Sent message:", message);
       
-      if (!response.ok) {
-        throw new Error('Error sending message');
-      }
+      // Add message to local state if the socket doesn't handle it immediately
+      setMessages((prev) => ({
+        ...prev,
+        [chatId]: [...(prev[chatId] || []), message]
+      }));
       
-      // No need to handle the response here as the socket will emit a chat:message event
+      // Update chat lastMessage
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.id === chatId
+            ? {
+                ...chat,
+                lastMessage: {
+                  content: message.content,
+                  timestamp: message.createdAt
+                }
+              }
+            : chat
+        )
+      );
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -242,18 +236,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentUser) return;
     
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`http://localhost:5000/api/chats/${chatId}/read`, {
+      // This endpoint would need to be implemented in your backend
+      await fetch(`http://localhost:5000/api/chats/${chatId}/read`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
-      if (!response.ok) {
-        throw new Error('Error marking messages as read');
-      }
     } catch (error) {
       console.error('Error marking messages as read:', error);
     }
@@ -264,18 +253,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentUser) return;
     
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`http://localhost:5000/api/chats/${chatId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error deleting chat');
-      }
+      await chatService.deleteChat(chatId);
       
       // Remove chat from state
       setChats((prev) => prev.filter(chat => chat.id !== chatId));
@@ -304,22 +282,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentUser) return false;
     
     try {
-      const token = localStorage.getItem('token');
+      await chatService.addUsersToChat(chatId, [userId]);
       
-      const response = await fetch(`http://localhost:5000/api/chats/${chatId}/participants`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ userId })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error adding participant');
-      }
-      
-      // Update chat in state
+      // Update chat in state by reloading chats
       loadChats();
       
       toast({
@@ -351,36 +316,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     try {
-      const token = localStorage.getItem('token');
+      const newChat = await chatService.createPrivateChat(userId);
       
-      const response = await fetch('http://localhost:5000/api/chats', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          participants: [userId],
-          isGroup: false
-        })
+      // Add the new chat to the state
+      setChats(prev => [...prev, newChat]);
+      
+      // Set as active chat
+      setActiveChat(newChat);
+      
+      toast({
+        title: "Chat creado",
+        description: "Se ha iniciado un nuevo chat privado"
       });
       
-      if (!response.ok) {
-        throw new Error('Error creating chat');
-      }
-      
-      const newChat = await response.json();
-      
-      // Make sure the new chat has a messages array
-      const chatWithMessages = {
-        ...newChat,
-        messages: []
-      };
-      
-      setChats(prev => [...prev, chatWithMessages]);
-      setActiveChat(chatWithMessages);
-      
-      return chatWithMessages;
+      return newChat;
     } catch (error) {
       console.error('Error creating private chat:', error);
       toast({
