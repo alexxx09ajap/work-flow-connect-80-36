@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { ChatType, MessageType, UserType } from '@/types';
@@ -8,6 +7,7 @@ import io, { Socket } from 'socket.io-client';
 // Context Type
 export interface ChatContextType {
   createChat: (participantIds: string[], name?: string) => void;
+  createPrivateChat: (userId: string) => Promise<ChatType | undefined>;
   sendMessage: (chatId: string, content: string) => void;
   deleteChat: (chatId: string) => void;
   setActiveChat: (chat: ChatType | null) => void;
@@ -18,7 +18,7 @@ export interface ChatContextType {
   chats: ChatType[];
   onlineUsers: string[];
   loadingChats: boolean;
-  addParticipantToChat: (chatId: string, userId: string) => void;
+  addParticipantToChat: (chatId: string, userId: string) => Promise<boolean>;
   loadChats: () => void;
 }
 
@@ -300,8 +300,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Add a participant to a group chat
-  const addParticipantToChat = async (chatId: string, userId: string) => {
-    if (!currentUser) return;
+  const addParticipantToChat = async (chatId: string, userId: string): Promise<boolean> => {
+    if (!currentUser) return false;
     
     try {
       const token = localStorage.getItem('token');
@@ -326,6 +326,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: "Participante agregado",
         description: "El usuario ha sido agregado al chat exitosamente"
       });
+      
+      return true;
     } catch (error) {
       console.error('Error adding participant:', error);
       toast({
@@ -333,6 +335,60 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: "Error",
         description: "No se pudo agregar el participante"
       });
+      return false;
+    }
+  };
+
+  // Create a new private chat
+  const createPrivateChat = async (userId: string): Promise<ChatType | undefined> => {
+    if (!currentUser) return undefined;
+    
+    // Check if a chat already exists with this user
+    const existingChat = findExistingPrivateChat(userId);
+    if (existingChat) {
+      setActiveChat(existingChat);
+      return existingChat;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch('http://localhost:5000/api/chats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          participants: [userId],
+          isGroup: false
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error creating chat');
+      }
+      
+      const newChat = await response.json();
+      
+      // Make sure the new chat has a messages array
+      const chatWithMessages = {
+        ...newChat,
+        messages: []
+      };
+      
+      setChats(prev => [...prev, chatWithMessages]);
+      setActiveChat(chatWithMessages);
+      
+      return chatWithMessages;
+    } catch (error) {
+      console.error('Error creating private chat:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo crear el chat privado"
+      });
+      return undefined;
     }
   };
 
@@ -340,6 +396,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <ChatContext.Provider
       value={{
         createChat,
+        createPrivateChat,
         sendMessage,
         deleteChat,
         setActiveChat,

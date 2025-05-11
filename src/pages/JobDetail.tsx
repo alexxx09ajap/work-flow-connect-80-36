@@ -1,317 +1,153 @@
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import MainLayout from '@/components/Layout/MainLayout';
-import { useJobs } from '@/contexts/JobContext';
+import { useJob } from '@/contexts/JobContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
 import { useData } from '@/contexts/DataContext';
-import { Button } from '@/components/ui/button';
+import MainLayout from '@/components/Layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Textarea } from '@/components/ui/textarea';
-import { MessageCircle, Calendar, DollarSign, User, Heart, Bookmark } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from '@/components/ui/use-toast';
-import { CommentItem } from '@/components/Comments/CommentItem';
+import { Loader2 } from 'lucide-react';
 
 const JobDetail = () => {
-  const { jobId } = useParams<{ jobId: string }>();
-  const navigate = useNavigate();
-  const { getJob, addComment, toggleSavedJob, toggleLike, savedJobs } = useJobs();
+  const { jobId } = useParams();
+  const { getJobById } = useJob();
   const { currentUser } = useAuth();
-  const { findExistingPrivateChat, createPrivateChat } = useChat();
   const { getUserById } = useData();
-  const [commentText, setCommentText] = useState('');
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const chat = useChat();
+  const navigate = useNavigate();
+  const [job, setJob] = useState(null);
+  const [owner, setOwner] = useState(null);
+  const [loading, setLoading] = useState(true);
   
-  const job = jobId ? getJob(jobId) : undefined;
-  const jobOwner = job ? getUserById(job.userId) : undefined;
-  const isJobSaved = job && savedJobs.includes(job.id);
-  const hasUserLiked = job && currentUser ? job.likes.includes(currentUser.id) : false;
+  useEffect(() => {
+    const loadJob = async () => {
+      if (!jobId) return;
+      
+      setLoading(true);
+      
+      try {
+        const jobData = await getJobById(jobId);
+        
+        if (jobData) {
+          setJob(jobData);
+          
+          const ownerData = await getUserById(jobData.userId);
+          setOwner(ownerData);
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "No se encontró la propuesta"
+          });
+          navigate('/jobs');
+        }
+      } catch (error) {
+        console.error("Error fetching job:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudo cargar la propuesta"
+        });
+        navigate('/jobs');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadJob();
+  }, [jobId, getJobById, getUserById, navigate]);
+  
+  // Update the contact function to use createPrivateChat
+  const handleContactOwner = async () => {
+    if (job && chat.createPrivateChat) {
+      await chat.createPrivateChat(job.userId);
+      navigate('/chats');
+    }
+  };
+  
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center h-full">
+          <Loader2 className="mr-2 h-8 w-8 animate-spin" />
+          <p className="mt-2">Cargando detalles de la propuesta...</p>
+        </div>
+      </MainLayout>
+    );
+  }
   
   if (!job) {
     return (
       <MainLayout>
-        <div className="text-center py-12">
-          <h2 className="text-xl font-semibold">Propuesta no encontrada</h2>
-          <p className="text-gray-600 mt-2">La propuesta que estás buscando no existe o ha sido eliminada.</p>
-          <Button className="mt-4" onClick={() => navigate('/jobs')}>
-            Ver todas las propuestas
+        <div className="flex flex-col items-center justify-center h-full">
+          <h2 className="text-2xl font-semibold">Propuesta no encontrada</h2>
+          <p className="mt-2">La propuesta que estás buscando no existe o ha sido eliminada.</p>
+          <Button onClick={() => navigate('/jobs')} className="mt-4">
+            Volver a la lista de propuestas
           </Button>
         </div>
       </MainLayout>
     );
   }
-
-  const handleContactClick = async () => {
-    if (!currentUser || !job) return;
-    
-    try {
-      const existingChat = findExistingPrivateChat(job.userId);
-      
-      if (existingChat) {
-        navigate('/chats');
-        toast({
-          title: "Chat existente",
-          description: `Continuando conversación con ${jobOwner?.name || 'usuario'}`
-        });
-      } else {
-        await createPrivateChat(job.userId);
-        navigate('/chats');
-        toast({
-          title: "Chat iniciado",
-          description: `Has iniciado una conversación con ${jobOwner?.name || 'usuario'}`
-        });
-      }
-    } catch (error) {
-      console.error("Error al iniciar chat:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo iniciar el chat. Inténtalo de nuevo."
-      });
-    }
-  };
-
-  const handleSubmitComment = async () => {
-    if (!commentText.trim() || !currentUser) return;
-    
-    setIsSubmittingComment(true);
-    try {
-      await addComment(job.id, commentText, currentUser);
-      setCommentText('');
-      toast({
-        title: "Comentario enviado",
-        description: "Tu comentario ha sido publicado correctamente"
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo enviar el comentario"
-      });
-    } finally {
-      setIsSubmittingComment(false);
-    }
-  };
-
-  const handleToggleSave = () => {
-    if (!currentUser || !job) return;
-    
-    toggleSavedJob(job.id, currentUser.id);
-    toast({
-      title: isJobSaved ? "Propuesta eliminada de guardados" : "Propuesta guardada",
-      description: isJobSaved 
-        ? "La propuesta ha sido eliminada de tus guardados" 
-        : "La propuesta ha sido añadida a tus guardados"
-    });
-  };
-
-  const handleToggleLike = () => {
-    if (!currentUser || !job) return;
-    
-    toggleLike(job.id, currentUser.id);
-  };
-
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  };
-
-  const formatTime = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('es-ES', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
+  
   return (
     <MainLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-gray-200">
-          <div>
-            <h1 className="text-2xl font-bold">{job.title}</h1>
-            <p className="text-gray-600 mt-1">
-              Publicado por {job.userName} • {formatDate(job.timestamp)}
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Badge className={`
-              ${job.status === 'open' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 
-                job.status === 'in-progress' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' : 
-                'bg-gray-100 text-gray-800 hover:bg-gray-200'}
-            `}>
-              {job.status === 'open' ? 'Abierto' : 
-               job.status === 'in-progress' ? 'En progreso' : 
-               'Completado'}
-            </Badge>
-            
-            {currentUser && (
-              <>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={handleToggleLike}
-                  className={hasUserLiked ? "text-red-500" : "text-gray-400"}
-                >
-                  <Heart className={`h-5 w-5 ${hasUserLiked ? "fill-red-500" : ""}`} />
-                </Button>
-                
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={handleToggleSave}
-                  className={isJobSaved ? "text-wfc-purple" : "text-gray-400"}
-                >
-                  <Bookmark className={`h-5 w-5 ${isJobSaved ? "fill-wfc-purple" : ""}`} />
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-        
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Descripción</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-700 whitespace-pre-line">{job.description}</p>
-                
-                <div className="mt-6">
-                  <h3 className="font-medium mb-2">Habilidades requeridas</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {job.skills.map((skill, index) => (
-                      <Badge key={index} variant="outline" className="bg-gray-50">
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="mt-4 flex items-center">
-                  <Heart className={`h-5 w-5 mr-1 ${job.likes.length > 0 ? "text-red-500 fill-red-500" : "text-gray-400"}`} />
-                  <span className="text-sm">{job.likes.length} {job.likes.length === 1 ? "like" : "likes"}</span>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Comentarios</CardTitle>
-                <CardDescription>
-                  {job.comments.length === 0 ? 'No hay comentarios aún' : `${job.comments.length} comentarios`}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {job.comments.length > 0 && (
-                  <div className="space-y-4 mb-6">
-                    {job.comments.map((comment) => (
-                      <CommentItem key={comment.id} comment={comment} jobId={job.id} />
-                    ))}
-                  </div>
-                )}
-                
-                {currentUser && job.status === 'open' && (
-                  <div className="space-y-4">
-                    <Separator />
-                    <h3 className="text-sm font-medium">Deja un comentario</h3>
-                    <Textarea
-                      placeholder="Escribe tu comentario aquí..."
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      className="min-h-[100px]"
-                    />
-                    <Button 
-                      onClick={handleSubmitComment} 
-                      disabled={isSubmittingComment || !commentText.trim()}
-                      className="bg-wfc-purple hover:bg-wfc-purple-medium"
-                    >
-                      {isSubmittingComment ? 'Enviando...' : 'Enviar comentario'}
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Detalles de la propuesta</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center">
-                  <DollarSign className="h-5 w-5 text-gray-500 mr-2" />
-                  <div>
-                    <h4 className="text-sm text-gray-600">Presupuesto</h4>
-                    <p className="font-medium">${job.budget}</p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <Calendar className="h-5 w-5 text-gray-500 mr-2" />
-                  <div>
-                    <h4 className="text-sm text-gray-600">Fecha de publicación</h4>
-                    <p className="font-medium">{formatDate(job.timestamp)}</p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 mr-2">
-                    {job.category}
-                  </Badge>
-                  <span className="text-sm text-gray-600">Categoría</span>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Cliente</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <Avatar>
-                    <AvatarImage src={job.userPhoto} alt={job.userName} />
-                    <AvatarFallback className="bg-wfc-purple-medium text-white">
-                      {job.userName?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
+      <div className="flex justify-center">
+        <Card className="w-full max-w-3xl">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold">{job.title}</CardTitle>
+            <CardDescription>
+              {owner ? (
+                <div className="flex items-center mt-2">
+                  <Avatar className="mr-2 h-8 w-8">
+                    <AvatarImage src={owner.photoURL} alt={owner.name} />
+                    <AvatarFallback>{owner.name?.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
-                  <div>
-                    <p className="font-medium">{job.userName}</p>
-                  </div>
+                  <span>
+                    Publicado por {owner.name}
+                  </span>
                 </div>
-                
-                {currentUser && currentUser.id !== job.userId && (
-                  <Button
-                    variant="outline"
-                    className="w-full mt-2 border-wfc-purple text-wfc-purple hover:bg-wfc-purple/10"
-                    onClick={handleContactClick}
-                  >
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Contactar
-                  </Button>
-                )}
-                
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => navigate(`/user/${job.userId}`)}
-                >
-                  <User className="h-4 w-4 mr-2" />
-                  Ver perfil
+              ) : (
+                <span>Publicado por un usuario desconocido</span>
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold">Descripción</h3>
+              <p>{job.description}</p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold">Categoría</h3>
+              <Badge variant="secondary">{job.category}</Badge>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold">Habilidades requeridas</h3>
+              <div className="flex flex-wrap gap-2">
+                {job.skills.map((skill, index) => (
+                  <Badge key={index} variant="outline">{skill}</Badge>
+                ))}
+              </div>
+            </div>
+            <div className="text-xl font-semibold">
+              Presupuesto: ${job.budget}
+            </div>
+            <div className="flex justify-end space-x-2">
+              {currentUser && job.userId !== currentUser.id && (
+                <Button onClick={handleContactOwner} className="bg-wfc-purple hover:bg-wfc-purple-medium text-white">
+                  Contactar
                 </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+              )}
+              <Button variant="outline" onClick={() => navigate('/jobs')}>
+                Volver
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </MainLayout>
   );

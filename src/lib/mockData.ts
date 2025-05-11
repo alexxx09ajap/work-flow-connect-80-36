@@ -1,162 +1,108 @@
+import { JobType, UserType } from "@/types";
 
-import { JobType } from '@/contexts/JobContext';
-import { UserType, ChatType, MessageType } from '@/types';
-
-// Job categories
-export const JOB_CATEGORIES = [
-  "Diseño Web", "Desarrollo Frontend", "Desarrollo Backend", "Aplicaciones Móviles",
-  "UX/UI", "Marketing Digital", "SEO", "Redacción de Contenido", "Traducción", 
-  "Edición de Video", "Ilustración", "Análisis de Datos", "Administración de Sistemas",
-  "Soporte Técnico"
-];
-
-// Skills list
-export const SKILLS_LIST = [
-  "HTML", "CSS", "JavaScript", "TypeScript", "React", "Angular", "Vue.js", "Node.js", 
-  "PHP", "Python", "Ruby", "Java", "Swift", "Kotlin", "Flutter", "React Native",
-  "AWS", "Docker", "Kubernetes", "SQL", "MongoDB", "Firebase", "GraphQL", "REST API",
-  "WordPress", "Shopify", "Figma", "Adobe XD", "Photoshop", "Illustrator", "After Effects",
-  "SEO", "Google Ads", "Facebook Ads", "Email Marketing", "Content Writing", "Copywriting",
-  "Data Analysis", "Excel", "Power BI", "Tableau", "Machine Learning", "AI"
-];
-
-// Mock users
-export const MOCK_USERS: UserType[] = [
+export const mockUsers: UserType[] = [
   {
-    id: "1",
-    name: "Ana García",
-    email: "ana@example.com",
-    photoURL: "https://randomuser.me/api/portraits/women/1.jpg",
-    role: "freelancer",
-    bio: "Diseñadora web con 5 años de experiencia especializada en UX/UI",
-    skills: ["HTML", "CSS", "JavaScript", "React", "Figma"],
-    hourlyRate: 25,
+    id: '101',
+    name: 'Alice Johnson',
+    email: 'alice.johnson@example.com',
+    photoURL: 'https://randomuser.me/api/portraits/women/1.jpg',
+    bio: 'Web Developer specializing in React and Node.js.',
+    location: 'San Francisco, CA',
+    skills: ['React', 'Node.js', 'JavaScript', 'HTML', 'CSS'],
     isOnline: true
   },
   {
-    id: "2",
-    name: "Luis Méndez",
-    email: "luis@example.com",
-    photoURL: "https://randomuser.me/api/portraits/men/2.jpg",
-    role: "freelancer",
-    bio: "Desarrollador Full Stack con experiencia en aplicaciones React y Node.js",
-    skills: ["JavaScript", "React", "Node.js", "MongoDB", "Express"],
-    hourlyRate: 30,
+    id: '102',
+    name: 'Bob Williams',
+    email: 'bob.williams@example.com',
+    photoURL: 'https://randomuser.me/api/portraits/men/2.jpg',
+    bio: 'Mobile App Developer experienced in iOS and Android development.',
+    location: 'New York, NY',
+    skills: ['Swift', 'Kotlin', 'React Native', 'Java'],
     isOnline: false
   },
   {
-    id: "3",
-    name: "Sofía Torres",
-    email: "sofia@example.com",
-    photoURL: "https://randomuser.me/api/portraits/women/3.jpg",
-    role: "client",
-    bio: "Dueña de startup de tecnología buscando developers talentosos",
+    id: '103',
+    name: 'Charlie Brown',
+    email: 'charlie.brown@example.com',
+    photoURL: 'https://randomuser.me/api/portraits/men/3.jpg',
+    bio: 'Data Scientist passionate about machine learning and AI.',
+    location: 'Seattle, WA',
+    skills: ['Python', 'Machine Learning', 'TensorFlow', 'Data Analysis'],
+    isOnline: true
+  },
+  {
+    id: '104',
+    name: 'Diana Miller',
+    email: 'diana.miller@example.com',
+    photoURL: 'https://randomuser.me/api/portraits/women/4.jpg',
+    bio: 'UI/UX Designer focused on creating intuitive and engaging user experiences.',
+    location: 'Los Angeles, CA',
+    skills: ['UI Design', 'UX Design', 'Figma', 'Adobe XD'],
+    isOnline: false
+  },
+  {
+    id: '105',
+    name: 'Ethan Davis',
+    email: 'ethan.davis@example.com',
+    photoURL: 'https://randomuser.me/api/portraits/men/5.jpg',
+    bio: 'Project Manager with a proven track record of delivering successful projects on time and within budget.',
+    location: 'Chicago, IL',
+    skills: ['Project Management', 'Agile', 'Scrum', 'Leadership'],
     isOnline: true
   }
 ];
 
-// Mock jobs
-export const MOCK_JOBS: JobType[] = [
+// Update job objects to match JobType interface by removing createdAt
+export const mockJobs: JobType[] = [
   {
-    id: "1",
-    title: "Desarrollo de landing page para startup",
-    description: "Necesito una landing page moderna y responsive que convierta visitantes en leads. Debe tener formulario de contacto, integración con MailChimp y optimización SEO.",
-    budget: 500,
-    category: "Desarrollo Frontend",
-    skills: ["HTML", "CSS", "JavaScript", "React"],
-    status: "open",
-    userId: "3",
-    createdAt: new Date(2025, 3, 15),
+    id: '1',
+    title: 'Diseño de sitio web para empresa de tecnología',
+    description: 'Necesitamos un diseñador web para crear un sitio moderno y responsive para nuestra startup de tecnología...',
+    budget: 1500,
+    category: 'Diseño Web',
+    skills: ['HTML', 'CSS', 'JavaScript'],
+    status: 'open',
+    userId: '101'
   },
   {
-    id: "2",
-    title: "Rediseño de interfaz de usuario para app móvil",
-    description: "Buscamos rediseñar la interfaz de nuestra aplicación móvil de fitness para mejorar la experiencia de usuario y aumentar la retención. Necesitamos mockups en Figma y colaboración con nuestro equipo de desarrollo.",
-    budget: 800,
-    category: "UX/UI",
-    skills: ["Figma", "UX Design", "UI Design", "Mobile Design"],
-    status: "open",
-    userId: "3",
-    createdAt: new Date(2025, 3, 18),
-  }
-];
-
-// Mock chats
-export const MOCK_CHATS: ChatType[] = [
-  {
-    id: "1",
-    name: "",
-    isGroup: false,
-    participants: ["1", "3"],
-    lastMessage: {
-      content: "Me interesa tu perfil para el proyecto",
-      timestamp: Date.now() - 3600000 // 1 hour ago
-    }
+    id: '2',
+    title: 'Desarrollo de aplicación móvil para iOS y Android',
+    description: 'Buscamos un desarrollador de aplicaciones móviles con experiencia en React Native para crear una aplicación para iOS y Android...',
+    budget: 3000,
+    category: 'Desarrollo Móvil',
+    skills: ['React Native', 'JavaScript', 'iOS', 'Android'],
+    status: 'in progress',
+    userId: '102'
   },
   {
-    id: "2",
-    name: "Proyecto Landing Page",
-    isGroup: true,
-    participants: ["1", "2", "3"],
-    lastMessage: {
-      content: "¿Cuándo podemos tener una reunión para discutir los detalles?",
-      timestamp: Date.now() - 86400000 // 1 day ago
-    }
+    id: '3',
+    title: 'Análisis de datos y creación de modelos de machine learning',
+    description: 'Requerimos un científico de datos para analizar nuestros datos y crear modelos de machine learning para mejorar nuestras predicciones...',
+    budget: 2500,
+    category: 'Ciencia de Datos',
+    skills: ['Python', 'Machine Learning', 'TensorFlow', 'Data Analysis'],
+    status: 'completed',
+    userId: '103'
+  },
+  {
+    id: '4',
+    title: 'Diseño de interfaz de usuario (UI) y experiencia de usuario (UX)',
+    description: 'Estamos buscando un diseñador de UI/UX para crear una interfaz de usuario intuitiva y atractiva para nuestra aplicación web...',
+    budget: 1200,
+    category: 'Diseño UI/UX',
+    skills: ['UI Design', 'UX Design', 'Figma', 'Adobe XD'],
+    status: 'open',
+    userId: '104'
+  },
+  {
+    id: '5',
+    title: 'Gestión de proyecto para el desarrollo de software',
+    description: 'Necesitamos un gestor de proyecto para liderar el desarrollo de nuestro nuevo software, asegurando que se entregue a tiempo y dentro del presupuesto...',
+    budget: 4000,
+    category: 'Gestión de Proyectos',
+    skills: ['Project Management', 'Agile', 'Scrum', 'Leadership'],
+    status: 'in progress',
+    userId: '105'
   }
 ];
-
-// Mock messages
-export const MOCK_MESSAGES: Record<string, MessageType[]> = {
-  "1": [
-    {
-      id: "101",
-      content: "Hola Ana, me interesa tu perfil para el proyecto de landing page",
-      timestamp: Date.now() - 7200000, // 2 hours ago
-      senderId: "3",
-      senderName: "Sofía Torres",
-      read: true
-    },
-    {
-      id: "102",
-      content: "Hola Sofía, gracias por contactarme. Me encantaría saber más sobre el proyecto",
-      timestamp: Date.now() - 3600000, // 1 hour ago
-      senderId: "1",
-      senderName: "Ana García",
-      read: true
-    },
-    {
-      id: "103",
-      content: "Me interesa tu perfil para el proyecto",
-      timestamp: Date.now() - 3600000, // 1 hour ago
-      senderId: "3",
-      senderName: "Sofía Torres",
-      read: false
-    }
-  ],
-  "2": [
-    {
-      id: "201",
-      content: "Bienvenidos al grupo del proyecto de landing page",
-      timestamp: Date.now() - 172800000, // 2 days ago
-      senderId: "3",
-      senderName: "Sofía Torres",
-      read: true
-    },
-    {
-      id: "202",
-      content: "Gracias por incluirme, estoy emocionado por colaborar",
-      timestamp: Date.now() - 162800000, // 45 hours ago
-      senderId: "2",
-      senderName: "Luis Méndez",
-      read: true
-    },
-    {
-      id: "203",
-      content: "¿Cuándo podemos tener una reunión para discutir los detalles?",
-      timestamp: Date.now() - 86400000, // 1 day ago
-      senderId: "1",
-      senderName: "Ana García",
-      read: false
-    }
-  ]
-};

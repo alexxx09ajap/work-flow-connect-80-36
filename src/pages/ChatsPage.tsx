@@ -3,7 +3,7 @@ import MainLayout from '@/components/Layout/MainLayout';
 import { useChat } from '@/contexts/ChatContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,7 +13,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Send, 
-  Plus, 
   UserPlus, 
   Users, 
   Search, 
@@ -25,6 +24,7 @@ import {
 import { ChatGroupForm } from '@/components/ChatGroupForm';
 import { UserSelectDialog } from '@/components/UserSelectDialog';
 import { toast } from '@/components/ui/use-toast';
+import { ChatType, MessageType } from '@/types';
 
 const ChatsPage = () => {
   const { 
@@ -36,7 +36,8 @@ const ChatsPage = () => {
     createPrivateChat,
     addParticipantToChat,
     loadChats,
-    loadingChats
+    loadingChats,
+    getMessages
   } = useChat();
   const { currentUser } = useAuth();
   const { getUserById } = useData();
@@ -48,9 +49,12 @@ const ChatsPage = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
+  // Get messages for the active chat
+  const activeMessages = activeChat ? getMessages(activeChat.id) : [];
+  
   useEffect(() => {
     scrollToBottom();
-  }, [activeChat?.messages?.length]);
+  }, [activeMessages.length]);
   
   useEffect(() => {
     if (currentUser) {
@@ -63,7 +67,7 @@ const ChatsPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
   
-  const getChatName = (chat) => {
+  const getChatName = (chat: ChatType) => {
     if (chat.name) return chat.name;
     
     if (!chat.isGroup && currentUser) {
@@ -77,7 +81,7 @@ const ChatsPage = () => {
     return 'Chat';
   };
   
-  const getChatAvatar = (chat) => {
+  const getChatAvatar = (chat: ChatType) => {
     if (!chat.isGroup && currentUser) {
       const otherUserId = chat.participants.find((id) => id !== currentUser.id);
       if (otherUserId) {
@@ -88,7 +92,7 @@ const ChatsPage = () => {
     return undefined;
   };
   
-  const getAvatarFallback = (chat) => {
+  const getAvatarFallback = (chat: ChatType) => {
     const name = getChatName(chat);
     return name.charAt(0).toUpperCase();
   };
@@ -100,8 +104,8 @@ const ChatsPage = () => {
     setMessageText('');
   };
   
-  const handleCreatePrivateChat = (userId: string) => {
-    createPrivateChat(userId);
+  const handleCreatePrivateChat = async (userId: string) => {
+    await createPrivateChat(userId);
     toast({
       title: "Chat creado",
       description: "Se ha iniciado un nuevo chat privado"
@@ -126,7 +130,7 @@ const ChatsPage = () => {
     }
   };
   
-  const formatTime = (timestamp) => {
+  const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('es-ES', {
       hour: '2-digit',
@@ -134,7 +138,7 @@ const ChatsPage = () => {
     });
   };
 
-  const formatDate = (timestamp) => {
+  const formatDate = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleDateString('es-ES', {
       year: 'numeric',
@@ -143,7 +147,7 @@ const ChatsPage = () => {
     });
   };
   
-  const isUserOnline = (userId) => onlineUsers.includes(userId);
+  const isUserOnline = (userId?: string) => userId ? onlineUsers.includes(userId) : false;
 
   const filteredChats = chats.filter(chat => 
     getChatName(chat).toLowerCase().includes(searchQuery.toLowerCase())
@@ -156,6 +160,7 @@ const ChatsPage = () => {
   return (
     <MainLayout>
       <div className="h-[calc(100vh-8rem)] flex">
+        {/* Left sidebar - chat list */}
         <div className={`relative transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'w-0 opacity-0' : 'w-full md:w-80 lg:w-96'}`}>
           {!sidebarCollapsed && (
             <Card className="h-full flex flex-col">
@@ -292,6 +297,7 @@ const ChatsPage = () => {
                 )}
               </ScrollArea>
               
+              {/* Update connection button */}
               <div className="p-4 border-t">
                 <Button 
                   variant="outline" 
@@ -312,6 +318,7 @@ const ChatsPage = () => {
             </Card>
           )}
           
+          {/* Sidebar toggle button */}
           <button 
             onClick={toggleSidebar}
             className="absolute -right-4 top-1/2 transform -translate-y-1/2 bg-wfc-purple text-white rounded-full h-8 w-8 flex items-center justify-center shadow-md z-10 hover:bg-wfc-purple-medium transition-colors"
@@ -321,10 +328,12 @@ const ChatsPage = () => {
           </button>
         </div>
         
+        {/* Main chat area */}
         <div className={`flex-1 transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'ml-0' : 'ml-4'}`}>
           <Card className="h-full flex flex-col">
             {activeChat ? (
               <>
+                {/* Chat header */}
                 <div className="p-4 border-b flex items-center space-x-3">
                   {sidebarCollapsed && (
                     <Button 
@@ -372,15 +381,16 @@ const ChatsPage = () => {
                   )}
                 </div>
                 
+                {/* Messages area */}
                 <ScrollArea id="messages-container" className="flex-1 p-4">
-                  {activeChat.messages.length === 0 ? (
+                  {activeMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
                       <p className="text-gray-500">No hay mensajes aún</p>
                       <p className="text-sm text-gray-400 mt-2">Envía un mensaje para iniciar la conversación</p>
                     </div>
                   ) : (
                     <div className="space-y-6">
-                      {activeChat.messages.map((message, index, messages) => {
+                      {activeMessages.map((message, index, messages) => {
                         const isCurrentUser = currentUser && message.senderId === currentUser.id;
                         const isSystemMessage = message.senderId === "system";
                         const sender = isSystemMessage ? null : getUserById(message.senderId);
@@ -444,6 +454,7 @@ const ChatsPage = () => {
                   )}
                 </ScrollArea>
                 
+                {/* Message input */}
                 <div className="p-4 border-t">
                   <div className="flex space-x-2">
                     <Input
@@ -507,6 +518,7 @@ const ChatsPage = () => {
         </div>
       </div>
       
+      {/* Dialogs */}
       <Dialog open={isCreatingGroup} onOpenChange={setIsCreatingGroup}>
         <DialogContent>
           <DialogHeader>

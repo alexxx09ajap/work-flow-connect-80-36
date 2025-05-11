@@ -1,8 +1,8 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { UserType } from './AuthContext';
+import { useAuth } from './AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { MOCK_JOBS } from '@/lib/mockData'; 
+import { JobType } from '@/types';
 
 export type ReplyType = {
   id: string;
@@ -25,23 +25,7 @@ export type CommentType = {
   replies: ReplyType[];
 };
 
-export type JobType = {
-  id: string;
-  title: string;
-  description: string;
-  budget: number;
-  category: string;
-  skills: string[];
-  userId: string;
-  userName: string;
-  userPhoto?: string;
-  timestamp: number;
-  status: 'open' | 'in-progress' | 'completed';
-  comments: CommentType[];
-  likes: string[]; // Array of user IDs who liked;
-};
-
-type JobContextType = {
+export type JobContextType = {
   jobs: JobType[];
   loading: boolean;
   createJob: (jobData: Omit<JobType, 'id' | 'timestamp' | 'comments' | 'likes'>) => Promise<JobType>;

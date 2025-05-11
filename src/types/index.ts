@@ -26,21 +26,25 @@ export interface AuthState {
 
 export interface ChatType {
   id: string;
-  name: string;
+  name?: string;
   isGroup: boolean;
   participants: string[];
+  messages: MessageType[];
   lastMessage?: {
     content: string;
-    timestamp: number;
+    timestamp: string;
   };
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface MessageType {
   id: string;
   content: string;
-  timestamp: number;
   senderId: string;
-  senderName: string;
+  senderName?: string;
+  chatId: string;
+  timestamp: string;
   read: boolean;
 }
 

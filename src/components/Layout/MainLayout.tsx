@@ -49,6 +49,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   ];
   
   const handleNavigation = (path: string) => {
+    console.log("Navigating to:", path);
     navigate(path);
   };
 
