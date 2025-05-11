@@ -1,7 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { JobType } from './JobContext';
-import { MOCK_USERS, MOCK_JOBS, JOB_CATEGORIES, SKILLS_LIST } from '@/lib/mockData';
+import { userService } from '@/services/api';
+import { MOCK_JOBS, JOB_CATEGORIES, SKILLS_LIST } from '@/lib/mockData';
 
 // Make sure the UserType in DataContext matches or extends the AuthContext UserType
 export type UserType = {
@@ -45,7 +46,7 @@ export const useData = () => {
 };
 
 export const DataProvider = ({ children }: { children: React.ReactNode }) => {
-  const [users, setUsers] = useState<UserType[]>(MOCK_USERS);
+  const [users, setUsers] = useState<UserType[]>([]);
   const [jobs, setJobs] = useState<JobType[]>(MOCK_JOBS);
   const [loading, setLoading] = useState(false);
   const [jobCategories, setJobCategories] = useState<string[]>(JOB_CATEGORIES);
@@ -54,11 +55,22 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Simulamos un retardo para la carga de datos
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Load users from backend
+      const userData = await userService.getAllUsers();
       
-      // Usamos los datos simulados
-      setUsers(MOCK_USERS);
+      // Transform backend user data to match our frontend UserType
+      const transformedUsers: UserType[] = userData.map((user: any) => ({
+        id: user.id.toString(),
+        name: user.username,
+        email: user.email,
+        role: "freelancer", // Default role, could be different based on your backend
+        photoURL: user.avatar,
+        joinedAt: new Date(user.created_at).getTime()
+      }));
+      
+      setUsers(transformedUsers);
+      
+      // For now, we're still using mock data for jobs
       setJobs(MOCK_JOBS);
       setJobCategories(JOB_CATEGORIES);
       setSkillsList(SKILLS_LIST);
@@ -69,7 +81,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Cargamos los datos al inicio
+  // Load data on component mount
   useEffect(() => {
     loadData();
   }, []);

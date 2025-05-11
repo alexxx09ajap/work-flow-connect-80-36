@@ -1,0 +1,62 @@
+
+-- Users Table
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(255) NOT NULL UNIQUE,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  avatar VARCHAR(255),
+  status VARCHAR(50) DEFAULT 'offline',
+  last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Files Table
+CREATE TABLE IF NOT EXISTS files (
+  id SERIAL PRIMARY KEY,
+  filename VARCHAR(255) NOT NULL,
+  content_type VARCHAR(100) NOT NULL,
+  size INTEGER NOT NULL,
+  data BYTEA NOT NULL,
+  uploaded_by INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Chats Table
+CREATE TABLE IF NOT EXISTS chats (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255),
+  is_group_chat BOOLEAN DEFAULT FALSE,
+  admin_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  last_message_id INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Chat Participants Table (Many-to-Many)
+CREATE TABLE IF NOT EXISTS chat_participants (
+  chat_id INTEGER REFERENCES chats(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  PRIMARY KEY (chat_id, user_id)
+);
+
+-- Messages Table
+CREATE TABLE IF NOT EXISTS messages (
+  id SERIAL PRIMARY KEY,
+  chat_id INTEGER REFERENCES chats(id) ON DELETE CASCADE,
+  sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  text TEXT,
+  file_id INTEGER REFERENCES files(id) ON DELETE SET NULL,
+  read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Add foreign key constraint for last_message_id after tables exist
+ALTER TABLE chats 
+ADD CONSTRAINT fk_last_message 
+FOREIGN KEY (last_message_id) 
+REFERENCES messages(id) 
+ON DELETE SET NULL;

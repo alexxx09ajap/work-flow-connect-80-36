@@ -1,7 +1,6 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
-import { MOCK_CHATS } from '@/lib/mockData';
+import { chatService, messageService, socketService } from '@/services/api';
 import { toast } from '@/components/ui/use-toast';
 
 // Type definitions for messages and chats
@@ -47,9 +46,6 @@ export const useChat = () => {
   return context;
 };
 
-// Mock online users
-const MOCK_ONLINE_USERS = ['1', '2', '3'];
-
 interface ChatProviderProps {
   children: ReactNode;
 }
@@ -59,7 +55,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const [chats, setChats] = useState<ChatType[]>([]);
   const [activeChat, setActiveChat] = useState<ChatType | null>(null);
   const [loadingChats, setLoadingChats] = useState(true);
-  const [onlineUsers] = useState<string[]>(MOCK_ONLINE_USERS);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
 
   /**
    * Function to find an existing private chat with a specific user
@@ -88,21 +84,31 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   
     setLoadingChats(true);
     try {
-      // Simulamos un retardo para la carga
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Load chats from backend
+      const chatsData = await chatService.getChats();
       
-      // Filtramos los chats donde el usuario actual es participante
-      const userChats = MOCK_CHATS.filter(chat => 
-        chat.participants.includes(currentUser.id)
-      );
+      // Transform backend chat data to match our frontend ChatType
+      const transformedChats: ChatType[] = chatsData.map((chat: any) => ({
+        id: chat.id.toString(),
+        name: chat.name || '',
+        isGroup: chat.is_group_chat,
+        participants: chat.participants.map((p: any) => p.id.toString()),
+        messages: [],
+        lastMessage: chat.lastMessage ? {
+          id: chat.lastMessage.id.toString(),
+          senderId: chat.lastMessage.sender_id.toString(),
+          content: chat.lastMessage.text,
+          timestamp: new Date(chat.lastMessage.created_at).getTime()
+        } : undefined
+      }));
       
-      setChats(userChats);
+      setChats(transformedChats);
     } catch (error) {
-      console.error("Error al cargar chats:", error);
+      console.error("Error loading chats:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudieron cargar los chats. Por favor, inténtalo de nuevo."
+        description: "Could not load chats. Please try again."
       });
     } finally {
       setLoadingChats(false);
@@ -115,6 +121,122 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   useEffect(() => {
     loadChats();
   }, [currentUser]);
+
+  /**
+   * Effect to setup socket.io event listeners
+   */
+  useEffect(() => {
+    const socket = socketService.socket;
+    if (!socket || !currentUser) return;
+    
+    // Listen for online users update
+    socket.on('userStatusChanged', ({ userId, status }: { userId: string, status: string }) => {
+      setOnlineUsers(prev => {
+        if (status === 'online' && !prev.includes(userId)) {
+          return [...prev, userId];
+        } else if (status === 'offline') {
+          return prev.filter(id => id !== userId);
+        }
+        return prev;
+      });
+    });
+    
+    // Listen for new messages
+    socket.on('message', (message: any) => {
+      // Transform backend message to frontend format
+      const transformedMessage = {
+        id: message.id.toString(),
+        senderId: message.sender_id.toString(),
+        content: message.text,
+        timestamp: new Date(message.created_at).getTime()
+      };
+      
+      // Update chats with new message
+      setChats(prevChats => prevChats.map(chat => {
+        if (chat.id !== message.chat_id.toString()) return chat;
+        
+        return {
+          ...chat,
+          messages: [...chat.messages, transformedMessage],
+          lastMessage: transformedMessage
+        };
+      }));
+      
+      // If the chat is active, update its messages
+      if (activeChat && activeChat.id === message.chat_id.toString()) {
+        setActiveChat(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            messages: [...prev.messages, transformedMessage],
+            lastMessage: transformedMessage
+          };
+        });
+      }
+    });
+    
+    // Listen for new chats
+    socket.on('newChatCreated', (chat: any) => {
+      const transformedChat: ChatType = {
+        id: chat.id.toString(),
+        name: chat.name || '',
+        isGroup: chat.is_group_chat,
+        participants: chat.participants.map((p: any) => p.id.toString()),
+        messages: [],
+        lastMessage: undefined
+      };
+      
+      setChats(prev => [...prev, transformedChat]);
+    });
+    
+    // Listen for chat updates
+    socket.on('chatUpdated', (chat: any) => {
+      const transformedChat: ChatType = {
+        id: chat.id.toString(),
+        name: chat.name || '',
+        isGroup: chat.is_group_chat,
+        participants: chat.participants.map((p: any) => p.id.toString()),
+        messages: [], // We'll load messages separately when needed
+        lastMessage: chat.lastMessage ? {
+          id: chat.lastMessage.id.toString(),
+          senderId: chat.lastMessage.sender_id.toString(),
+          content: chat.lastMessage.text,
+          timestamp: new Date(chat.lastMessage.created_at).getTime()
+        } : undefined
+      };
+      
+      setChats(prev => 
+        prev.map(c => c.id === transformedChat.id ? transformedChat : c)
+      );
+      
+      // If this is the active chat, update it
+      if (activeChat && activeChat.id === transformedChat.id) {
+        // Keep the messages from the active chat
+        setActiveChat({
+          ...transformedChat,
+          messages: activeChat.messages
+        });
+      }
+    });
+    
+    // Listen for chat deletion
+    socket.on('chatDeleted', (chatId: string) => {
+      setChats(prev => prev.filter(chat => chat.id !== chatId));
+      
+      // If this was the active chat, clear it
+      if (activeChat && activeChat.id === chatId) {
+        setActiveChat(null);
+      }
+    });
+    
+    return () => {
+      socket.off('userStatusChanged');
+      socket.off('message');
+      socket.off('newChatCreated');
+      socket.off('chatUpdated');
+      socket.off('chatDeleted');
+    };
+  }, [currentUser, activeChat, socketService.socket]);
 
   /**
    * Helper function to get a specific chat by ID
@@ -130,51 +252,45 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     if (!currentUser || !content.trim()) return;
     
     try {
-      // Simulamos un retardo para el envío
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Send message to backend
+      const message = await messageService.sendMessage(chatId, content);
       
-      const newMessage: MessageType = {
-        id: `msg_${Date.now()}`,
-        senderId: currentUser.id,
-        content,
-        timestamp: Date.now()
+      // Transform backend message to frontend format
+      const transformedMessage: MessageType = {
+        id: message.id.toString(),
+        senderId: message.sender_id.toString(),
+        content: message.text,
+        timestamp: new Date(message.created_at).getTime()
       };
       
-      // Actualizamos el estado local
+      // Update local state
       setChats(prevChats => prevChats.map(chat => {
         if (chat.id !== chatId) return chat;
         
         return {
           ...chat,
-          messages: [...chat.messages, newMessage],
-          lastMessage: newMessage
+          messages: [...chat.messages, transformedMessage],
+          lastMessage: transformedMessage
         };
       }));
       
-      // En un caso real, esto actualizaría la base de datos
-      const mockChatIndex = MOCK_CHATS.findIndex(chat => chat.id === chatId);
-      if (mockChatIndex !== -1) {
-        MOCK_CHATS[mockChatIndex].messages.push(newMessage);
-        MOCK_CHATS[mockChatIndex].lastMessage = newMessage;
-      }
-      
-      // Si el chat activo es el mismo, actualizamos sus mensajes
+      // If the chat is active, update its messages
       if (activeChat && activeChat.id === chatId) {
         setActiveChat(prev => {
           if (!prev) return null;
           return {
             ...prev,
-            messages: [...prev.messages, newMessage],
-            lastMessage: newMessage
+            messages: [...prev.messages, transformedMessage],
+            lastMessage: transformedMessage
           };
         });
       }
     } catch (error) {
-      console.error("Error al enviar mensaje:", error);
+      console.error("Error sending message:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo enviar el mensaje. Por favor, inténtalo de nuevo."
+        description: "Could not send message. Please try again."
       });
     }
   };
@@ -185,39 +301,38 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const createChat = async (participantIds: string[], name = '') => {
     if (!currentUser) return;
     
-    // Ensure current user is included
-    if (!participantIds.includes(currentUser.id)) {
-      participantIds.push(currentUser.id);
-    }
-    
     try {
-      // Simulamos un retardo
-      await new Promise(resolve => setTimeout(resolve, 800));
+      let newChat;
       
-      const isGroup = participantIds.length > 2 || !!name;
+      if (name || participantIds.length > 1) {
+        // Create group chat
+        newChat = await chatService.createGroupChat(name, participantIds);
+      } else {
+        // Create private chat
+        newChat = await chatService.createPrivateChat(participantIds[0]);
+      }
       
-      const newChat: ChatType = {
-        id: `chat_${Date.now()}`,
-        name,
-        participants: participantIds,
+      // Transform backend chat to frontend format
+      const transformedChat: ChatType = {
+        id: newChat.id.toString(),
+        name: newChat.name || '',
+        isGroup: newChat.is_group_chat,
+        participants: newChat.participants.map((p: any) => p.id.toString()),
         messages: [],
-        isGroup
+        lastMessage: undefined
       };
       
-      // Actualizamos el estado local
-      setChats(prevChats => [...prevChats, newChat]);
+      // Update chats
+      setChats(prev => [...prev, transformedChat]);
       
-      // En un caso real, esto actualizaría la base de datos
-      MOCK_CHATS.push(newChat);
-      
-      // Establecemos el chat como activo
-      setActiveChat(newChat);
+      // Set the new chat as active
+      setActiveChat(transformedChat);
     } catch (error) {
-      console.error("Error al crear chat:", error);
+      console.error("Error creating chat:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo crear el chat. Por favor, inténtalo de nuevo."
+        description: "Could not create chat. Please try again."
       });
     }
   };
@@ -229,23 +344,23 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     if (!currentUser || participantId === currentUser.id) return;
     
     try {
-      // Check if a private chat already exists with this user
+      // Check if chat already exists
       const existingChat = findExistingPrivateChat(participantId);
       
       if (existingChat) {
-        // If the chat exists, set it as active
+        // If chat exists, set it as active
         setActiveChat(existingChat);
         return;
       }
       
-      // If it doesn't exist, create a new private chat
-      await createChat([currentUser.id, participantId]);
+      // Create new private chat
+      await createChat([participantId]);
     } catch (error) {
-      console.error("Error al crear chat privado:", error);
+      console.error("Error creating private chat:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo crear el chat privado. Por favor, inténtalo de nuevo."
+        description: "Could not create private chat. Please try again."
       });
     }
   };
@@ -255,51 +370,26 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
    */
   const addParticipantToChat = async (chatId: string, participantId: string) => {
     try {
-      // Check if the chat exists
-      const chat = chats.find(c => c.id === chatId);
-      if (!chat) return false;
+      // Add participant to chat
+      const updatedChat = await chatService.addUsersToChat(chatId, [participantId]);
       
-      // Check if the user is already in the chat
-      if (chat.participants.includes(participantId)) return false;
-      
-      // Simulamos un retardo
-      await new Promise(resolve => setTimeout(resolve, 600));
-      
-      // Mensaje del sistema
-      const systemMessage: MessageType = {
-        id: `msg_${Date.now()}`,
-        senderId: "system",
-        content: "Un nuevo participante se ha unido al chat",
-        timestamp: Date.now()
-      };
-      
-      // Actualizamos el estado local
-      setChats(prevChats => prevChats.map(c => {
-        if (c.id !== chatId) return c;
+      // Update local state
+      setChats(prevChats => prevChats.map(chat => {
+        if (chat.id !== chatId) return chat;
         
         return {
-          ...c,
-          participants: [...c.participants, participantId],
-          messages: [...c.messages, systemMessage],
-          lastMessage: systemMessage
+          ...chat,
+          participants: updatedChat.participants.map((p: any) => p.id.toString())
         };
       }));
       
-      // En un caso real, esto actualizaría la base de datos
-      const mockChatIndex = MOCK_CHATS.findIndex(c => c.id === chatId);
-      if (mockChatIndex !== -1) {
-        MOCK_CHATS[mockChatIndex].participants.push(participantId);
-        MOCK_CHATS[mockChatIndex].messages.push(systemMessage);
-        MOCK_CHATS[mockChatIndex].lastMessage = systemMessage;
-      }
-      
       return true;
     } catch (error) {
-      console.error("Error al añadir participante:", error);
+      console.error("Error adding participant:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo añadir el participante. Por favor, inténtalo de nuevo."
+        description: "Could not add participant. Please try again."
       });
       return false;
     }

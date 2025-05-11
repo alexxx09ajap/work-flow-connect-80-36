@@ -1,7 +1,7 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { toast } from "@/components/ui/use-toast";
-import { MOCK_USERS, CURRENT_USER } from '@/lib/mockData';
+import { authService, socketService } from '@/services/api';
 
 export type UserType = {
   id: string;
@@ -41,33 +41,80 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<UserType | null>(CURRENT_USER);
-  const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<UserType | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Simulación de iniciar sesión
+  // Check for existing login on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        try {
+          const userData = await authService.verifyToken();
+          
+          // Transform backend user data to match our frontend UserType
+          const user: UserType = {
+            id: userData.id.toString(),
+            name: userData.username,
+            email: userData.email,
+            photoURL: userData.avatar,
+            role: 'freelancer', // Default role, can be updated later
+            joinedAt: new Date(userData.created_at).getTime()
+          };
+          
+          setCurrentUser(user);
+          
+          // Connect to socket.io
+          socketService.connect(token);
+        } catch (error) {
+          console.error('Error verifying token:', error);
+          localStorage.removeItem('auth_token');
+        }
+      }
+      setLoading(false);
+    };
+    
+    checkAuth();
+    
+    // Cleanup socket connection on unmount
+    return () => {
+      socketService.disconnect();
+    };
+  }, []);
+
+  // Login function
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Simulamos un retardo para la llamada a la API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { user, token } = await authService.login(email, password);
       
-      // Buscamos al usuario por email (en un caso real, también verificaríamos la contraseña)
-      const user = MOCK_USERS.find(user => user.email === email);
+      // Save token
+      localStorage.setItem('auth_token', token);
       
-      if (!user) {
-        throw new Error('Credenciales incorrectas');
-      }
+      // Transform backend user data to match our frontend UserType
+      const transformedUser: UserType = {
+        id: user.id.toString(),
+        name: user.username,
+        email: user.email,
+        photoURL: user.avatar,
+        role: 'freelancer', // Default role, can be updated later
+        joinedAt: new Date(user.created_at).getTime()
+      };
       
-      setCurrentUser(user);
+      setCurrentUser(transformedUser);
+      
+      // Connect to socket.io
+      socketService.connect(token);
+      
       toast({
-        title: "Inicio de sesión exitoso",
-        description: "Bienvenido a WorkFlowConnect",
+        title: "Login successful",
+        description: "Welcome to WorkFlowConnect",
       });
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error de inicio de sesión",
-        description: error instanceof Error ? error.message : "Error al iniciar sesión",
+        title: "Login error",
+        description: "Invalid email or password",
       });
       throw error;
     } finally {
@@ -75,42 +122,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Simulación de registro de usuario
+  // Register function
   const register = async (email: string, password: string, name: string) => {
     setLoading(true);
     try {
-      // Simulamos un retardo para la llamada a la API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { user, token } = await authService.register(name, email, password);
       
-      // Verificamos si el email ya está en uso
-      if (MOCK_USERS.some(user => user.email === email)) {
-        throw new Error('Este email ya está en uso');
-      }
+      // Save token
+      localStorage.setItem('auth_token', token);
       
-      // Crear un nuevo usuario
-      const newUser: UserType = {
-        id: `user${MOCK_USERS.length + 1}`,
-        name,
-        email,
-        role: 'freelancer',
-        skills: [],
-        joinedAt: Date.now()
+      // Transform backend user data to match our frontend UserType
+      const transformedUser: UserType = {
+        id: user.id.toString(),
+        name: user.username,
+        email: user.email,
+        photoURL: user.avatar,
+        role: 'freelancer', // Default role
+        joinedAt: new Date(user.created_at).getTime()
       };
       
-      // En un caso real, lo añadiríamos a la base de datos
-      // Aquí solo lo guardamos en memoria
-      MOCK_USERS.push(newUser);
+      setCurrentUser(transformedUser);
       
-      setCurrentUser(newUser);
+      // Connect to socket.io
+      socketService.connect(token);
+      
       toast({
-        title: "Registro exitoso",
-        description: "¡Bienvenido a WorkFlowConnect!",
+        title: "Registration successful",
+        description: "Welcome to WorkFlowConnect!",
       });
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error de registro",
-        description: error instanceof Error ? error.message : "Error al registrar",
+        title: "Registration error",
+        description: "This email is already in use",
       });
       throw error;
     } finally {
@@ -118,76 +162,92 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Simulación de cierre de sesión
+  // Logout function
   const logout = async () => {
     try {
-      // Simulamos un retardo
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Disconnect from socket
+      socketService.disconnect();
       
+      // Clear local storage
+      localStorage.removeItem('auth_token');
+      
+      // Clear current user
       setCurrentUser(null);
+      
       toast({
-        title: "Sesión cerrada",
-        description: "Has cerrado sesión correctamente",
+        title: "Logged out",
+        description: "You have been successfully logged out",
       });
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Error al cerrar sesión"
+        description: "Error logging out"
       });
     }
   };
 
-  // Simulación de actualización de perfil
+  // Update user profile
   const updateUserProfile = async (data: Partial<UserType>) => {
-    if (!currentUser) throw new Error('No hay usuario autenticado');
+    if (!currentUser) throw new Error('No authenticated user');
     
     try {
-      // Simulamos un retardo
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Transform frontend data to match backend expectations
+      const backendData = {
+        username: data.name,
+        avatar: data.photoURL,
+        bio: data.bio,
+        // Add other fields as needed
+      };
       
-      // Actualizamos el usuario actual en memoria
-      const updatedUser = { ...currentUser, ...data };
+      const updatedUserData = await authService.updateProfile(backendData);
+      
+      // Update local user state
+      const updatedUser = { 
+        ...currentUser,
+        name: updatedUserData.username,
+        photoURL: updatedUserData.avatar,
+        // Update other fields as needed
+      };
+      
       setCurrentUser(updatedUser);
       
-      // También actualizamos el usuario en nuestra "base de datos" simulada
-      const userIndex = MOCK_USERS.findIndex(u => u.id === currentUser.id);
-      if (userIndex !== -1) {
-        MOCK_USERS[userIndex] = updatedUser;
-      }
-      
       toast({
-        title: "Perfil actualizado",
-        description: "Tus cambios han sido guardados",
+        title: "Profile updated",
+        description: "Your changes have been saved",
       });
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Error al actualizar el perfil"
+        description: "Error updating profile"
       });
       throw error;
     }
   };
 
-  // Simulación de subida de foto de perfil
+  // Upload profile photo
   const uploadProfilePhoto = async (file: File) => {
-    if (!currentUser) throw new Error('No hay usuario autenticado');
+    if (!currentUser) throw new Error('No authenticated user');
     
     try {
-      // Simulamos un retardo para la "subida"
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Read file as base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+      });
       
-      // Generamos una URL simulada para la imagen
-      // En un caso real, esto sería una URL de almacenamiento en la nube
-      const photoURL = URL.createObjectURL(file);
+      // Get base64 data
+      const photoURL = base64;
       
-      // Actualizamos el usuario
-      setCurrentUser(prev => prev ? { ...prev, photoURL } : null);
+      // Update user profile with new photo
+      await updateUserProfile({ photoURL });
       
       toast({
-        title: "Foto actualizada",
-        description: "Tu foto de perfil ha sido actualizada",
+        title: "Photo updated",
+        description: "Your profile photo has been updated",
       });
       
       return photoURL;
@@ -195,7 +255,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Error al subir la foto de perfil"
+        description: "Error uploading profile photo"
       });
       throw error;
     }

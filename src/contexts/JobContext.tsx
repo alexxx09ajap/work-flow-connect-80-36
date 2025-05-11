@@ -1,8 +1,8 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { UserType } from './AuthContext';
-import { MOCK_JOBS, SAVED_JOBS } from '@/lib/mockData'; 
 import { toast } from '@/components/ui/use-toast';
+import { MOCK_JOBS } from '@/lib/mockData'; 
 
 export type ReplyType = {
   id: string;
@@ -38,7 +38,7 @@ export type JobType = {
   timestamp: number;
   status: 'open' | 'in-progress' | 'completed';
   comments: CommentType[];
-  likes: string[]; // Array de IDs de usuarios que dieron like;
+  likes: string[]; // Array of user IDs who liked;
 };
 
 type JobContextType = {
@@ -53,7 +53,7 @@ type JobContextType = {
   toggleSavedJob: (jobId: string, userId: string) => void;
   getSavedJobs: (userId: string) => Promise<JobType[]>;
   toggleLike: (jobId: string, userId: string) => void;
-  savedJobs: string[]; // Array de IDs de trabajos guardados por el usuario actual
+  savedJobs: string[]; // Array of saved job IDs by the current user
   loadJobs: () => Promise<void>; // Add method to refresh jobs
 };
 
@@ -74,13 +74,12 @@ interface JobProviderProps {
 export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
   const [jobs, setJobs] = useState<JobType[]>(MOCK_JOBS);
   const [loading, setLoading] = useState(false);
-  const [savedJobs, setSavedJobs] = useState<string[]>(SAVED_JOBS);
+  const [savedJobs, setSavedJobs] = useState<string[]>([]);
 
   const loadJobs = async () => {
     setLoading(true);
     try {
-      // Simulamos un retardo para la carga
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // For now we're using mock data, but in the future we can fetch from the backend
       setJobs(MOCK_JOBS);
     } catch (error) {
       console.error("Error loading jobs:", error);
@@ -95,10 +94,10 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
 
   const createJob = async (jobData: Omit<JobType, 'id' | 'timestamp' | 'comments' | 'likes'>) => {
     try {
-      // Simulamos un retardo
+      // Simulate delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Creamos un nuevo trabajo con ID único
+      // Create a new job with unique ID
       const newJob: JobType = {
         id: `job${Date.now()}`,
         ...jobData,
@@ -107,10 +106,10 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
         likes: []
       };
       
-      // Actualizamos el estado local
+      // Update local state
       setJobs(prevJobs => [...prevJobs, newJob]);
       
-      // En un caso real, esto se guardaría en la base de datos
+      // In a real scenario, this would be saved to the database
       MOCK_JOBS.push(newJob);
       
       return newJob;
@@ -122,28 +121,28 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
 
   const updateJob = async (jobId: string, jobData: Partial<JobType>) => {
     try {
-      // Simulamos un retardo
+      // Simulate delay
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Encontramos el índice del trabajo a actualizar
+      // Find the job to update
       const jobIndex = jobs.findIndex(job => job.id === jobId);
       
       if (jobIndex === -1) {
-        throw new Error('Trabajo no encontrado');
+        throw new Error('Job not found');
       }
       
-      // Actualizamos el trabajo
+      // Update the job
       const updatedJob = {
         ...jobs[jobIndex],
         ...jobData
       };
       
-      // Actualizamos el estado local
+      // Update local state
       setJobs(prevJobs => 
         prevJobs.map(job => job.id === jobId ? updatedJob : job)
       );
       
-      // En un caso real, esto actualizaría la base de datos
+      // In a real scenario, this would update the database
       const mockJobIndex = MOCK_JOBS.findIndex(job => job.id === jobId);
       if (mockJobIndex !== -1) {
         MOCK_JOBS[mockJobIndex] = updatedJob;
@@ -158,13 +157,13 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
 
   const deleteJob = async (jobId: string) => {
     try {
-      // Simulamos un retardo
+      // Simulate delay
       await new Promise(resolve => setTimeout(resolve, 600));
       
-      // Eliminamos el trabajo del estado local
+      // Remove job from local state
       setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
       
-      // En un caso real, esto eliminaría de la base de datos
+      // In a real scenario, this would delete from the database
       const mockJobIndex = MOCK_JOBS.findIndex(job => job.id === jobId);
       if (mockJobIndex !== -1) {
         MOCK_JOBS.splice(mockJobIndex, 1);
@@ -179,7 +178,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
 
   const addComment = async (jobId: string, content: string, user: UserType) => {
     try {
-      // Simulamos un retardo
+      // Simulate delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const newComment: CommentType = {
@@ -193,14 +192,14 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
         replies: []
       };
       
-      // Actualizamos el estado local
+      // Update local state
       setJobs(prevJobs => prevJobs.map(job => 
         job.id === jobId 
           ? { ...job, comments: [...job.comments, newComment] }
           : job
       ));
       
-      // En un caso real, esto actualizaría la base de datos
+      // In a real scenario, this would update the database
       const mockJobIndex = MOCK_JOBS.findIndex(job => job.id === jobId);
       if (mockJobIndex !== -1) {
         MOCK_JOBS[mockJobIndex].comments.push(newComment);
@@ -213,7 +212,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
 
   const addReplyToComment = async (jobId: string, commentId: string, content: string, user: UserType) => {
     try {
-      // Simulamos un retardo
+      // Simulate delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const newReply: ReplyType = {
@@ -226,7 +225,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
         timestamp: Date.now()
       };
       
-      // Actualizamos el estado local
+      // Update local state
       setJobs(prevJobs => prevJobs.map(job => {
         if (job.id !== jobId) return job;
         
@@ -240,7 +239,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
         };
       }));
       
-      // En un caso real, esto actualizaría la base de datos
+      // In a real scenario, this would update the database
       const mockJobIndex = MOCK_JOBS.findIndex(job => job.id === jobId);
       if (mockJobIndex !== -1) {
         const commentIndex = MOCK_JOBS[mockJobIndex].comments.findIndex(c => c.id === commentId);
@@ -260,10 +259,10 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
 
   const toggleSavedJob = (jobId: string, userId: string) => {
     try {
-      // Verificamos si el trabajo ya está guardado
+      // Check if job is already saved
       const isJobSaved = savedJobs.includes(jobId);
       
-      // Actualizamos el estado local
+      // Update local state
       setSavedJobs(prev => {
         if (isJobSaved) {
           return prev.filter(id => id !== jobId);
@@ -272,19 +271,12 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
         }
       });
       
-      // En un caso real, esto actualizaría la base de datos
-      if (isJobSaved) {
-        SAVED_JOBS = SAVED_JOBS.filter(id => id !== jobId);
-      } else {
-        SAVED_JOBS.push(jobId);
-      }
-      
-      // Notificamos al usuario
+      // Notify user
       toast({
-        title: isJobSaved ? "Propuesta eliminada de guardados" : "Propuesta guardada",
+        title: isJobSaved ? "Proposal removed from saved" : "Proposal saved",
         description: isJobSaved 
-          ? "La propuesta ha sido eliminada de tus guardados" 
-          : "La propuesta ha sido añadida a tus guardados"
+          ? "The proposal has been removed from your saved items" 
+          : "The proposal has been added to your saved items"
       });
     } catch (error) {
       console.error("Error toggling saved job:", error);
@@ -293,15 +285,11 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
 
   const getSavedJobs = async (userId: string) => {
     try {
-      // Simulamos un retardo
+      // Simulate delay
       await new Promise(resolve => setTimeout(resolve, 700));
       
-      // Obtenemos los IDs de trabajos guardados
-      const savedJobIds = savedJobs;
-      setSavedJobs(savedJobIds);
-      
-      // Filtramos los trabajos guardados
-      const savedJobsList = jobs.filter(job => savedJobIds.includes(job.id));
+      // Filter saved jobs
+      const savedJobsList = jobs.filter(job => savedJobs.includes(job.id));
       
       return savedJobsList;
     } catch (error) {
@@ -312,7 +300,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
 
   const toggleLike = (jobId: string, userId: string) => {
     try {
-      // Actualizamos el estado local
+      // Update local state
       setJobs(prevJobs => prevJobs.map(job => {
         if (job.id !== jobId) return job;
         
@@ -326,7 +314,7 @@ export const JobProvider: React.FC<JobProviderProps> = ({ children }) => {
         };
       }));
       
-      // En un caso real, esto actualizaría la base de datos
+      // In a real scenario, this would update the database
       const mockJobIndex = MOCK_JOBS.findIndex(job => job.id === jobId);
       if (mockJobIndex !== -1) {
         const userLiked = MOCK_JOBS[mockJobIndex].likes.includes(userId);
