@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useJob } from '@/contexts/JobContext';
+import { useJobs } from '@/contexts/JobContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
 import { useData } from '@/contexts/DataContext';
@@ -14,7 +15,7 @@ import { Loader2 } from 'lucide-react';
 
 const JobDetail = () => {
   const { jobId } = useParams();
-  const { getJobById } = useJob();
+  const { getJobById } = useJobs();
   const { currentUser } = useAuth();
   const { getUserById } = useData();
   const chat = useChat();
