@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthState, User } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -14,7 +15,8 @@ type AuthAction =
   | { type: 'LOGOUT' }
   | { type: 'VERIFY_TOKEN_START' }
   | { type: 'VERIFY_TOKEN_SUCCESS'; payload: { user: User } }
-  | { type: 'VERIFY_TOKEN_FAILURE'; payload: string };
+  | { type: 'VERIFY_TOKEN_FAILURE'; payload: string }
+  | { type: 'UPDATE_PROFILE'; payload: { user: User } };
 
 // Initial state
 const initialState: AuthState = {
@@ -55,6 +57,12 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         error: null,
         isAuthenticated: true,
       };
+    case 'UPDATE_PROFILE':
+      return {
+        ...state,
+        user: action.payload.user,
+        loading: false,
+      };
     case 'LOGIN_FAILURE':
     case 'REGISTER_FAILURE':
     case 'VERIFY_TOKEN_FAILURE':
@@ -77,11 +85,15 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 };
 
 // Create context
-interface AuthContextType {
+export interface AuthContextType {
   state: AuthState;
   login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string, role?: string) => Promise<void>;
   logout: () => void;
+  currentUser: User | null;
+  isAuthenticated: boolean;
+  updateUserProfile?: (userData: Partial<User>) => Promise<void>;
+  uploadProfilePhoto?: (file: File) => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -93,6 +105,7 @@ const API_URL = 'http://localhost:5000/api';
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Verify if user is already authenticated when page loads
   useEffect(() => {
@@ -102,6 +115,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       try {
         console.log("Verifying token:", token);
+        dispatch({ type: 'VERIFY_TOKEN_START' });
+        
         const response = await fetch(`${API_URL}/auth/verify`, {
           method: 'GET',
           headers: {
@@ -114,21 +129,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const data = await response.json();
           console.log("Verification successful:", data);
           dispatch({
-            type: 'LOGIN_SUCCESS',
-            payload: { user: data.user, token }
+            type: 'VERIFY_TOKEN_SUCCESS',
+            payload: { user: data.user }
           });
+          
+          // If verification is successful, check if we are on login/register pages
+          // and redirect if needed
+          const currentPath = window.location.pathname;
+          if (currentPath === '/login' || currentPath === '/register' || currentPath === '/') {
+            navigate('/dashboard');
+          }
         } else {
           console.log("Invalid token");
+          dispatch({
+            type: 'VERIFY_TOKEN_FAILURE',
+            payload: 'Token inválido o expirado'
+          });
           // If token is not valid, clear storage
           localStorage.removeItem('token');
         }
       } catch (error) {
         console.error('Error verifying authentication:', error);
+        dispatch({
+          type: 'VERIFY_TOKEN_FAILURE',
+          payload: 'Error verificando la autenticación'
+        });
       }
     };
 
     checkAuthStatus();
-  }, []);
+  }, [navigate]);
 
   // Function to login
   const login = async (email: string, password: string) => {
@@ -152,6 +182,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           title: "Welcome back!",
           description: "You have successfully logged in.",
         });
+        
+        // Redirect to dashboard after successful login
+        navigate('/dashboard');
       } else {
         dispatch({
           type: 'LOGIN_FAILURE',
@@ -177,14 +210,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Function to register
-  const register = async (username: string, email: string, password: string) => {
+  const register = async (username: string, email: string, password: string, role: string = 'client') => {
     dispatch({ type: 'REGISTER_START' });
 
     try {
       const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password })
+        body: JSON.stringify({ username, email, password, role })
       });
 
       const data = await response.json();
@@ -198,6 +231,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           title: "Registration successful!",
           description: "Your account has been created successfully.",
         });
+        
+        // Redirect to dashboard after successful registration
+        navigate('/dashboard');
       } else {
         dispatch({
           type: 'REGISTER_FAILURE',
@@ -229,10 +265,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       title: "Logged out",
       description: "You have been logged out successfully",
     });
+    navigate('/login');
+  };
+
+  // Export convenient values and functions
+  const contextValue: AuthContextType = {
+    state,
+    login,
+    register,
+    logout,
+    currentUser: state.user,
+    isAuthenticated: state.isAuthenticated
   };
 
   return (
-    <AuthContext.Provider value={{ state, login, register, logout }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

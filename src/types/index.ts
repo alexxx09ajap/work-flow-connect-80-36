@@ -1,16 +1,17 @@
-
-// User related types
 export interface User {
-  _id: string;
-  username?: string;
+  id: string;
+  name: string;
   email: string;
-  avatar?: string;
   photoURL?: string;
-  status?: 'online' | 'offline';
+  role?: string;
+  bio?: string;
+  skills?: string[];
+  hourlyRate?: number;
   isOnline?: boolean;
-  id?: string; // For compatibility with existing code
-  name?: string; // For compatibility with existing code
-  role?: string; // For compatibility with existing code
+  status?: string;
+  lastSeen?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface AuthState {
@@ -21,34 +22,22 @@ export interface AuthState {
   isAuthenticated: boolean;
 }
 
-// Message related types
-export interface Message {
-  _id: string;
-  chatId: string;
-  senderId: string;
-  text?: string;
-  createdAt: string;
-  updatedAt: string;
-  fileId?: string;
-  file?: {
-    id: string;
-    filename: string;
-    contentType: string;
-    size: number;
+export interface ChatType {
+  id: string;
+  name: string;
+  isGroup: boolean;
+  participants: string[];
+  lastMessage?: {
+    content: string;
+    timestamp: number;
   };
-  sender?: User;
-  read: boolean;
 }
 
-// Chat related types
-export interface Chat {
-  _id: string;
-  name?: string;
-  isGroupChat: boolean;
-  participants: User[];
-  admin?: string;
-  createdAt: string;
-  updatedAt: string;
-  lastMessage?: Message;
-  id?: string; // For compatibility with existing code
+export interface MessageType {
+  id: string;
+  content: string;
+  timestamp: number;
+  senderId: string;
+  senderName: string;
+  read: boolean;
 }

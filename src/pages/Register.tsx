@@ -1,13 +1,14 @@
 
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useAuth } from '@/contexts/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -18,12 +19,21 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { register } = useAuth();
+  const { register, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
+    // Validations
     if (!name || !email || !password || !confirmPassword) {
       setError('Por favor, completa todos los campos');
       return;
@@ -41,8 +51,8 @@ const Register = () => {
     
     try {
       setLoading(true);
-      await register(email, password, name, userRole);
-      // Registration successful, user will be redirected to dashboard by the auth provider
+      await register(name, email, password, userRole);
+      // La redirección se maneja en el AuthContext tras el registro exitoso
     } catch (error) {
       console.error('Error de registro:', error);
       setError(error instanceof Error ? error.message : 'Error al registrar');
@@ -50,7 +60,7 @@ const Register = () => {
       setLoading(false);
     }
   };
-
+  
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
       <div className="w-full max-w-md p-8">
@@ -61,7 +71,7 @@ const Register = () => {
             </div>
           </div>
           <h1 className="text-2xl font-bold">WorkFlow Connect</h1>
-          <p className="text-gray-500 mt-2">Crea tu cuenta y comienza a conectarte</p>
+          <p className="text-gray-500 mt-2">La plataforma que conecta proyectos con talento</p>
         </div>
         
         <Card>
@@ -84,7 +94,8 @@ const Register = () => {
                 <Label htmlFor="name">Nombre completo</Label>
                 <Input
                   id="name"
-                  placeholder="John Doe"
+                  type="text"
+                  placeholder="Tu nombre"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -134,12 +145,12 @@ const Register = () => {
                   className="flex space-x-4 mt-1"
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="freelancer" id="freelancer" />
-                    <Label htmlFor="freelancer">Freelancer</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
                     <RadioGroupItem value="client" id="client" />
                     <Label htmlFor="client">Cliente</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="freelancer" id="freelancer" />
+                    <Label htmlFor="freelancer">Freelancer</Label>
                   </div>
                 </RadioGroup>
               </div>
@@ -151,13 +162,20 @@ const Register = () => {
                 type="submit"
                 disabled={loading}
               >
-                {loading ? 'Registrando...' : 'Registrarse'}
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creando cuenta...
+                  </>
+                ) : (
+                  'Crear cuenta'
+                )}
               </Button>
               
               <p className="mt-4 text-center text-sm">
                 ¿Ya tienes una cuenta?{' '}
                 <Link to="/login" className="text-wfc-purple hover:underline">
-                  Iniciar sesión
+                  Inicia sesión
                 </Link>
               </p>
             </CardFooter>
