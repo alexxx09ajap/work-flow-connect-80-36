@@ -12,24 +12,29 @@ const chatController = {
       const populatedChats = [];
       
       for (const chat of chats) {
-        const participants = await chatModel.getParticipants(chat.id);
-        
-        let lastMessage = null;
-        if (chat.last_message_id) {
-          lastMessage = await messageModel.findById(chat.last_message_id);
+        try {
+          const participants = await chatModel.getParticipants(chat.id);
+          
+          let lastMessage = null;
+          if (chat.last_message_id) {
+            lastMessage = await messageModel.findById(chat.last_message_id);
+          }
+          
+          populatedChats.push({
+            ...chat,
+            participants,
+            lastMessage
+          });
+        } catch (err) {
+          console.error(`Error processing chat ${chat.id}:`, err);
+          // Continue with other chats even if one fails
         }
-        
-        populatedChats.push({
-          ...chat,
-          participants,
-          lastMessage
-        });
       }
       
       res.json(populatedChats);
     } catch (error) {
       console.error('Error getting chats:', error);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
   
@@ -54,7 +59,7 @@ const chatController = {
       });
     } catch (error) {
       console.error('Error creating private chat:', error);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
   
@@ -90,7 +95,7 @@ const chatController = {
       });
     } catch (error) {
       console.error('Error creating group chat:', error);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
   
@@ -112,7 +117,7 @@ const chatController = {
       }
       
       // Check if it's a group chat
-      if (!chat.is_group_chat) {
+      if (!chat.isGroup) {
         return res.status(400).json({ message: 'Can only add users to group chats' });
       }
       
@@ -136,7 +141,7 @@ const chatController = {
       });
     } catch (error) {
       console.error('Error adding users to chat:', error);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
   
@@ -153,7 +158,7 @@ const chatController = {
       }
       
       // Check if it's a group chat
-      if (!chat.is_group_chat) {
+      if (!chat.isGroup) {
         return res.status(400).json({ message: 'Can only leave group chats' });
       }
       
@@ -169,7 +174,7 @@ const chatController = {
       res.json({ message: 'Successfully left the chat' });
     } catch (error) {
       console.error('Error leaving chat:', error);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
   
@@ -185,11 +190,6 @@ const chatController = {
         return res.status(404).json({ message: 'Chat not found' });
       }
       
-      // For group chats, check if user is admin
-      if (chat.is_group_chat && chat.admin_id !== req.user.userId) {
-        return res.status(403).json({ message: 'Only the admin can delete a group chat' });
-      }
-      
       // Check if user is a participant
       const isParticipant = await chatModel.isParticipant(chatId, req.user.userId);
       if (!isParticipant) {
@@ -202,7 +202,7 @@ const chatController = {
       res.json({ message: 'Chat deleted successfully', chatId });
     } catch (error) {
       console.error('Error deleting chat:', error);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
 };

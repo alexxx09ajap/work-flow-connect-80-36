@@ -5,10 +5,10 @@ const chatModel = {
   // Get all chats for a user
   async findByUserId(userId) {
     const result = await db.query(`
-      SELECT c.* FROM chats c
-      JOIN chat_participants cp ON c.id = cp.chat_id
-      WHERE cp.user_id = $1
-      ORDER BY c.updated_at DESC
+      SELECT c.* FROM "Chats" c
+      JOIN "ChatParticipants" cp ON c.id = cp."chatId"
+      WHERE cp."userId" = $1
+      ORDER BY c."updatedAt" DESC
     `, [userId]);
     
     return result.rows;
@@ -16,14 +16,14 @@ const chatModel = {
   
   // Get a chat by ID
   async findById(chatId) {
-    const result = await db.query('SELECT * FROM chats WHERE id = $1', [chatId]);
+    const result = await db.query('SELECT * FROM "Chats" WHERE id = $1', [chatId]);
     return result.rows[0];
   },
   
   // Check if a user is participant in a chat
   async isParticipant(chatId, userId) {
     const result = await db.query(
-      'SELECT 1 FROM chat_participants WHERE chat_id = $1 AND user_id = $2',
+      'SELECT 1 FROM "ChatParticipants" WHERE "chatId" = $1 AND "userId" = $2',
       [chatId, userId]
     );
     return result.rows.length > 0;
@@ -39,12 +39,12 @@ const chatModel = {
       // Check if private chat already exists between these users
       if (participants.length === 2) {
         const existingChat = await client.query(`
-          SELECT c.id FROM chats c
-          JOIN chat_participants cp1 ON c.id = cp1.chat_id AND cp1.user_id = $1
-          JOIN chat_participants cp2 ON c.id = cp2.chat_id AND cp2.user_id = $2
-          WHERE NOT c.is_group_chat
+          SELECT c.id FROM "Chats" c
+          JOIN "ChatParticipants" cp1 ON c.id = cp1."chatId" AND cp1."userId" = $1
+          JOIN "ChatParticipants" cp2 ON c.id = cp2."chatId" AND cp2."userId" = $2
+          WHERE NOT c."isGroup"
           AND (
-            SELECT COUNT(*) FROM chat_participants WHERE chat_id = c.id
+            SELECT COUNT(*) FROM "ChatParticipants" WHERE "chatId" = c.id
           ) = 2
         `, [participants[0], participants[1]]);
         
@@ -56,7 +56,7 @@ const chatModel = {
       
       // Create new chat
       const chatResult = await client.query(
-        'INSERT INTO chats (is_group_chat) VALUES ($1) RETURNING id',
+        'INSERT INTO "Chats" ("isGroup", "createdAt", "updatedAt") VALUES ($1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
         [false]
       );
       
@@ -65,7 +65,7 @@ const chatModel = {
       // Add participants
       for (const userId of participants) {
         await client.query(
-          'INSERT INTO chat_participants (chat_id, user_id) VALUES ($1, $2)',
+          'INSERT INTO "ChatParticipants" (id, "chatId", "userId", "createdAt", "updatedAt") VALUES (gen_random_uuid(), $1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
           [chatId, userId]
         );
       }
@@ -89,8 +89,8 @@ const chatModel = {
       
       // Create new chat
       const chatResult = await client.query(
-        'INSERT INTO chats (name, is_group_chat, admin_id) VALUES ($1, $2, $3) RETURNING id',
-        [name, true, adminId]
+        'INSERT INTO "Chats" (name, "isGroup", "createdAt", "updatedAt") VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
+        [name, true]
       );
       
       const chatId = chatResult.rows[0].id;
@@ -98,7 +98,7 @@ const chatModel = {
       // Add participants
       for (const userId of participants) {
         await client.query(
-          'INSERT INTO chat_participants (chat_id, user_id) VALUES ($1, $2)',
+          'INSERT INTO "ChatParticipants" (id, "chatId", "userId", "createdAt", "updatedAt") VALUES (gen_random_uuid(), $1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
           [chatId, userId]
         );
       }
@@ -116,7 +116,7 @@ const chatModel = {
   // Add participant to chat
   async addParticipant(chatId, userId) {
     await db.query(
-      'INSERT INTO chat_participants (chat_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      'INSERT INTO "ChatParticipants" (id, "chatId", "userId", "createdAt", "updatedAt") VALUES (gen_random_uuid(), $1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) ON CONFLICT DO NOTHING',
       [chatId, userId]
     );
   },
@@ -124,7 +124,7 @@ const chatModel = {
   // Remove participant from chat
   async removeParticipant(chatId, userId) {
     await db.query(
-      'DELETE FROM chat_participants WHERE chat_id = $1 AND user_id = $2',
+      'DELETE FROM "ChatParticipants" WHERE "chatId" = $1 AND "userId" = $2',
       [chatId, userId]
     );
   },
@@ -132,26 +132,26 @@ const chatModel = {
   // Get all participants of a chat
   async getParticipants(chatId) {
     const result = await db.query(`
-      SELECT u.id, u.username, u.email, u.avatar, u.status
-      FROM users u
-      JOIN chat_participants cp ON u.id = cp.user_id
-      WHERE cp.chat_id = $1
+      SELECT u.id, u.name, u.email, u."photoURL", u."isOnline"
+      FROM "Users" u
+      JOIN "ChatParticipants" cp ON u.id = cp."userId"
+      WHERE cp."chatId" = $1
     `, [chatId]);
     
     return result.rows;
   },
   
   // Update last message of a chat
-  async updateLastMessage(chatId, messageId) {
+  async updateLastMessage(chatId) {
     await db.query(
-      'UPDATE chats SET last_message_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [messageId, chatId]
+      'UPDATE "Chats" SET "lastMessageAt" = CURRENT_TIMESTAMP, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $1',
+      [chatId]
     );
   },
   
   // Delete a chat
   async delete(chatId) {
-    await db.query('DELETE FROM chats WHERE id = $1', [chatId]);
+    await db.query('DELETE FROM "Chats" WHERE id = $1', [chatId]);
   }
 };
 

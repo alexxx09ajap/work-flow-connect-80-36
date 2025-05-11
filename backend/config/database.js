@@ -20,7 +20,25 @@ pool.on('error', (err) => {
   process.exit(-1);
 });
 
+// Helper function to log queries in development
+const query = async (text, params) => {
+  const start = Date.now();
+  try {
+    const result = await pool.query(text, params);
+    const duration = Date.now() - start;
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Executed query', { text, duration, rows: result.rowCount });
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Error executing query', { text, error });
+    throw error;
+  }
+};
+
 module.exports = {
-  query: (text, params) => pool.query(text, params),
+  query,
   pool
 };
