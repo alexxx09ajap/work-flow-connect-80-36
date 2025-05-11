@@ -11,9 +11,10 @@ const userModel = {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     
+    // Usando name en lugar de username para ser consistente con la estructura de la BD
     const result = await db.query(
-      'INSERT INTO "Users" (username, email, password, avatar, status) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email, avatar, status, created_at',
-      [username, email, hashedPassword, avatar || null, 'online']
+      'INSERT INTO "Users" (name, email, password, "photoURL", status, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, email, "photoURL", role, "createdAt"',
+      [username, email, hashedPassword, avatar || null, 'online', 'client']
     );
     
     return result.rows[0];
@@ -28,7 +29,7 @@ const userModel = {
   // Find user by ID
   async findById(id) {
     const result = await db.query(
-      'SELECT id, username, email, avatar, status, "lastSeen", "createdAt" FROM "Users" WHERE id = $1',
+      'SELECT id, name, email, "photoURL" as avatar, "isOnline" as status, "lastSeen", "createdAt" FROM "Users" WHERE id = $1',
       [id]
     );
     return result.rows[0];
@@ -37,7 +38,7 @@ const userModel = {
   // Get all users except the one with the given ID
   async findAllExcept(userId) {
     const result = await db.query(
-      'SELECT id, username, email, avatar, status, "lastSeen", "createdAt" FROM "Users" WHERE id != $1',
+      'SELECT id, name, email, "photoURL" as avatar, "isOnline" as status, "lastSeen", "createdAt" FROM "Users" WHERE id != $1',
       [userId]
     );
     return result.rows;
@@ -45,9 +46,10 @@ const userModel = {
   
   // Update user status
   async updateStatus(userId, status) {
+    const isOnline = status === 'online';
     const result = await db.query(
-      'UPDATE "Users" SET status = $1, "lastSeen" = CURRENT_TIMESTAMP, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, username, status',
-      [status, userId]
+      'UPDATE "Users" SET "isOnline" = $1, "lastSeen" = CURRENT_TIMESTAMP, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, name, "isOnline"',
+      [isOnline, userId]
     );
     return result.rows[0];
   },
@@ -57,7 +59,7 @@ const userModel = {
     const { username, avatar } = userData;
     
     const result = await db.query(
-      'UPDATE "Users" SET username = COALESCE($1, username), avatar = COALESCE($2, avatar), "updatedAt" = CURRENT_TIMESTAMP WHERE id = $3 RETURNING id, username, email, avatar, status',
+      'UPDATE "Users" SET name = COALESCE($1, name), "photoURL" = COALESCE($2, "photoURL"), "updatedAt" = CURRENT_TIMESTAMP WHERE id = $3 RETURNING id, name, email, "photoURL" as avatar, "isOnline" as status',
       [username, avatar, userId]
     );
     
