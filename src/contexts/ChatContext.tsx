@@ -4,7 +4,7 @@ import { useAuth } from './AuthContext';
 import { ChatType, MessageType, UserType } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import io, { Socket } from 'socket.io-client';
-import { chatService } from '@/services/api';
+import { chatService, messageService } from '@/services/api';
 
 // Context Type
 export interface ChatContextType {
@@ -21,7 +21,7 @@ export interface ChatContextType {
   onlineUsers: string[];
   loadingChats: boolean;
   addParticipantToChat: (chatId: string, userId: string) => Promise<boolean>;
-  loadChats: () => void;
+  loadChats: () => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextType | null>(null);
@@ -49,72 +49,78 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentUser) return;
 
     // Initialize Socket.io connection
-    const newSocket = io('http://localhost:5000', {
-      query: {
-        userId: currentUser.id
-      },
-      withCredentials: true
-    });
+    try {
+      const newSocket = io('http://localhost:5000', {
+        query: {
+          userId: currentUser.id
+        },
+        withCredentials: true
+      });
 
-    // Socket event listeners
-    newSocket.on('connect', () => {
-      console.log('Connected to Socket.io server');
-    });
+      // Socket event listeners
+      newSocket.on('connect', () => {
+        console.log('Connected to Socket.io server');
+      });
 
-    newSocket.on('disconnect', () => {
-      console.log('Disconnected from Socket.io server');
-    });
+      newSocket.on('disconnect', () => {
+        console.log('Disconnected from Socket.io server');
+      });
 
-    newSocket.on('user:online', (userId: string) => {
-      setOnlineUsers((prev) => [...prev, userId]);
-    });
+      newSocket.on('user:online', (userId: string) => {
+        setOnlineUsers((prev) => [...prev, userId]);
+      });
 
-    newSocket.on('user:offline', (userId: string) => {
-      setOnlineUsers((prev) => prev.filter(id => id !== userId));
-    });
+      newSocket.on('user:offline', (userId: string) => {
+        setOnlineUsers((prev) => prev.filter(id => id !== userId));
+      });
 
-    newSocket.on('chat:message', (chatId: string, message: MessageType) => {
-      // Add message to messages state
-      setMessages((prev) => ({
-        ...prev,
-        [chatId]: [...(prev[chatId] || []), message]
-      }));
+      newSocket.on('chat:message', (chatId: string, message: MessageType) => {
+        // Add message to messages state
+        setMessages((prev) => ({
+          ...prev,
+          [chatId]: [...(prev[chatId] || []), message]
+        }));
 
-      // Update chat's lastMessage
-      setChats((prev) =>
-        prev.map((chat) =>
-          chat.id === chatId
-            ? {
-                ...chat,
-                lastMessage: {
-                  content: message.content,
-                  timestamp: message.timestamp
+        // Update chat's lastMessage
+        setChats((prev) =>
+          prev.map((chat) =>
+            chat.id === chatId
+              ? {
+                  ...chat,
+                  lastMessage: {
+                    content: message.content,
+                    timestamp: message.timestamp
+                  }
                 }
-              }
-            : chat
-        )
-      );
+              : chat
+          )
+        );
 
-      // If this chat is active, mark messages as read
-      if (activeChat?.id === chatId) {
-        markAsRead(chatId);
-      } else {
-        // Show notification for new message
-        toast({
-          title: `Nuevo mensaje de ${message.senderName}`,
-          description: message.content
-        });
-      }
-    });
+        // If this chat is active, mark messages as read
+        if (activeChat?.id === chatId) {
+          markAsRead(chatId);
+        } else {
+          // Show notification for new message
+          toast({
+            title: `Nuevo mensaje de ${message.senderName}`,
+            description: message.content
+          });
+        }
+      });
 
-    setSocket(newSocket);
+      setSocket(newSocket);
 
-    // Load chats when user logs in
-    loadChats();
+      // Load chats when user logs in
+      loadChats();
+    } catch (error) {
+      console.error("Failed to connect to socket:", error);
+    }
 
     // Cleanup on unmount
     return () => {
-      newSocket.disconnect();
+      if (socket) {
+        socket.disconnect();
+      }
     };
   }, [currentUser]);
 
@@ -127,7 +133,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const chatsData = await chatService.getChats();
       console.log("Loaded chats:", chatsData);
-      setChats(chatsData);
+      setChats(chatsData || []);
     } catch (error) {
       console.error('Error loading chats:', error);
       toast({
@@ -182,8 +188,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return chats.find(chat => 
       !chat.isGroup && 
       chat.participants && 
-      chat.participants.includes(userId) && 
-      chat.participants.includes(currentUser.id)
+      chat.participants.some(p => p === userId) && 
+      chat.participants.some(p => p === currentUser.id)
     );
   };
 
@@ -192,7 +198,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentUser || !socket) return;
     
     try {
-      const message = await chatService.sendMessage(chatId, content);
+      const message = await messageService.sendMessage(chatId, content);
       
       console.log("Sent message:", message);
       
@@ -285,7 +291,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await chatService.addUsersToChat(chatId, [userId]);
       
       // Update chat in state by reloading chats
-      loadChats();
+      await loadChats();
       
       toast({
         title: "Participante agregado",
@@ -317,17 +323,28 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       const newChat = await chatService.createPrivateChat(userId);
+      console.log("Created new private chat:", newChat);
       
-      // Add the new chat to the state
-      setChats(prev => [...prev, newChat]);
+      if (newChat) {
+        // Add the new chat to the state
+        setChats(prev => {
+          // Make sure we're not adding duplicate chats
+          const exists = prev.some(chat => chat.id === newChat.id);
+          if (exists) return prev;
+          return [...prev, newChat];
+        });
+        
+        // Set as active chat
+        setActiveChat(newChat);
+        
+        toast({
+          title: "Chat creado",
+          description: "Se ha iniciado un nuevo chat privado"
+        });
+      }
       
-      // Set as active chat
-      setActiveChat(newChat);
-      
-      toast({
-        title: "Chat creado",
-        description: "Se ha iniciado un nuevo chat privado"
-      });
+      // Reload all chats to make sure we have the latest data
+      await loadChats();
       
       return newChat;
     } catch (error) {

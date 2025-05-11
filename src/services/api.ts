@@ -73,6 +73,7 @@ export const chatService = {
   getChats: async () => {
     try {
       const response = await api.get('/chats');
+      console.log("Chat service - fetched chats:", response.data);
       return response.data;
     } catch (err) {
       console.error("Error fetching chats:", err);
@@ -81,8 +82,14 @@ export const chatService = {
   },
   
   createPrivateChat: async (userId: string) => {
-    const response = await api.post('/chats/private', { userId });
-    return response.data;
+    try {
+      const response = await api.post('/chats/private', { userId });
+      console.log("Chat service - created private chat:", response.data);
+      return response.data;
+    } catch (err) {
+      console.error("Error creating private chat:", err);
+      throw err;
+    }
   },
   
   createGroupChat: async (name: string, participants: string[]) => {

@@ -69,13 +69,13 @@ const chatModel = {
         }
       }
       
-      // Create new chat
-      const chatResult = await client.query(
-        'INSERT INTO "Chats" ("isGroup", "createdAt", "updatedAt") VALUES ($1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
-        [false]
-      );
+      // Create new chat - Explicitly generate UUID for id
+      const chatId = await db.query('SELECT gen_random_uuid() as id').then(res => res.rows[0].id);
       
-      const chatId = chatResult.rows[0].id;
+      const chatResult = await client.query(
+        'INSERT INTO "Chats" (id, "isGroup", "createdAt", "updatedAt") VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
+        [chatId, false]
+      );
       
       // Add participants
       for (const userId of participants) {
@@ -103,13 +103,14 @@ const chatModel = {
     try {
       await client.query('BEGIN');
       
-      // Create new chat
-      const chatResult = await client.query(
-        'INSERT INTO "Chats" (name, "isGroup", "createdAt", "updatedAt") VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
-        [name, true]
-      );
+      // Generate UUID explicitly
+      const chatId = await db.query('SELECT gen_random_uuid() as id').then(res => res.rows[0].id);
       
-      const chatId = chatResult.rows[0].id;
+      // Create new chat with the generated UUID
+      const chatResult = await client.query(
+        'INSERT INTO "Chats" (id, name, "isGroup", "createdAt", "updatedAt") VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
+        [chatId, name, true]
+      );
       
       // Add participants
       for (const userId of participants) {

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Verified } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 const UserProfile = () => {
   const { userId } = useParams();
@@ -18,6 +19,7 @@ const UserProfile = () => {
   const { getUserById } = useData();
   const { currentUser } = useAuth();
   const { createPrivateChat } = useChat();
+  const { toast } = useToast();
   const [profileUser, setProfileUser] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -34,11 +36,27 @@ const UserProfile = () => {
     fetchProfileUser();
   }, [userId, getUserById]);
   
-  // Update the contact function to use createPrivateChat
   const handleContactUser = async () => {
-    if (profileUser && createPrivateChat) {
-      await createPrivateChat(profileUser.id);
-      navigate('/chats');
+    if (!profileUser) return;
+    
+    try {
+      console.log("Attempting to create chat with user:", profileUser.id);
+      const chatCreated = await createPrivateChat(profileUser.id);
+      
+      if (chatCreated) {
+        toast({
+          title: "Chat creado",
+          description: `Ahora puedes chatear con ${profileUser.name}`
+        });
+        navigate('/chats');
+      }
+    } catch (error) {
+      console.error("Error creating chat:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo crear el chat"
+      });
     }
   };
   
@@ -97,7 +115,10 @@ const UserProfile = () => {
               </h2>
               <p className="text-gray-500">{profileUser.email}</p>
               {currentUser && profileUser.id !== currentUser.id && (
-                <Button onClick={handleContactUser} className="bg-wfc-purple hover:bg-wfc-purple-medium">
+                <Button 
+                  onClick={handleContactUser} 
+                  className="bg-wfc-purple hover:bg-wfc-purple-medium"
+                >
                   Contactar
                 </Button>
               )}
