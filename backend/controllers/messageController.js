@@ -31,7 +31,7 @@ const messageController = {
   // Send a message
   async sendMessage(req, res) {
     try {
-      const { chatId, text } = req.body;
+      const { chatId, content } = req.body;
       
       // Check if user is a participant
       const isParticipant = await chatModel.isParticipant(chatId, req.user.userId);
@@ -43,11 +43,11 @@ const messageController = {
       const message = await messageModel.create({
         chatId,
         senderId: req.user.userId,
-        text
+        text: content
       });
       
       // Update last message in chat
-      await chatModel.updateLastMessage(chatId, message.id);
+      await chatModel.updateLastMessage(chatId);
       
       res.status(201).json(message);
     } catch (error) {
@@ -70,13 +70,8 @@ const messageController = {
       }
       
       // Check if user is the sender
-      if (message.sender_id !== req.user.userId) {
+      if (message.userId !== req.user.userId) {
         return res.status(403).json({ message: 'You can only edit your own messages' });
-      }
-      
-      // Check if the message has a file (don't allow editing file messages)
-      if (message.file_id) {
-        return res.status(400).json({ message: 'Cannot edit messages with files' });
       }
       
       // Update message
@@ -102,25 +97,16 @@ const messageController = {
       }
       
       // Check if user is the sender
-      if (message.sender_id !== req.user.userId) {
+      if (message.userId !== req.user.userId) {
         return res.status(403).json({ message: 'You can only delete your own messages' });
-      }
-      
-      // If message has a file, delete the file too
-      if (message.file_id) {
-        await fileModel.delete(message.file_id);
       }
       
       // Delete message
       await messageModel.delete(messageId);
       
       // If this was the last message in the chat, update the chat
-      const chat = await chatModel.findById(message.chat_id);
-      
-      if (chat && chat.last_message_id === parseInt(messageId)) {
-        const lastMessage = await messageModel.getLastMessage(message.chat_id);
-        await chatModel.updateLastMessage(message.chat_id, lastMessage ? lastMessage.id : null);
-      }
+      const lastMessage = await messageModel.getLastMessage(message.chatId);
+      await chatModel.updateLastMessage(message.chatId);
       
       res.json({ message: 'Message deleted', messageId });
     } catch (error) {

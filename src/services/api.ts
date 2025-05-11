@@ -115,13 +115,23 @@ export const chatService = {
 
 export const messageService = {
   getMessages: async (chatId: string) => {
-    const response = await api.get(`/messages/${chatId}`);
-    return response.data;
+    try {
+      const response = await api.get(`/messages/${chatId}`);
+      return response.data;
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+      return [];
+    }
   },
   
   sendMessage: async (chatId: string, content: string) => {
-    const response = await api.post('/messages', { chatId, content });
-    return response.data;
+    try {
+      const response = await api.post('/messages', { chatId, content });
+      return response.data;
+    } catch (err) {
+      console.error("Error sending message:", err);
+      throw err;
+    }
   },
   
   updateMessage: async (messageId: string, text: string) => {
