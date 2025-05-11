@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 // Create axios instance with base URL
@@ -29,6 +28,11 @@ export const authService = {
   verifyToken: async () => {
     const response = await api.get('/auth/verify');
     return response.data.user;
+  },
+  
+  updateProfile: async (userData: any) => {
+    const response = await api.put('/users/profile', userData);
+    return response.data;
   }
 };
 
