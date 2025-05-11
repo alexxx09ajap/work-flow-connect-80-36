@@ -1,15 +1,7 @@
+
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
 import { toast } from "@/components/ui/use-toast";
-import { 
-  registerUser, 
-  loginUser, 
-  logoutUser, 
-  updateUserProfile as updateFirebaseUserProfile,
-  uploadUserPhoto
-} from "@/lib/firebaseUtils";
+import { MOCK_USERS, CURRENT_USER } from '@/lib/mockData';
 
 export type UserType = {
   id: string;
@@ -49,49 +41,23 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<UserType | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<UserType | null>(CURRENT_USER);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          const userDoc = await getDoc(doc(db, "users", user.uid));
-          if (userDoc.exists()) {
-            setCurrentUser({
-              id: user.uid,
-              ...userDoc.data() as Omit<UserType, "id">
-            });
-          } else {
-            setCurrentUser({
-              id: user.uid,
-              name: user.displayName || "",
-              email: user.email || "",
-              photoURL: user.photoURL || undefined,
-              role: "freelancer"
-            });
-          }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Error al cargar los datos del usuario"
-          });
-        }
-      } else {
-        setCurrentUser(null);
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
+  // Simulación de iniciar sesión
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const user = await loginUser(email, password);
+      // Simulamos un retardo para la llamada a la API
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Buscamos al usuario por email (en un caso real, también verificaríamos la contraseña)
+      const user = MOCK_USERS.find(user => user.email === email);
+      
+      if (!user) {
+        throw new Error('Credenciales incorrectas');
+      }
+      
       setCurrentUser(user);
       toast({
         title: "Inicio de sesión exitoso",
@@ -109,11 +75,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Simulación de registro de usuario
   const register = async (email: string, password: string, name: string) => {
     setLoading(true);
     try {
-      const user = await registerUser(email, password, name);
-      setCurrentUser(user);
+      // Simulamos un retardo para la llamada a la API
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Verificamos si el email ya está en uso
+      if (MOCK_USERS.some(user => user.email === email)) {
+        throw new Error('Este email ya está en uso');
+      }
+      
+      // Crear un nuevo usuario
+      const newUser: UserType = {
+        id: `user${MOCK_USERS.length + 1}`,
+        name,
+        email,
+        role: 'freelancer',
+        skills: [],
+        joinedAt: Date.now()
+      };
+      
+      // En un caso real, lo añadiríamos a la base de datos
+      // Aquí solo lo guardamos en memoria
+      MOCK_USERS.push(newUser);
+      
+      setCurrentUser(newUser);
       toast({
         title: "Registro exitoso",
         description: "¡Bienvenido a WorkFlowConnect!",
@@ -130,9 +118,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Simulación de cierre de sesión
   const logout = async () => {
     try {
-      await logoutUser();
+      // Simulamos un retardo
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       setCurrentUser(null);
       toast({
         title: "Sesión cerrada",
@@ -147,12 +138,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Simulación de actualización de perfil
   const updateUserProfile = async (data: Partial<UserType>) => {
     if (!currentUser) throw new Error('No hay usuario autenticado');
     
     try {
-      await updateFirebaseUserProfile(currentUser.id, data);
-      setCurrentUser(prev => prev ? { ...prev, ...data } : null);
+      // Simulamos un retardo
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Actualizamos el usuario actual en memoria
+      const updatedUser = { ...currentUser, ...data };
+      setCurrentUser(updatedUser);
+      
+      // También actualizamos el usuario en nuestra "base de datos" simulada
+      const userIndex = MOCK_USERS.findIndex(u => u.id === currentUser.id);
+      if (userIndex !== -1) {
+        MOCK_USERS[userIndex] = updatedUser;
+      }
+      
       toast({
         title: "Perfil actualizado",
         description: "Tus cambios han sido guardados",
@@ -167,13 +170,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Simulación de subida de foto de perfil
   const uploadProfilePhoto = async (file: File) => {
     if (!currentUser) throw new Error('No hay usuario autenticado');
     
     try {
-      console.log("Iniciando proceso de subida de foto de perfil");
-      const photoURL = await uploadUserPhoto(currentUser.id, file);
+      // Simulamos un retardo para la "subida"
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
+      // Generamos una URL simulada para la imagen
+      // En un caso real, esto sería una URL de almacenamiento en la nube
+      const photoURL = URL.createObjectURL(file);
+      
+      // Actualizamos el usuario
       setCurrentUser(prev => prev ? { ...prev, photoURL } : null);
       
       toast({
@@ -181,10 +190,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         description: "Tu foto de perfil ha sido actualizada",
       });
       
-      console.log("Foto de perfil actualizada correctamente:", photoURL);
       return photoURL;
     } catch (error) {
-      console.error("Error en uploadProfilePhoto:", error);
       toast({
         variant: "destructive",
         title: "Error",

@@ -3,7 +3,6 @@
  * Application Entry Point
  * 
  * This is the main entry point for the React application that:
- * - Initializes Firebase data
  * - Sets up global providers
  * - Renders the main App component to the DOM
  */
@@ -18,14 +17,6 @@ import { DataProvider } from './contexts/DataContext.tsx'
 import { JobProvider } from './contexts/JobContext.tsx'
 import { ChatProvider } from './contexts/ChatContext.tsx'
 import { Toaster } from './components/ui/toaster.tsx'
-import { initializeFirebaseData } from './lib/firebaseUtils'
-
-// Initialize Firebase data before rendering the app
-initializeFirebaseData().then(() => {
-  console.log("Firebase initialization complete or already initialized");
-}).catch(error => {
-  console.error("Firebase initialization failed:", error);
-});
 
 // Render the application to the DOM
 ReactDOM.createRoot(document.getElementById('root')!).render(

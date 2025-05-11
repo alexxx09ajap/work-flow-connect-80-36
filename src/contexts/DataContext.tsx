@@ -1,13 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { JobType } from './JobContext';
-import {
-  getAllUsers as getFirebaseUsers,
-  getUserById as getFirebaseUserById,
-  getJobCategories as getFirebaseJobCategories,
-  getSkillsList as getFirebaseSkillsList,
-  getAllJobs as getFirebaseJobs
-} from '@/lib/firebaseUtils';
+import { MOCK_USERS, MOCK_JOBS, JOB_CATEGORIES, SKILLS_LIST } from '@/lib/mockData';
 
 // Make sure the UserType in DataContext matches or extends the AuthContext UserType
 export type UserType = {
@@ -51,41 +45,23 @@ export const useData = () => {
 };
 
 export const DataProvider = ({ children }: { children: React.ReactNode }) => {
-  const [users, setUsers] = useState<UserType[]>([]);
-  const [jobs, setJobs] = useState<JobType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [jobCategories, setJobCategories] = useState<string[]>([]);
-  const [skillsList, setSkillsList] = useState<string[]>([]);
+  const [users, setUsers] = useState<UserType[]>(MOCK_USERS);
+  const [jobs, setJobs] = useState<JobType[]>(MOCK_JOBS);
+  const [loading, setLoading] = useState(false);
+  const [jobCategories, setJobCategories] = useState<string[]>(JOB_CATEGORIES);
+  const [skillsList, setSkillsList] = useState<string[]>(SKILLS_LIST);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load users
-      const usersData = await getFirebaseUsers();
-      // Convert Firebase users to DataContext UserType
-      const convertedUsers = usersData.map(user => ({
-        id: user.id,
-        name: user.name || "",
-        email: user.email || "",
-        role: user.role as "freelancer" | "client" || "freelancer",
-        bio: user.bio,
-        photoURL: user.photoURL,
-        skills: user.skills,
-        hourlyRate: user.hourlyRate,
-        joinedAt: user.joinedAt
-      }));
-      setUsers(convertedUsers);
+      // Simulamos un retardo para la carga de datos
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Load jobs
-      const jobsData = await getFirebaseJobs();
-      setJobs(jobsData);
-      
-      // Load categories and skills
-      const categories = await getFirebaseJobCategories();
-      setJobCategories(categories);
-      
-      const skills = await getFirebaseSkillsList();
-      setSkillsList(skills);
+      // Usamos los datos simulados
+      setUsers(MOCK_USERS);
+      setJobs(MOCK_JOBS);
+      setJobCategories(JOB_CATEGORIES);
+      setSkillsList(SKILLS_LIST);
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -93,6 +69,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Cargamos los datos al inicio
   useEffect(() => {
     loadData();
   }, []);
