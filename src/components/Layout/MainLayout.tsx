@@ -113,7 +113,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
               ))}
               
               <Link
-                to="/create-job"
+                to="/jobs/create"
                 className={`
                   flex items-center px-3 py-2 mt-4 rounded-md text-sm font-medium bg-sidebar-primary text-sidebar-primary-foreground hover:bg-wfc-purple-medium transition-colors
                   ${sidebarCollapsed && !isMobile ? 'justify-center' : ''}

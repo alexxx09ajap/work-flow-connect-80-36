@@ -43,14 +43,15 @@ function App() {
                       <JobsPage />
                     </ProtectedRoute>
                   } />
-                  <Route path="/jobs/:jobId" element={
-                    <ProtectedRoute>
-                      <JobDetail />
-                    </ProtectedRoute>
-                  } />
+                  {/* Important: More specific route comes before dynamic route */}
                   <Route path="/jobs/create" element={
                     <ProtectedRoute>
                       <CreateJobPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/jobs/:jobId" element={
+                    <ProtectedRoute>
+                      <JobDetail />
                     </ProtectedRoute>
                   } />
                   <Route path="/chats" element={
