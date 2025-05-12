@@ -164,6 +164,7 @@ const ChatsPage = () => {
         <div className={`relative transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'w-0 opacity-0' : 'w-full md:w-80 lg:w-96'}`}>
           {!sidebarCollapsed && (
             <Card className="h-full flex flex-col">
+              {/* Chat list header */}
               <div className="p-4 border-b">
                 <div className="flex justify-between items-center mb-3">
                   <h2 className="font-semibold text-lg">Mensajes</h2>
@@ -381,7 +382,7 @@ const ChatsPage = () => {
                   )}
                 </div>
                 
-                {/* Messages area */}
+                {/* Messages area - MODIFICADO PARA EL ESTILO MESSENGER/WHATSAPP */}
                 <ScrollArea id="messages-container" className="flex-1 p-4">
                   {activeMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
@@ -389,7 +390,7 @@ const ChatsPage = () => {
                       <p className="text-sm text-gray-400 mt-2">Envía un mensaje para iniciar la conversación</p>
                     </div>
                   ) : (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                       {activeMessages.map((message, index, messages) => {
                         const isCurrentUser = currentUser && message.senderId === currentUser.id;
                         const isSystemMessage = message.senderId === "system";
@@ -417,41 +418,51 @@ const ChatsPage = () => {
                                 </div>
                               </div>
                             ) : (
-                              <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} group`}>
+                              <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                                {/* Para mensajes recibidos - avatar al inicio */}
                                 {!isCurrentUser && (
-                                  <Avatar className="h-8 w-8 mr-2 mt-1">
-                                    <AvatarImage src={sender?.photoURL} />
-                                    <AvatarFallback className="bg-gray-300 text-gray-700">
-                                      {sender?.name?.charAt(0).toUpperCase() || '?'}
-                                    </AvatarFallback>
-                                  </Avatar>
+                                  <div className="flex-shrink-0 mr-2">
+                                    <Avatar className="h-8 w-8">
+                                      <AvatarImage src={sender?.photoURL} />
+                                      <AvatarFallback className="bg-gray-300 text-gray-700">
+                                        {sender?.name?.charAt(0).toUpperCase() || '?'}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  </div>
                                 )}
                                 
-                                <div className={`max-w-[80%]`}>
+                                {/* Burbuja de mensaje */}
+                                <div className="max-w-[75%]">
+                                  {/* Nombre del remitente para grupos */}
                                   {!isCurrentUser && activeChat.isGroup && (
                                     <p className="text-xs text-gray-500 mb-1 ml-1">{sender?.name || 'Usuario'}</p>
                                   )}
-                                  <div 
-                                    className={`px-4 py-2 rounded-lg shadow-sm
-                                      ${isCurrentUser 
-                                        ? 'bg-wfc-purple text-white rounded-br-none ml-2' 
-                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'}
-                                    `}
-                                  >
+                                  
+                                  {/* Contenido del mensaje */}
+                                  <div className={`px-4 py-2 rounded-lg ${
+                                    isCurrentUser 
+                                      ? 'bg-wfc-purple text-white rounded-br-none' 
+                                      : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
+                                  }`}>
                                     <p className="break-words">{message.content}</p>
                                   </div>
-                                  <p className={`text-xs text-gray-400 mt-1 ${isCurrentUser ? 'text-right mr-2' : 'ml-1'}`}>
+                                  
+                                  {/* Hora del mensaje */}
+                                  <p className={`text-xs text-gray-500 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
                                     {formatTime(message.timestamp)}
                                   </p>
                                 </div>
                                 
+                                {/* Para mensajes enviados - avatar al final */}
                                 {isCurrentUser && (
-                                  <Avatar className="h-8 w-8 ml-2 mt-1">
-                                    <AvatarImage src={currentUser?.photoURL} />
-                                    <AvatarFallback className="bg-wfc-purple text-white">
-                                      {currentUser?.name?.charAt(0).toUpperCase() || 'U'}
-                                    </AvatarFallback>
-                                  </Avatar>
+                                  <div className="flex-shrink-0 ml-2">
+                                    <Avatar className="h-8 w-8">
+                                      <AvatarImage src={currentUser?.photoURL} />
+                                      <AvatarFallback className="bg-wfc-purple text-white">
+                                        {currentUser?.name?.charAt(0).toUpperCase() || 'U'}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  </div>
                                 )}
                               </div>
                             )}
