@@ -383,7 +383,7 @@ const ChatsPage = () => {
                   )}
                 </div>
                 
-                {/* Messages area - MODIFICADO PARA EL ESTILO MESSENGER/WHATSAPP */}
+                {/* Messages area - Updated to match WhatsApp/Messenger style */}
                 <ScrollArea id="messages-container" className="flex-1 p-4 bg-gray-50 dark:bg-gray-900">
                   {activeMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
@@ -419,25 +419,23 @@ const ChatsPage = () => {
                                 </div>
                               </div>
                             ) : (
-                              <div className={`flex items-end ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}>
+                              <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}>
                                 {/* Avatar for received messages */}
                                 {!isCurrentUser && (
-                                  <div className="flex-shrink-0 mr-2">
-                                    <Avatar className="h-8 w-8">
-                                      <AvatarImage src={sender?.photoURL} />
-                                      <AvatarFallback className="bg-gray-300 text-gray-700">
-                                        {sender?.name?.charAt(0).toUpperCase() || '?'}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                  </div>
+                                  <Avatar className="h-8 w-8 mr-2 self-end">
+                                    <AvatarImage src={sender?.photoURL} />
+                                    <AvatarFallback className="bg-gray-300 text-gray-700">
+                                      {sender?.name?.charAt(0).toUpperCase() || '?'}
+                                    </AvatarFallback>
+                                  </Avatar>
                                 )}
                                 
-                                <div className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'} max-w-[75%]`}>
-                                  {/* Sender name for groups */}
+                                <div className="max-w-[70%]">
+                                  {/* Sender name for group chats */}
                                   {!isCurrentUser && activeChat.isGroup && (
-                                    <span className="text-xs text-gray-500 mb-1 ml-1">
+                                    <div className="text-xs text-gray-500 ml-1 mb-1">
                                       {sender?.name || 'Usuario'}
-                                    </span>
+                                    </div>
                                   )}
                                   
                                   {/* Message bubble */}
@@ -450,21 +448,19 @@ const ChatsPage = () => {
                                   </div>
                                   
                                   {/* Message timestamp */}
-                                  <span className="text-xs text-gray-400 mt-1 mx-1">
+                                  <div className={`text-xs text-gray-400 mt-1 ${isCurrentUser ? 'text-right mr-2' : 'ml-2'}`}>
                                     {formatTime(message.timestamp)}
-                                  </span>
+                                  </div>
                                 </div>
                                 
                                 {/* Avatar for sent messages */}
                                 {isCurrentUser && (
-                                  <div className="flex-shrink-0 ml-2">
-                                    <Avatar className="h-8 w-8">
-                                      <AvatarImage src={currentUser.photoURL} />
-                                      <AvatarFallback className="bg-wfc-purple text-white">
-                                        {currentUser.name?.charAt(0).toUpperCase() || 'Y'}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                  </div>
+                                  <Avatar className="h-8 w-8 ml-2 self-end">
+                                    <AvatarImage src={currentUser.photoURL} />
+                                    <AvatarFallback className="bg-wfc-purple text-white">
+                                      {currentUser.name?.charAt(0).toUpperCase() || 'Y'}
+                                    </AvatarFallback>
+                                  </Avatar>
                                 )}
                               </div>
                             )}
