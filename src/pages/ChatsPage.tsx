@@ -20,12 +20,14 @@ import {
   ChevronLeft, 
   ChevronRight,
   Info,
-  Loader2
+  Loader2,
+  MessageCircle
 } from 'lucide-react';
 import { ChatGroupForm } from '@/components/ChatGroupForm';
 import { UserSelectDialog } from '@/components/UserSelectDialog';
 import { toast } from '@/components/ui/use-toast';
 import { ChatType, MessageType } from '@/types';
+import ChatMobileSheet from '@/components/ChatMobileSheet';
 
 const ChatsPage = () => {
   const { 
@@ -48,6 +50,7 @@ const ChatsPage = () => {
   const [isAddingParticipant, setIsAddingParticipant] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobileChat, setIsMobileChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Get messages for the active chat
@@ -157,6 +160,11 @@ const ChatsPage = () => {
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
+
+  const openMobileChat = (chat: ChatType) => {
+    setActiveChat(chat);
+    setIsMobileChat(true);
+  };
   
   return (
     <MainLayout>
@@ -218,7 +226,7 @@ const ChatsPage = () => {
               <ScrollArea className="flex-1">
                 {loadingChats ? (
                   <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-wfc-purple mb-2" />
+                    <Loader2 className="h-8 w-8 animate-spin text-[#9b87f5] mb-2" />
                     <p className="text-gray-500">Cargando conversaciones...</p>
                   </div>
                 ) : filteredChats.length === 0 ? (
@@ -231,7 +239,7 @@ const ChatsPage = () => {
                         <div className="flex mt-2 space-x-2">
                           <Button 
                             variant="outline" 
-                            className="text-wfc-purple"
+                            className="text-[#9b87f5]"
                             onClick={() => setIsCreatingGroup(true)}
                           >
                             <Users className="h-4 w-4 mr-2" />
@@ -239,7 +247,7 @@ const ChatsPage = () => {
                           </Button>
                           <Button 
                             variant="outline" 
-                            className="text-wfc-purple"
+                            className="text-[#9b87f5]"
                             onClick={() => setIsSelectingUser(true)}
                           >
                             <UserPlus className="h-4 w-4 mr-2" />
@@ -255,19 +263,19 @@ const ChatsPage = () => {
                       <div
                         key={chat.id}
                         className={`p-3 flex items-start space-x-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors rounded-md
-                          ${activeChat?.id === chat.id ? 'bg-wfc-purple/10 border-l-4 border-wfc-purple' : ''}
+                          ${activeChat?.id === chat.id ? 'bg-[#9b87f5]/10 border-l-4 border-[#9b87f5]' : ''}
                         `}
                         onClick={() => setActiveChat(chat)}
                       >
                         <div className="relative">
                           <Avatar>
                             <AvatarImage src={getChatAvatar(chat)} />
-                            <AvatarFallback className={`bg-wfc-purple-medium text-white`}>
+                            <AvatarFallback className={`bg-[#9b87f5] text-white`}>
                               {getAvatarFallback(chat)}
                             </AvatarFallback>
                           </Avatar>
                           {chat.isGroup ? (
-                            <Badge className="absolute -top-1 -right-1 bg-wfc-purple p-0 min-w-[1.1rem] h-[1.1rem] flex items-center justify-center">
+                            <Badge className="absolute -top-1 -right-1 bg-[#9b87f5] p-0 min-w-[1.1rem] h-[1.1rem] flex items-center justify-center">
                               <Users className="h-3 w-3" />
                             </Badge>
                           ) : (
@@ -323,7 +331,7 @@ const ChatsPage = () => {
           {/* Sidebar toggle button */}
           <button 
             onClick={toggleSidebar}
-            className="absolute -right-4 top-1/2 transform -translate-y-1/2 bg-wfc-purple text-white rounded-full h-8 w-8 flex items-center justify-center shadow-md z-10 hover:bg-wfc-purple-medium transition-colors"
+            className="absolute -right-4 top-1/2 transform -translate-y-1/2 bg-[#9b87f5] text-white rounded-full h-8 w-8 flex items-center justify-center shadow-md z-10 hover:bg-[#8E9196] transition-colors"
             aria-label={sidebarCollapsed ? "Mostrar contactos" : "Ocultar contactos"}
           >
             {sidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
@@ -349,7 +357,7 @@ const ChatsPage = () => {
                   )}
                   <Avatar>
                     <AvatarImage src={getChatAvatar(activeChat)} />
-                    <AvatarFallback className="bg-wfc-purple-medium text-white">
+                    <AvatarFallback className="bg-[#9b87f5] text-white">
                       {getAvatarFallback(activeChat)}
                     </AvatarFallback>
                   </Avatar>
@@ -441,7 +449,7 @@ const ChatsPage = () => {
                                   {/* Message bubble with different colors for sent/received */}
                                   <div className={`px-4 py-2 rounded-2xl ${
                                     isCurrentUser 
-                                      ? 'bg-wfc-purple text-white rounded-br-none' 
+                                      ? 'bg-[#9b87f5] text-white rounded-br-none' 
                                       : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
                                   }`}>
                                     <p className="break-words">{message.content}</p>
@@ -457,7 +465,7 @@ const ChatsPage = () => {
                                 {isCurrentUser && (
                                   <Avatar className="h-8 w-8 ml-2 self-end flex-shrink-0">
                                     <AvatarImage src={currentUser.photoURL} />
-                                    <AvatarFallback className="bg-wfc-purple text-white text-xs">
+                                    <AvatarFallback className="bg-[#9b87f5] text-white text-xs">
                                       {currentUser.name?.charAt(0).toUpperCase() || 'Y'}
                                     </AvatarFallback>
                                   </Avatar>
@@ -490,7 +498,7 @@ const ChatsPage = () => {
                     <Button
                       onClick={handleSendMessage}
                       disabled={!messageText.trim()}
-                      className="bg-wfc-purple hover:bg-wfc-purple-medium"
+                      className="bg-[#9b87f5] hover:bg-[#8a74f0]"
                     >
                       <Send className="h-4 w-4" />
                     </Button>
@@ -535,6 +543,33 @@ const ChatsPage = () => {
           </Card>
         </div>
       </div>
+      
+      {/* Mobile chat view */}
+      {activeChat && (
+        <ChatMobileSheet
+          isOpen={isMobileChat}
+          onClose={() => setIsMobileChat(false)}
+          title={getChatName(activeChat)}
+          messages={activeMessages}
+          isGroup={activeChat.isGroup}
+        >
+          <div className="flex space-x-2">
+            <Input
+              placeholder="Escribe un mensaje..."
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              className="flex-1"
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={!messageText.trim()}
+              className="bg-[#9b87f5] hover:bg-[#8a74f0]"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </ChatMobileSheet>
+      )}
       
       {/* Dialogs */}
       <Dialog open={isCreatingGroup} onOpenChange={setIsCreatingGroup}>

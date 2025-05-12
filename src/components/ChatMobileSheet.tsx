@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { ChevronLeft, Users, UserPlus, Info } from "lucide-react";
+import { ChevronLeft, Info } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from '@/contexts/AuthContext';
@@ -109,7 +109,7 @@ const ChatMobileSheet = ({
                           {/* Message bubble with different colors for sent/received */}
                           <div className={`px-4 py-2 rounded-2xl ${
                             isCurrentUser 
-                              ? 'bg-wfc-purple text-white rounded-br-none' 
+                              ? 'bg-[#9b87f5] text-white rounded-br-none' 
                               : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
                           }`}>
                             <p className="break-words">{message.content}</p>
@@ -125,7 +125,7 @@ const ChatMobileSheet = ({
                         {isCurrentUser && (
                           <Avatar className="h-8 w-8 ml-2 self-end flex-shrink-0">
                             <AvatarImage src={currentUser.photoURL} />
-                            <AvatarFallback className="bg-wfc-purple text-white text-xs">
+                            <AvatarFallback className="bg-[#9b87f5] text-white text-xs">
                               {currentUser.name?.charAt(0).toUpperCase() || 'Y'}
                             </AvatarFallback>
                           </Avatar>
