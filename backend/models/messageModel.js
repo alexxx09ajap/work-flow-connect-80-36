@@ -1,4 +1,3 @@
-
 const db = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
@@ -129,15 +128,17 @@ const messageModel = {
         query = 'UPDATE "Messages" SET content = $1, "updatedAt" = $2, "edited" = true WHERE id = $3 RETURNING *, "userId" as "senderId"';
         values = [text, now, messageId];
       } else {
+        // Si no existe la columna edited, primero intentamos agregarla
+        await this.addEditedColumn();
+        
+        // Luego hacemos la actualización sin usar la columna edited para evitar errores
         query = 'UPDATE "Messages" SET content = $1, "updatedAt" = $2 WHERE id = $3 RETURNING *, "userId" as "senderId"';
         values = [text, now, messageId];
-        
-        // Intentar agregar la columna edited si no existe
-        await this.addEditedColumn();
       }
       
       const result = await db.query(query, values);
       
+      // Aseguramos que siempre devolvemos edited como true para mensajes actualizados
       return result.rows[0] ? {
         ...result.rows[0],
         edited: true,
@@ -145,7 +146,22 @@ const messageModel = {
       } : null;
     } catch (error) {
       console.error("Error al actualizar mensaje:", error);
-      throw error;
+      // Si hay un error con la columna edited, intentamos con la consulta alternativa
+      try {
+        const query = 'UPDATE "Messages" SET content = $1, "updatedAt" = $2 WHERE id = $3 RETURNING *, "userId" as "senderId"';
+        const values = [text, now, messageId];
+        
+        const result = await db.query(query, values);
+        
+        return result.rows[0] ? {
+          ...result.rows[0],
+          edited: true,
+          deleted: result.rows[0].deleted || false
+        } : null;
+      } catch (secondError) {
+        console.error("Error en el segundo intento de actualizar mensaje:", secondError);
+        throw secondError;
+      }
     }
   },
   

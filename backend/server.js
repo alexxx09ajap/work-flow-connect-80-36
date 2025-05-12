@@ -65,7 +65,7 @@ app.get('/', (req, res) => {
   res.send('WorkFlowConnect API is running');
 });
 
-// Iniciar el servidor CORRECTO con socket.io
+// Iniciar el servidor con socket.io
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, async () => {
   console.log(`Server running on port ${PORT} with Socket.IO support`);
@@ -75,7 +75,11 @@ server.listen(PORT, async () => {
   
   // Asegurarnos de que las columnas necesarias existan
   const messageModel = require('./models/messageModel');
-  await messageModel.addDeletedColumn();
-  await messageModel.addEditedColumn();
+  try {
+    await messageModel.addDeletedColumn();
+    await messageModel.addEditedColumn();
+    console.log('Verificadas las columnas necesarias en la tabla de mensajes al iniciar el servidor');
+  } catch (err) {
+    console.error('Error al verificar columnas en inicio de servidor:', err);
+  }
 });
-

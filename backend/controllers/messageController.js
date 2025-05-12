@@ -123,7 +123,7 @@ const messageController = {
         senderName: sender ? sender.name : 'Unknown User',
         senderPhoto: sender ? sender.photoURL : null,
         timestamp: updatedMessage.updatedAt,
-        edited: true,
+        edited: true, // Aseguramos que edited siempre sea true para mensajes actualizados
         deleted: updatedMessage.deleted || false
       };
       
