@@ -16,8 +16,8 @@ router.post('/private', chatController.createPrivateChat);
 // Create group chat
 router.post('/group', chatController.createGroupChat);
 
-// Add users to a chat
-router.post('/:chatId/users', chatController.addUsersToChat);
+// Add users to a chat - Corregido el nombre de la función
+router.post('/:chatId/users', chatController.addUsersToChatActions);
 
 // Leave a chat
 router.post('/:chatId/leave', chatController.leaveChat);

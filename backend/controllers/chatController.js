@@ -1,4 +1,3 @@
-
 const chatModel = require('../models/chatModel');
 const userModel = require('../models/userModel');
 const messageModel = require('../models/messageModel');
@@ -111,7 +110,7 @@ const chatController = {
   },
   
   // Add users to a chat
-  async addUsersToChatActions(req, res) {
+  async addUsersToChat(req, res) {
     try {
       const { userId } = req.user;
       const { chatId } = req.params;
