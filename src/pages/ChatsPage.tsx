@@ -78,7 +78,7 @@ const ChatsPage = () => {
       const otherUserId = chat.participants.find((id) => id !== currentUser.id);
       if (otherUserId) {
         const otherUser = getUserById(otherUserId);
-        return otherUser ? otherUser.name : 'Chat privado';
+        return otherUser ? otherUser.name : 'Usuario';
       }
     }
     
@@ -391,7 +391,7 @@ const ChatsPage = () => {
                   )}
                 </div>
                 
-                {/* Messages area - Mensajes enviados a la derecha, recibidos a la izquierda */}
+                {/* Messages area */}
                 <ScrollArea id="messages-container" className="flex-1 p-4 bg-gray-50 dark:bg-gray-900">
                   {activeMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">

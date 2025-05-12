@@ -60,7 +60,7 @@ const ChatMobileSheet = ({
         <ScrollArea className="h-[calc(100vh-4rem)]">
           <div className="p-4 space-y-4">
             {messages.length > 0 ? (
-              messages.map((message, index, messages) => {
+              messages.map((message, index) => {
                 const isCurrentUser = currentUser && message.senderId === currentUser.id;
                 const isSystemMessage = message.senderId === "system";
                 const sender = isSystemMessage ? null : getUserById(message.senderId);
