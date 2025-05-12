@@ -62,7 +62,8 @@ const messageController = {
         senderId: senderId, // Asegurarse que el senderId está explícitamente establecido
         senderName: sender ? sender.name : 'Unknown User',
         senderPhoto: sender ? sender.photoURL : null,
-        timestamp: message.createdAt
+        timestamp: message.createdAt,
+        deleted: message.deleted || false
       };
       
       console.log('Formatted message to send:', formattedMessage);
@@ -121,7 +122,8 @@ const messageController = {
         senderName: sender ? sender.name : 'Unknown User',
         senderPhoto: sender ? sender.photoURL : null,
         timestamp: updatedMessage.updatedAt,
-        edited: true
+        edited: true,
+        deleted: updatedMessage.deleted || false
       };
       
       // Get the socket service from the app

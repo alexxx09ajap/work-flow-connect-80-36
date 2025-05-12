@@ -1,4 +1,3 @@
-
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -17,6 +16,9 @@ const fileRoutes = require('./routes/fileRoutes');
 
 // Socket handler
 const socketHandler = require('./socket/socketHandler');
+
+// Importar el script de verificación de esquema
+const { checkAndUpdateDbSchema } = require('./scripts/checkDbSchema');
 
 // Create Express app
 const app = express();
@@ -62,8 +64,11 @@ app.get('/', (req, res) => {
   res.send('WorkFlowConnect API is running');
 });
 
-// Start the server
+// Iniciar el servidor
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
+  
+  // Verificar y actualizar el esquema de la base de datos al iniciar
+  await checkAndUpdateDbSchema();
 });
