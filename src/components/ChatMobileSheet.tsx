@@ -46,6 +46,9 @@ const ChatMobileSheet = ({
     });
   };
 
+  // Verificar que currentUser tenga un ID válido
+  console.log("Current User ID:", currentUser?.id);
+
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="left" className="sm:max-w-md w-full p-0">
@@ -62,6 +65,9 @@ const ChatMobileSheet = ({
             {messages.length > 0 ? (
               messages.map((message, index) => {
                 const isCurrentUser = currentUser && message.senderId === currentUser.id;
+                // Debug information
+                console.log(`Message ${index}: senderId=${message.senderId}, currentUserId=${currentUser?.id}, isCurrentUser=${isCurrentUser}`);
+                
                 const isSystemMessage = message.senderId === "system";
                 const sender = isSystemMessage ? null : getUserById(message.senderId);
                 
@@ -88,10 +94,10 @@ const ChatMobileSheet = ({
                       </div>
                     ) : (
                       <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} group mb-2`}>
-                        {/* Avatar for received messages only */}
+                        {/* Avatar para mensajes recibidos solamente */}
                         {!isCurrentUser && (
                           <Avatar className="h-8 w-8 mr-2 self-end flex-shrink-0">
-                            <AvatarImage src={sender?.photoURL} />
+                            <AvatarImage src={sender?.photoURL || sender?.avatar} />
                             <AvatarFallback className="bg-gray-300 text-gray-700 text-xs">
                               {sender?.name?.charAt(0).toUpperCase() || '?'}
                             </AvatarFallback>
@@ -99,14 +105,14 @@ const ChatMobileSheet = ({
                         )}
                         
                         <div className="max-w-[70%]">
-                          {/* Sender name for group chats */}
+                          {/* Nombre del remitente para chats grupales */}
                           {!isCurrentUser && isGroup && (
                             <div className="text-xs text-gray-500 ml-1 mb-1">
                               {sender?.name || 'Usuario'}
                             </div>
                           )}
                           
-                          {/* Message bubble with different colors for sent/received */}
+                          {/* Burbuja de mensaje con diferentes colores para enviados/recibidos */}
                           <div className={`px-4 py-2 rounded-2xl ${
                             isCurrentUser 
                               ? 'bg-[#9b87f5] text-white rounded-br-none' 
@@ -115,16 +121,16 @@ const ChatMobileSheet = ({
                             <p className="break-words">{message.content}</p>
                           </div>
                           
-                          {/* Message timestamp */}
+                          {/* Marca de tiempo del mensaje */}
                           <div className={`text-xs text-gray-400 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
                             {formatTime(message.timestamp)}
                           </div>
                         </div>
                         
-                        {/* Avatar for sent messages only */}
+                        {/* Avatar para mensajes enviados solamente */}
                         {isCurrentUser && (
                           <Avatar className="h-8 w-8 ml-2 self-end flex-shrink-0">
-                            <AvatarImage src={currentUser.photoURL} />
+                            <AvatarImage src={currentUser.photoURL || currentUser.avatar} />
                             <AvatarFallback className="bg-[#9b87f5] text-white text-xs">
                               {currentUser.name?.charAt(0).toUpperCase() || 'Y'}
                             </AvatarFallback>

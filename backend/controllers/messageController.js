@@ -21,6 +21,9 @@ const messageController = {
       // Mark messages as read
       await messageModel.markAsRead(chatId, req.user.userId);
       
+      // Log message info for debugging
+      console.log(`Retrieved ${messages.length} messages for chat ${chatId}. User ID: ${req.user.userId}`);
+      
       res.json(messages);
     } catch (error) {
       console.error('Error getting messages:', error);
@@ -32,9 +35,12 @@ const messageController = {
   async sendMessage(req, res) {
     try {
       const { chatId, content } = req.body;
+      const senderId = req.user.userId;
+      
+      console.log(`Sending message from user ${senderId} to chat ${chatId}: "${content}"`);
       
       // Check if user is a participant
-      const isParticipant = await chatModel.isParticipant(chatId, req.user.userId);
+      const isParticipant = await chatModel.isParticipant(chatId, senderId);
       if (!isParticipant) {
         return res.status(403).json({ message: 'You are not a participant in this chat' });
       }
@@ -42,21 +48,24 @@ const messageController = {
       // Create message
       const message = await messageModel.create({
         chatId,
-        senderId: req.user.userId,
+        senderId: senderId,
         text: content
       });
       
       // Get sender information for real-time updates
       const result = await chatModel.getParticipants(chatId);
-      const sender = result.find(user => user.id === req.user.userId);
+      const sender = result.find(user => user.id === senderId);
       
       // Format message for response with sender info
       const formattedMessage = {
         ...message,
+        senderId: senderId, // Asegurarse que el senderId está explícitamente establecido
         senderName: sender ? sender.name : 'Unknown User',
         senderPhoto: sender ? sender.photoURL : null,
         timestamp: message.createdAt
       };
+      
+      console.log('Formatted message to send:', formattedMessage);
       
       // Update last message in chat
       await chatModel.updateLastMessage(chatId);

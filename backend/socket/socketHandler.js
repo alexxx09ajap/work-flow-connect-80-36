@@ -46,6 +46,8 @@ const socketHandler = (io) => {
           return socket.emit('error', 'You are not a participant in this chat');
         }
         
+        console.log(`Socket sendMessage: userId=${userId}, chatId=${chatId}, text=${text}`);
+        
         // Create message
         const message = await messageModel.create({
           chatId,
@@ -60,10 +62,13 @@ const socketHandler = (io) => {
         // Format message with sender info
         const formattedMessage = {
           ...message,
+          senderId: userId, // Ensure senderId is explicitly set
           senderName: sender ? sender.name : 'Unknown User',
           senderPhoto: sender ? sender.photoURL : null,
           timestamp: message.createdAt
         };
+        
+        console.log('Socket formatted message:', formattedMessage);
         
         // Update last message in chat
         await chatModel.updateLastMessage(chatId);
@@ -121,6 +126,7 @@ const socketHandler = (io) => {
         // Message to send to clients (without binary data)
         const messageToSend = {
           ...message,
+          senderId: userId, // Ensure senderId is explicitly set
           file: {
             id: file.id,
             filename,
