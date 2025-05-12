@@ -391,7 +391,7 @@ const ChatsPage = () => {
                   )}
                 </div>
                 
-                {/* Messages area */}
+                {/* Messages area with proper visualization */}
                 <ScrollArea id="messages-container" className="flex-1 p-4 bg-gray-50 dark:bg-gray-900">
                   {activeMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
@@ -427,7 +427,7 @@ const ChatsPage = () => {
                                 </div>
                               </div>
                             ) : (
-                              <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} w-full mb-2`}>
+                              <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} group mb-2`}>
                                 {/* Avatar for received messages only */}
                                 {!isCurrentUser && (
                                   <Avatar className="h-8 w-8 mr-2 self-end flex-shrink-0">

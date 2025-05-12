@@ -87,7 +87,7 @@ const ChatMobileSheet = ({
                         </div>
                       </div>
                     ) : (
-                      <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} w-full mb-2`}>
+                      <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} group mb-2`}>
                         {/* Avatar for received messages only */}
                         {!isCurrentUser && (
                           <Avatar className="h-8 w-8 mr-2 self-end flex-shrink-0">
