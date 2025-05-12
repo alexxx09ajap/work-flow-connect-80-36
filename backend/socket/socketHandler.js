@@ -76,7 +76,7 @@ const socketHandler = (io) => {
         // Get participants of the chat
         const participants = await chatModel.getParticipants(chatId);
         
-        // Send to all participants
+        // Send to all participants including the sender
         participants.forEach((participant) => {
           const socketId = connectedUsers.get(participant.id.toString());
           if (socketId) {
@@ -101,7 +101,7 @@ const socketHandler = (io) => {
           return socket.emit('error', 'Message not found');
         }
         
-        if (message.userId !== userId) {
+        if (message.userId !== userId && message.senderId !== userId) {
           return socket.emit('error', 'You can only edit your own messages');
         }
         
@@ -115,7 +115,7 @@ const socketHandler = (io) => {
         // Format message for notifications
         const formattedMessage = {
           ...updatedMessage,
-          senderId: userId,
+          senderId: updatedMessage.senderId || updatedMessage.userId,
           edited: true,
           timestamp: updatedMessage.updatedAt
         };
@@ -143,7 +143,7 @@ const socketHandler = (io) => {
           return socket.emit('error', 'Message not found');
         }
         
-        if (message.userId !== userId) {
+        if (message.userId !== userId && message.senderId !== userId) {
           return socket.emit('error', 'You can only delete your own messages');
         }
         
@@ -151,7 +151,7 @@ const socketHandler = (io) => {
         const chatId = message.chatId;
         
         // Delete message
-        await messageModel.delete(messageId);
+        const deletedMessage = await messageModel.delete(messageId);
         
         // Get participants
         const participants = await chatModel.getParticipants(chatId);
@@ -163,7 +163,13 @@ const socketHandler = (io) => {
         participants.forEach((participant) => {
           const socketId = connectedUsers.get(participant.id.toString());
           if (socketId) {
-            io.to(socketId).emit('chat:message:delete', chatId, messageId);
+            io.to(socketId).emit('chat:message:delete', chatId, {
+              id: messageId,
+              chatId,
+              deleted: true,
+              content: '[Mensaje eliminado]',
+              timestamp: deletedMessage.updatedAt
+            });
           }
         });
       } catch (error) {
@@ -225,7 +231,7 @@ const socketHandler = (io) => {
         participants.forEach((participant) => {
           const socketId = connectedUsers.get(participant.id.toString());
           if (socketId) {
-            io.to(socketId).emit('chat:message', messageToSend);
+            io.to(socketId).emit('chat:message', chatId, messageToSend);
           }
         });
       } catch (error) {
