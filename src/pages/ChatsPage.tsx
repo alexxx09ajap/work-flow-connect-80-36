@@ -421,7 +421,7 @@ const ChatsPage = () => {
                                 {!isCurrentUser && (
                                   <Avatar className="h-8 w-8 mr-2 mt-1">
                                     <AvatarImage src={sender?.photoURL} />
-                                    <AvatarFallback className="bg-wfc-purple-medium text-white">
+                                    <AvatarFallback className="bg-gray-300 text-gray-700">
                                       {sender?.name?.charAt(0).toUpperCase() || '?'}
                                     </AvatarFallback>
                                   </Avatar>
@@ -429,21 +429,30 @@ const ChatsPage = () => {
                                 
                                 <div className={`max-w-[80%]`}>
                                   {!isCurrentUser && activeChat.isGroup && (
-                                    <p className="text-xs text-gray-500 mb-1">{sender?.name || 'Usuario'}</p>
+                                    <p className="text-xs text-gray-500 mb-1 ml-1">{sender?.name || 'Usuario'}</p>
                                   )}
                                   <div 
-                                    className={`rounded-lg px-4 py-2 inline-block
+                                    className={`px-4 py-2 rounded-lg shadow-sm
                                       ${isCurrentUser 
-                                        ? 'bg-wfc-purple text-white rounded-tr-none' 
-                                        : 'bg-gray-100 dark:bg-gray-700 rounded-tl-none'}
+                                        ? 'bg-wfc-purple text-white rounded-br-none ml-2' 
+                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'}
                                     `}
                                   >
                                     <p className="break-words">{message.content}</p>
                                   </div>
-                                  <p className="text-xs text-gray-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <p className={`text-xs text-gray-400 mt-1 transition-opacity ${isCurrentUser ? 'text-right mr-2' : 'ml-1'}`}>
                                     {formatTime(message.timestamp)}
                                   </p>
                                 </div>
+                                
+                                {isCurrentUser && (
+                                  <Avatar className="h-8 w-8 ml-2 mt-1">
+                                    <AvatarImage src={currentUser?.photoURL} />
+                                    <AvatarFallback className="bg-wfc-purple text-white">
+                                      {currentUser?.name?.charAt(0).toUpperCase() || 'U'}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                )}
                               </div>
                             )}
                           </React.Fragment>
