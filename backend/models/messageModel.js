@@ -70,6 +70,16 @@ const messageModel = {
        WHERE "chatId" = $1 AND "userId" != $2 AND NOT read`,
       [chatId, userId]
     );
+    
+    // Return the count of updated messages (optional)
+    const result = await db.query(
+      `SELECT COUNT(*) as updated_count 
+       FROM "Messages" 
+       WHERE "chatId" = $1 AND read = true AND "userId" != $2`,
+      [chatId, userId]
+    );
+    
+    return result.rows[0]?.updated_count || 0;
   }
 };
 

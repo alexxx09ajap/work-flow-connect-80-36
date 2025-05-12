@@ -41,9 +41,9 @@ router.put('/:chatId/read', async (req, res) => {
     
     // Mark messages as read
     const messageModel = require('../models/messageModel');
-    await messageModel.markAsRead(chatId, userId);
+    const updatedCount = await messageModel.markAsRead(chatId, userId);
     
-    res.json({ success: true });
+    res.json({ success: true, updatedCount });
   } catch (error) {
     console.error('Error marking messages as read:', error);
     res.status(500).json({ message: 'Server error' });

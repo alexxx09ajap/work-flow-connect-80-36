@@ -440,7 +440,7 @@ const ChatsPage = () => {
                                   >
                                     <p className="break-words">{message.content}</p>
                                   </div>
-                                  <p className={`text-xs text-gray-400 mt-1 transition-opacity ${isCurrentUser ? 'text-right mr-2' : 'ml-1'}`}>
+                                  <p className={`text-xs text-gray-400 mt-1 ${isCurrentUser ? 'text-right mr-2' : 'ml-1'}`}>
                                     {formatTime(message.timestamp)}
                                   </p>
                                 </div>
