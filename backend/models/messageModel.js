@@ -10,9 +10,12 @@ const messageModel = {
     // Generate UUID for the message
     const messageId = uuidv4();
     
+    // Get current timestamp for createdAt and updatedAt
+    const now = new Date();
+    
     const result = await db.query(
-      'INSERT INTO "Messages" (id, "chatId", "userId", content, read) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [messageId, chatId, senderId, text, false]
+      'INSERT INTO "Messages" (id, "chatId", "userId", content, read, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [messageId, chatId, senderId, text, false, now, now]
     );
     
     return result.rows[0];
