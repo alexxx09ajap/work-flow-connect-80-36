@@ -40,7 +40,8 @@ const messageModel = {
     // Nos aseguramos de que cada mensaje tenga un senderId explícito para la coherencia en la interfaz
     return result.rows.map(row => ({
       ...row,
-      senderId: row.userId || row.senderId
+      senderId: row.userId || row.senderId,
+      timestamp: row.createdAt // Añadimos timestamp para compatibilidad con el frontend
     }));
   },
   
@@ -55,9 +56,10 @@ const messageModel = {
   
   // Update a message
   async update(messageId, text) {
+    const now = new Date();
     const result = await db.query(
-      'UPDATE "Messages" SET content = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *, "userId" as "senderId"',
-      [text, messageId]
+      'UPDATE "Messages" SET content = $1, "updatedAt" = $2 WHERE id = $3 RETURNING *, "userId" as "senderId"',
+      [text, now, messageId]
     );
     
     return result.rows[0];

@@ -135,13 +135,23 @@ export const messageService = {
   },
   
   updateMessage: async (messageId: string, text: string) => {
-    const response = await api.put(`/messages/${messageId}`, { text });
-    return response.data;
+    try {
+      const response = await api.put(`/messages/${messageId}`, { text });
+      return response.data;
+    } catch (err) {
+      console.error("Error updating message:", err);
+      throw err;
+    }
   },
   
   deleteMessage: async (messageId: string) => {
-    const response = await api.delete(`/messages/${messageId}`);
-    return response.data;
+    try {
+      const response = await api.delete(`/messages/${messageId}`);
+      return response.data;
+    } catch (err) {
+      console.error("Error deleting message:", err);
+      throw err;
+    }
   }
 };
 

@@ -102,14 +102,40 @@ const messageController = {
       }
       
       // Check if user is the sender
-      if (message.userId !== req.user.userId) {
+      if (message.senderId !== req.user.userId && message.userId !== req.user.userId) {
         return res.status(403).json({ message: 'You can only edit your own messages' });
       }
       
       // Update message
       const updatedMessage = await messageModel.update(messageId, text);
       
-      res.json(updatedMessage);
+      // Get chat and sender information for real-time updates
+      const chatId = message.chatId;
+      const result = await chatModel.getParticipants(chatId);
+      const sender = result.find(user => user.id === req.user.userId);
+      
+      // Format message for response with sender info
+      const formattedMessage = {
+        ...updatedMessage,
+        senderId: updatedMessage.senderId || updatedMessage.userId,
+        senderName: sender ? sender.name : 'Unknown User',
+        senderPhoto: sender ? sender.photoURL : null,
+        timestamp: updatedMessage.updatedAt,
+        edited: true
+      };
+      
+      // Get the socket service from the app
+      const socketService = req.app.get('socketService');
+      if (socketService) {
+        // Get all participants of the chat
+        const participants = await chatModel.getParticipants(chatId);
+        const participantIds = participants.map(p => p.id);
+        
+        // Notify all participants about the updated message
+        socketService.notifyUsers(participantIds, 'chat:message:update', chatId, formattedMessage);
+      }
+      
+      res.json(formattedMessage);
     } catch (error) {
       console.error('Error updating message:', error);
       res.status(500).json({ message: 'Server error' });
@@ -129,16 +155,30 @@ const messageController = {
       }
       
       // Check if user is the sender
-      if (message.userId !== req.user.userId) {
+      if (message.senderId !== req.user.userId && message.userId !== req.user.userId) {
         return res.status(403).json({ message: 'You can only delete your own messages' });
       }
+      
+      // Get chat ID for notifications before deleting
+      const chatId = message.chatId;
       
       // Delete message
       await messageModel.delete(messageId);
       
       // If this was the last message in the chat, update the chat
-      const lastMessage = await messageModel.getLastMessage(message.chatId);
-      await chatModel.updateLastMessage(message.chatId);
+      const lastMessage = await messageModel.getLastMessage(chatId);
+      await chatModel.updateLastMessage(chatId);
+      
+      // Get the socket service from the app
+      const socketService = req.app.get('socketService');
+      if (socketService) {
+        // Get all participants of the chat
+        const participants = await chatModel.getParticipants(chatId);
+        const participantIds = participants.map(p => p.id);
+        
+        // Notify all participants about the deleted message
+        socketService.notifyUsers(participantIds, 'chat:message:delete', chatId, messageId);
+      }
       
       res.json({ message: 'Message deleted', messageId });
     } catch (error) {

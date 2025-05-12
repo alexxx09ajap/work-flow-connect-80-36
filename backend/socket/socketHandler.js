@@ -89,6 +89,89 @@ const socketHandler = (io) => {
       }
     });
     
+    // Handle editing messages
+    socket.on('editMessage', async (messageData) => {
+      try {
+        const { messageId, text } = messageData;
+        
+        // Get message to check ownership and chat
+        const message = await messageModel.findById(messageId);
+        
+        if (!message) {
+          return socket.emit('error', 'Message not found');
+        }
+        
+        if (message.userId !== userId) {
+          return socket.emit('error', 'You can only edit your own messages');
+        }
+        
+        // Update message
+        const updatedMessage = await messageModel.update(messageId, text);
+        
+        // Get chat and participants
+        const chatId = message.chatId;
+        const participants = await chatModel.getParticipants(chatId);
+        
+        // Format message for notifications
+        const formattedMessage = {
+          ...updatedMessage,
+          senderId: userId,
+          edited: true,
+          timestamp: updatedMessage.updatedAt
+        };
+        
+        // Notify all participants about the update
+        participants.forEach((participant) => {
+          const socketId = connectedUsers.get(participant.id.toString());
+          if (socketId) {
+            io.to(socketId).emit('chat:message:update', chatId, formattedMessage);
+          }
+        });
+      } catch (error) {
+        console.error('Error editing message:', error);
+        socket.emit('error', 'Error editing message');
+      }
+    });
+    
+    // Handle deleting messages
+    socket.on('deleteMessage', async (messageId) => {
+      try {
+        // Get message to check ownership and chat
+        const message = await messageModel.findById(messageId);
+        
+        if (!message) {
+          return socket.emit('error', 'Message not found');
+        }
+        
+        if (message.userId !== userId) {
+          return socket.emit('error', 'You can only delete your own messages');
+        }
+        
+        // Get chat ID before deleting
+        const chatId = message.chatId;
+        
+        // Delete message
+        await messageModel.delete(messageId);
+        
+        // Get participants
+        const participants = await chatModel.getParticipants(chatId);
+        
+        // Update chat's last message
+        await chatModel.updateLastMessage(chatId);
+        
+        // Notify all participants about the deletion
+        participants.forEach((participant) => {
+          const socketId = connectedUsers.get(participant.id.toString());
+          if (socketId) {
+            io.to(socketId).emit('chat:message:delete', chatId, messageId);
+          }
+        });
+      } catch (error) {
+        console.error('Error deleting message:', error);
+        socket.emit('error', 'Error deleting message');
+      }
+    });
+    
     // Handle file uploads
     socket.on('sendFile', async (fileData) => {
       try {

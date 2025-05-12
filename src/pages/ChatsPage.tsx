@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
@@ -21,13 +21,18 @@ import {
   ChevronRight,
   Info,
   Loader2,
-  MessageCircle
+  MessageCircle,
+  Edit,
+  Trash2,
+  MoreVertical
 } from 'lucide-react';
 import { ChatGroupForm } from '@/components/ChatGroupForm';
 import { UserSelectDialog } from '@/components/UserSelectDialog';
 import { toast } from '@/components/ui/use-toast';
 import { ChatType, MessageType } from '@/types';
 import ChatMobileSheet from '@/components/ChatMobileSheet';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { messageService } from '@/services/api';
 
 const ChatsPage = () => {
   const { 
@@ -51,6 +56,8 @@ const ChatsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileChat, setIsMobileChat] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<{id: string, content: string} | null>(null);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Get messages for the active chat
@@ -164,6 +171,48 @@ const ChatsPage = () => {
   const openMobileChat = (chat: ChatType) => {
     setActiveChat(chat);
     setIsMobileChat(true);
+  };
+  
+  const handleEditMessage = async (id: string, content: string) => {
+    if (!editingMessage) {
+      // Comenzar edición
+      setEditingMessage({ id, content });
+    } else {
+      // Finalizar edición
+      try {
+        await messageService.updateMessage(id, editingMessage.content);
+        toast({
+          title: "Mensaje actualizado",
+          description: "El mensaje ha sido actualizado correctamente."
+        });
+        setEditingMessage(null);
+      } catch (error) {
+        console.error('Error al actualizar mensaje:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudo actualizar el mensaje."
+        });
+      }
+    }
+  };
+  
+  const handleDeleteMessage = async (messageId: string) => {
+    try {
+      await messageService.deleteMessage(messageId);
+      toast({
+        title: "Mensaje eliminado",
+        description: "El mensaje ha sido eliminado correctamente."
+      });
+      setIsConfirmingDelete(null);
+    } catch (error) {
+      console.error('Error al eliminar mensaje:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo eliminar el mensaje."
+      });
+    }
   };
   
   return (
@@ -404,6 +453,7 @@ const ChatsPage = () => {
                         const isCurrentUser = currentUser && message.senderId === currentUser.id;
                         const isSystemMessage = message.senderId === "system";
                         const sender = isSystemMessage ? null : getUserById(message.senderId);
+                        const isEditing = editingMessage && editingMessage.id === message.id;
                         
                         const showDateSeparator = index === 0 || 
                           new Date(message.timestamp).toDateString() !== 
@@ -447,12 +497,81 @@ const ChatsPage = () => {
                                   )}
                                   
                                   {/* Message bubble with different colors for sent/received */}
-                                  <div className={`px-4 py-2 rounded-2xl ${
+                                  <div className={`px-4 py-2 rounded-2xl relative ${
                                     isCurrentUser 
                                       ? 'bg-[#9b87f5] text-white rounded-br-none' 
                                       : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
-                                  }`}>
-                                    <p className="break-words">{message.content}</p>
+                                  } group`}>
+                                    {isEditing ? (
+                                      <div className="flex items-center">
+                                        <Input
+                                          value={editingMessage.content}
+                                          onChange={(e) => setEditingMessage({...editingMessage, content: e.target.value})}
+                                          className="bg-white text-gray-800 border-0"
+                                          autoFocus
+                                        />
+                                        <Button 
+                                          size="sm" 
+                                          variant="ghost"
+                                          onClick={() => handleEditMessage(message.id, editingMessage.content)}
+                                          className="ml-2"
+                                        >
+                                          <Check className="h-4 w-4" />
+                                        </Button>
+                                        <Button 
+                                          size="sm" 
+                                          variant="ghost"
+                                          onClick={() => setEditingMessage(null)}
+                                          className="ml-1"
+                                        >
+                                          <X className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <p className="break-words">{message.content}</p>
+                                    )}
+                                    
+                                    {/* Opciones de mensaje (editar/eliminar) para mensajes propios */}
+                                    {isCurrentUser && !isEditing && (
+                                      <Popover>
+                                        <PopoverTrigger asChild>
+                                          <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-6 w-6 p-0 absolute top-1 right-1 opacity-0 group-hover:opacity-100"
+                                          >
+                                            <MoreVertical className="h-4 w-4 text-white" />
+                                          </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-2">
+                                          <div className="flex flex-col space-y-1">
+                                            <Button 
+                                              variant="ghost" 
+                                              size="sm" 
+                                              className="flex justify-start px-2"
+                                              onClick={() => setEditingMessage({ id: message.id, content: message.content })}
+                                            >
+                                              <Edit className="h-4 w-4 mr-2" />
+                                              Editar
+                                            </Button>
+                                            <Button 
+                                              variant="ghost" 
+                                              size="sm" 
+                                              className="flex justify-start text-red-500 hover:text-red-600 px-2"
+                                              onClick={() => setIsConfirmingDelete(message.id)}
+                                            >
+                                              <Trash2 className="h-4 w-4 mr-2" />
+                                              Eliminar
+                                            </Button>
+                                          </div>
+                                        </PopoverContent>
+                                      </Popover>
+                                    )}
+                                    
+                                    {/* Edited indicator */}
+                                    {message.edited && (
+                                      <span className="text-xs opacity-70 ml-1">(editado)</span>
+                                    )}
                                   </div>
                                   
                                   {/* Message timestamp */}
@@ -552,6 +671,8 @@ const ChatsPage = () => {
           title={getChatName(activeChat)}
           messages={activeMessages}
           isGroup={activeChat.isGroup}
+          onEditMessage={(id, content) => setEditingMessage({ id, content })}
+          onDeleteMessage={(id) => setIsConfirmingDelete(id)}
         >
           <div className="flex space-x-2">
             <Input
@@ -597,6 +718,61 @@ const ChatsPage = () => {
           excludeUsers={activeChat.participants}
         />
       )}
+      
+      {/* Edit message dialog */}
+      {editingMessage && !isConfirmingDelete && (
+        <Dialog 
+          open={!!editingMessage} 
+          onOpenChange={(open) => !open && setEditingMessage(null)}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Editar mensaje</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <Input
+                value={editingMessage.content}
+                onChange={(e) => setEditingMessage({...editingMessage, content: e.target.value})}
+                className="w-full"
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingMessage(null)}>Cancelar</Button>
+              <Button 
+                className="bg-[#9b87f5] hover:bg-[#8a74f0]"
+                onClick={() => handleEditMessage(editingMessage.id, editingMessage.content)}
+              >
+                Guardar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {/* Delete confirmation dialog */}
+      <Dialog 
+        open={!!isConfirmingDelete} 
+        onOpenChange={(open) => !open && setIsConfirmingDelete(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Eliminar mensaje</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>¿Estás seguro que deseas eliminar este mensaje? Esta acción no se puede deshacer.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsConfirmingDelete(null)}>Cancelar</Button>
+            <Button 
+              variant="destructive"
+              onClick={() => isConfirmingDelete && handleDeleteMessage(isConfirmingDelete)}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };

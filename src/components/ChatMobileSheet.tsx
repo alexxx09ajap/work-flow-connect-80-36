@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { MessageType } from '@/types';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { MoreVertical, Edit, Trash2 } from 'lucide-react';
 
 interface ChatMobileSheetProps {
   isOpen: boolean;
@@ -16,6 +18,8 @@ interface ChatMobileSheetProps {
   messages: MessageType[];
   isGroup?: boolean;
   children?: React.ReactNode;
+  onEditMessage?: (messageId: string, content: string) => void;
+  onDeleteMessage?: (messageId: string) => void;
 }
 
 const ChatMobileSheet = ({
@@ -24,7 +28,9 @@ const ChatMobileSheet = ({
   title,
   messages,
   isGroup = false,
-  children
+  children,
+  onEditMessage,
+  onDeleteMessage
 }: ChatMobileSheetProps) => {
   const { currentUser } = useAuth();
   const { getUserById } = useData();
@@ -97,7 +103,7 @@ const ChatMobileSheet = ({
                         {/* Avatar para mensajes recibidos solamente */}
                         {!isCurrentUser && (
                           <Avatar className="h-8 w-8 mr-2 self-end flex-shrink-0">
-                            <AvatarImage src={sender?.photoURL || sender?.avatar} />
+                            <AvatarImage src={sender?.photoURL} />
                             <AvatarFallback className="bg-gray-300 text-gray-700 text-xs">
                               {sender?.name?.charAt(0).toUpperCase() || '?'}
                             </AvatarFallback>
@@ -117,8 +123,45 @@ const ChatMobileSheet = ({
                             isCurrentUser 
                               ? 'bg-[#9b87f5] text-white rounded-br-none' 
                               : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
-                          }`}>
+                          } relative group`}>
                             <p className="break-words">{message.content}</p>
+                            
+                            {/* Opciones de mensaje (editar/eliminar) para mensajes propios */}
+                            {isCurrentUser && onEditMessage && onDeleteMessage && (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-6 w-6 p-0 absolute top-1 right-1 opacity-0 group-hover:opacity-100"
+                                  >
+                                    <MoreVertical className="h-4 w-4 text-white" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-2">
+                                  <div className="flex flex-col space-y-1">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="flex justify-start px-2"
+                                      onClick={() => onEditMessage(message.id, message.content)}
+                                    >
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Editar
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="flex justify-start text-red-500 hover:text-red-600 px-2"
+                                      onClick={() => onDeleteMessage(message.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Eliminar
+                                    </Button>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            )}
                           </div>
                           
                           {/* Marca de tiempo del mensaje */}
@@ -130,7 +173,7 @@ const ChatMobileSheet = ({
                         {/* Avatar para mensajes enviados solamente */}
                         {isCurrentUser && (
                           <Avatar className="h-8 w-8 ml-2 self-end flex-shrink-0">
-                            <AvatarImage src={currentUser.photoURL || currentUser.avatar} />
+                            <AvatarImage src={currentUser.photoURL} />
                             <AvatarFallback className="bg-[#9b87f5] text-white text-xs">
                               {currentUser.name?.charAt(0).toUpperCase() || 'Y'}
                             </AvatarFallback>
