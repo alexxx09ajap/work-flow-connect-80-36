@@ -14,7 +14,7 @@ export interface User {
   createdAt?: Date;
   updatedAt?: Date;
   joinedAt?: number;
-  location?: string; // Agregando la propiedad location
+  location?: string;
 }
 
 export interface AuthState {

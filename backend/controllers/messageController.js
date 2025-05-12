@@ -63,7 +63,8 @@ const messageController = {
         senderName: sender ? sender.name : 'Unknown User',
         senderPhoto: sender ? sender.photoURL : null,
         timestamp: message.createdAt,
-        deleted: message.deleted || false
+        deleted: message.deleted || false,
+        edited: message.edited || false
       };
       
       console.log('Formatted message to send:', formattedMessage);
@@ -181,6 +182,7 @@ const messageController = {
         socketService.notifyUsers(participantIds, 'chat:message:update', chatId, {
           ...deletedMessage,
           deleted: true,
+          content: '[Mensaje eliminado]',
           timestamp: deletedMessage.updatedAt
         });
       }

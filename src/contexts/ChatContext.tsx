@@ -1,4 +1,6 @@
 
+// Actualizamos la lógica para manejar las actualizaciones de mensajes
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { ChatType, MessageType, UserType } from '@/types';
@@ -148,6 +150,42 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             description: message.content
           });
         }
+      });
+
+      // Add handler for updated messages (edit/delete)
+      newSocket.on('chat:message:update', (chatId: string, updatedMessage: MessageType) => {
+        console.log("Received updated message:", updatedMessage, "for chat:", chatId);
+        
+        // Update the message in the messages state
+        setMessages((prev) => {
+          const chatMessages = prev[chatId] || [];
+          const updatedMessages = chatMessages.map((msg) => 
+            msg.id === updatedMessage.id ? { ...updatedMessage } : msg
+          );
+          
+          return {
+            ...prev,
+            [chatId]: updatedMessages
+          };
+        });
+        
+        // If the message was the last message in the chat, update the chat's lastMessage
+        setChats((prev) =>
+          prev.map((chat) => {
+            if (chat.id === chatId && chat.lastMessage && 
+                chat.messages && chat.messages.length > 0 && 
+                chat.messages[chat.messages.length - 1].id === updatedMessage.id) {
+              return {
+                ...chat,
+                lastMessage: {
+                  content: updatedMessage.deleted ? '[Mensaje eliminado]' : updatedMessage.content,
+                  timestamp: updatedMessage.timestamp || new Date().toISOString()
+                }
+              };
+            }
+            return chat;
+          })
+        );
       });
 
       setSocket(newSocket);
