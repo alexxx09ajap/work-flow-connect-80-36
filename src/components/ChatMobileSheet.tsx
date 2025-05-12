@@ -76,6 +76,7 @@ const ChatMobileSheet = ({
                 
                 const isSystemMessage = message.senderId === "system";
                 const sender = isSystemMessage ? null : getUserById(message.senderId);
+                const isDeleted = message.deleted;
                 
                 const showDateSeparator = index === 0 || 
                   new Date(message.timestamp).toDateString() !== 
@@ -120,14 +121,16 @@ const ChatMobileSheet = ({
                           
                           {/* Burbuja de mensaje con diferentes colores para enviados/recibidos */}
                           <div className={`px-4 py-2 rounded-2xl ${
-                            isCurrentUser 
-                              ? 'bg-[#9b87f5] text-white rounded-br-none' 
-                              : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
+                            isDeleted
+                              ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 italic'
+                              : isCurrentUser 
+                                ? 'bg-[#9b87f5] text-white rounded-br-none' 
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
                           } relative group`}>
                             <p className="break-words">{message.content}</p>
                             
-                            {/* Opciones de mensaje (editar/eliminar) para mensajes propios */}
-                            {isCurrentUser && onEditMessage && onDeleteMessage && (
+                            {/* Opciones de mensaje (editar/eliminar) para mensajes propios no eliminados */}
+                            {isCurrentUser && !isDeleted && onEditMessage && onDeleteMessage && (
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <Button 

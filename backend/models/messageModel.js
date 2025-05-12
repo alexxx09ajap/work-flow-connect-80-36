@@ -17,8 +17,8 @@ const messageModel = {
     
     // Asegurarse de que senderId se guarda tanto en userId (para compatibilidad) como en senderId
     const result = await db.query(
-      'INSERT INTO "Messages" (id, "chatId", "userId", content, read, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [messageId, chatId, senderId, text, false, now, now]
+      'INSERT INTO "Messages" (id, "chatId", "userId", content, read, "createdAt", "updatedAt", "deleted") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [messageId, chatId, senderId, text, false, now, now, false]
     );
     
     // Añadir el senderId explícitamente para garantizar la coherencia
@@ -65,9 +65,16 @@ const messageModel = {
     return result.rows[0];
   },
   
-  // Delete a message
+  // Delete a message (marcar como eliminado)
   async delete(messageId) {
-    await db.query('DELETE FROM "Messages" WHERE id = $1', [messageId]);
+    const now = new Date();
+    // En lugar de eliminar, marcamos como eliminado y mantenemos un placeholder
+    const result = await db.query(
+      'UPDATE "Messages" SET deleted = true, content = \'[Mensaje eliminado]\', "updatedAt" = $1 WHERE id = $2 RETURNING *, "userId" as "senderId"',
+      [now, messageId]
+    );
+    
+    return result.rows[0];
   },
   
   // Get last message for a chat

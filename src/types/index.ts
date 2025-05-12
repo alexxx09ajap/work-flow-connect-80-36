@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -41,12 +40,15 @@ export interface ChatType {
 
 export interface MessageType {
   id: string;
+  chatId: string;
   content: string;
   senderId: string;
   senderName?: string;
-  chatId: string;
+  senderPhoto?: string;
   timestamp: string;
-  read: boolean;
+  read?: boolean;
+  edited?: boolean;
+  deleted?: boolean;
 }
 
 // Job type definition

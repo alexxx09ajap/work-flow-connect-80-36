@@ -162,11 +162,10 @@ const messageController = {
       // Get chat ID for notifications before deleting
       const chatId = message.chatId;
       
-      // Delete message
-      await messageModel.delete(messageId);
+      // Marcar el mensaje como eliminado en vez de borrarlo físicamente
+      const deletedMessage = await messageModel.delete(messageId);
       
-      // If this was the last message in the chat, update the chat
-      const lastMessage = await messageModel.getLastMessage(chatId);
+      // Update last message in the chat
       await chatModel.updateLastMessage(chatId);
       
       // Get the socket service from the app
@@ -176,8 +175,12 @@ const messageController = {
         const participants = await chatModel.getParticipants(chatId);
         const participantIds = participants.map(p => p.id);
         
-        // Notify all participants about the deleted message
-        socketService.notifyUsers(participantIds, 'chat:message:delete', chatId, messageId);
+        // Notify all participants about the "deleted" message with updated content
+        socketService.notifyUsers(participantIds, 'chat:message:update', chatId, {
+          ...deletedMessage,
+          deleted: true,
+          timestamp: deletedMessage.updatedAt
+        });
       }
       
       res.json({ message: 'Message deleted', messageId });

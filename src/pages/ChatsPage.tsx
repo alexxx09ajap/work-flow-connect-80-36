@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useChat } from '@/contexts/ChatContext';
@@ -24,7 +23,9 @@ import {
   MessageCircle,
   Edit,
   Trash2,
-  MoreVertical
+  MoreVertical,
+  Check,
+  X
 } from 'lucide-react';
 import { ChatGroupForm } from '@/components/ChatGroupForm';
 import { UserSelectDialog } from '@/components/UserSelectDialog';
@@ -454,6 +455,7 @@ const ChatsPage = () => {
                         const isSystemMessage = message.senderId === "system";
                         const sender = isSystemMessage ? null : getUserById(message.senderId);
                         const isEditing = editingMessage && editingMessage.id === message.id;
+                        const isDeleted = message.deleted;
                         
                         const showDateSeparator = index === 0 || 
                           new Date(message.timestamp).toDateString() !== 
@@ -498,9 +500,11 @@ const ChatsPage = () => {
                                   
                                   {/* Message bubble with different colors for sent/received */}
                                   <div className={`px-4 py-2 rounded-2xl relative ${
-                                    isCurrentUser 
-                                      ? 'bg-[#9b87f5] text-white rounded-br-none' 
-                                      : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
+                                    isDeleted
+                                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 italic'
+                                      : isCurrentUser 
+                                        ? 'bg-[#9b87f5] text-white rounded-br-none' 
+                                        : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
                                   } group`}>
                                     {isEditing ? (
                                       <div className="flex items-center">
@@ -531,8 +535,8 @@ const ChatsPage = () => {
                                       <p className="break-words">{message.content}</p>
                                     )}
                                     
-                                    {/* Opciones de mensaje (editar/eliminar) para mensajes propios */}
-                                    {isCurrentUser && !isEditing && (
+                                    {/* Opciones de mensaje (editar/eliminar) para mensajes propios no eliminados */}
+                                    {isCurrentUser && !isDeleted && !isEditing && (
                                       <Popover>
                                         <PopoverTrigger asChild>
                                           <Button 
@@ -569,7 +573,7 @@ const ChatsPage = () => {
                                     )}
                                     
                                     {/* Edited indicator */}
-                                    {message.edited && (
+                                    {message.edited && !isDeleted && (
                                       <span className="text-xs opacity-70 ml-1">(editado)</span>
                                     )}
                                   </div>
@@ -760,7 +764,7 @@ const ChatsPage = () => {
             <DialogTitle>Eliminar mensaje</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p>¿Estás seguro que deseas eliminar este mensaje? Esta acción no se puede deshacer.</p>
+            <p>¿Estás seguro que deseas eliminar este mensaje? Esta acción mostrará el texto como "Mensaje eliminado".</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsConfirmingDelete(null)}>Cancelar</Button>
