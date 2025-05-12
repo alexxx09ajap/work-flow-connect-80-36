@@ -1,3 +1,4 @@
+
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -64,11 +65,17 @@ app.get('/', (req, res) => {
   res.send('WorkFlowConnect API is running');
 });
 
-// Iniciar el servidor
+// Iniciar el servidor CORRECTO con socket.io
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`);
+server.listen(PORT, async () => {
+  console.log(`Server running on port ${PORT} with Socket.IO support`);
   
   // Verificar y actualizar el esquema de la base de datos al iniciar
   await checkAndUpdateDbSchema();
+  
+  // Asegurarnos de que las columnas necesarias existan
+  const messageModel = require('./models/messageModel');
+  await messageModel.addDeletedColumn();
+  await messageModel.addEditedColumn();
 });
+

@@ -19,4 +19,16 @@ router.put('/:messageId', messageController.updateMessage);
 // Delete a message
 router.delete('/:messageId', messageController.deleteMessage);
 
+// Asegurar que el modelo de mensajes esté correctamente inicializado
+const messageModel = require('../models/messageModel');
+(async () => {
+  try {
+    await messageModel.addEditedColumn();
+    await messageModel.addDeletedColumn();
+    console.log('Verificadas las columnas necesarias en la tabla de mensajes');
+  } catch (err) {
+    console.error('Error al verificar columnas:', err);
+  }
+})();
+
 module.exports = router;

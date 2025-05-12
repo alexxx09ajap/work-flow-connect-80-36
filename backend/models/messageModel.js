@@ -16,29 +16,47 @@ const messageModel = {
     console.log(`Creating message: chatId=${chatId}, senderId=${senderId}, text=${text}`);
     
     try {
-      // Intentar verificar si existe la columna "deleted"
-      const columnExists = await this.checkDeletedColumn();
+      // Verificar si existen las columnas necesarias
+      const columnInfo = await this.checkColumns();
       
       let result;
-      if (columnExists) {
-        // Si existe la columna, incluirla en el INSERT
-        result = await db.query(
-          'INSERT INTO "Messages" (id, "chatId", "userId", content, read, "createdAt", "updatedAt", "deleted") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-          [messageId, chatId, senderId, text, false, now, now, false]
-        );
-      } else {
-        // Si no existe la columna, omitirla
-        result = await db.query(
-          'INSERT INTO "Messages" (id, "chatId", "userId", content, read, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-          [messageId, chatId, senderId, text, false, now, now]
-        );
+      // Construir la consulta basada en las columnas disponibles
+      let query = 'INSERT INTO "Messages" (id, "chatId", "userId", content, read, "createdAt", "updatedAt"';
+      let valueParams = '$1, $2, $3, $4, $5, $6, $7';
+      let values = [messageId, chatId, senderId, text, false, now, now];
+      let valueIndex = 8;
+      
+      if (columnInfo.hasDeleted) {
+        query += ', "deleted"';
+        valueParams += `, $${valueIndex}`;
+        values.push(false);
+        valueIndex++;
       }
+      
+      if (columnInfo.hasEdited) {
+        query += ', "edited"';
+        valueParams += `, $${valueIndex}`;
+        values.push(false);
+        valueIndex++;
+      }
+      
+      if (fileId) {
+        query += ', "fileId"';
+        valueParams += `, $${valueIndex}`;
+        values.push(fileId);
+        valueIndex++;
+      }
+      
+      query += `) VALUES (${valueParams}) RETURNING *`;
+      
+      result = await db.query(query, values);
       
       // Añadir el senderId explícitamente para garantizar la coherencia
       const message = {
         ...result.rows[0],
         senderId: senderId,
-        deleted: false
+        deleted: result.rows[0].deleted || false,
+        edited: result.rows[0].edited || false
       };
       
       return message;
@@ -58,14 +76,16 @@ const messageModel = {
       
       // Nos aseguramos de que cada mensaje tenga un senderId explícito para la coherencia en la interfaz
       return result.rows.map(row => {
-        // Verificar si existe la propiedad deleted, si no existe asumimos false
+        // Verificar si existe la propiedad deleted y edited, si no existe asumimos false
         const deleted = typeof row.deleted !== 'undefined' ? row.deleted : false;
+        const edited = typeof row.edited !== 'undefined' ? row.edited : false;
         
         return {
           ...row,
           senderId: row.userId || row.senderId,
           timestamp: row.createdAt, // Añadimos timestamp para compatibilidad con el frontend
-          deleted: deleted
+          deleted: deleted,
+          edited: edited
         };
       });
     } catch (error) {
@@ -85,7 +105,8 @@ const messageModel = {
       if (result.rows[0]) {
         return {
           ...result.rows[0],
-          deleted: result.rows[0].deleted || false // Si no existe la columna deleted, asumimos false
+          deleted: result.rows[0].deleted || false,
+          edited: result.rows[0].edited || false
         };
       }
       return null;
@@ -99,10 +120,23 @@ const messageModel = {
   async update(messageId, text) {
     const now = new Date();
     try {
-      const result = await db.query(
-        'UPDATE "Messages" SET content = $1, "updatedAt" = $2, "edited" = true WHERE id = $3 RETURNING *, "userId" as "senderId"',
-        [text, now, messageId]
-      );
+      const columnInfo = await this.checkColumns();
+      
+      let query;
+      let values;
+      
+      if (columnInfo.hasEdited) {
+        query = 'UPDATE "Messages" SET content = $1, "updatedAt" = $2, "edited" = true WHERE id = $3 RETURNING *, "userId" as "senderId"';
+        values = [text, now, messageId];
+      } else {
+        query = 'UPDATE "Messages" SET content = $1, "updatedAt" = $2 WHERE id = $3 RETURNING *, "userId" as "senderId"';
+        values = [text, now, messageId];
+        
+        // Intentar agregar la columna edited si no existe
+        await this.addEditedColumn();
+      }
+      
+      const result = await db.query(query, values);
       
       return result.rows[0] ? {
         ...result.rows[0],
@@ -110,22 +144,6 @@ const messageModel = {
         deleted: result.rows[0].deleted || false
       } : null;
     } catch (error) {
-      // Si falla porque no existe la columna "edited", simplemente actualizamos sin ella
-      if (error.code === '42703' && error.message.includes('edited')) {
-        const result = await db.query(
-          'UPDATE "Messages" SET content = $1, "updatedAt" = $2 WHERE id = $3 RETURNING *, "userId" as "senderId"',
-          [text, now, messageId]
-        );
-        
-        if (result.rows[0]) {
-          return {
-            ...result.rows[0],
-            edited: true,
-            deleted: result.rows[0].deleted || false
-          };
-        }
-      }
-      
       console.error("Error al actualizar mensaje:", error);
       throw error;
     }
@@ -136,23 +154,23 @@ const messageModel = {
     const now = new Date();
     
     try {
-      // Intentar verificar si existe la columna "deleted"
-      const columnExists = await this.checkDeletedColumn();
+      const columnInfo = await this.checkColumns();
       
-      let result;
-      if (columnExists) {
-        // Si existe la columna, marcarla como true
-        result = await db.query(
-          'UPDATE "Messages" SET deleted = true, content = \'[Mensaje eliminado]\', "updatedAt" = $1 WHERE id = $2 RETURNING *, "userId" as "senderId"',
-          [now, messageId]
-        );
+      let query;
+      let values;
+      
+      if (columnInfo.hasDeleted) {
+        query = 'UPDATE "Messages" SET deleted = true, content = \'[Mensaje eliminado]\', "updatedAt" = $1 WHERE id = $2 RETURNING *, "userId" as "senderId"';
+        values = [now, messageId];
       } else {
-        // Si no existe la columna, solo actualizar el contenido
-        result = await db.query(
-          'UPDATE "Messages" SET content = \'[Mensaje eliminado]\', "updatedAt" = $1 WHERE id = $2 RETURNING *, "userId" as "senderId"',
-          [now, messageId]
-        );
+        query = 'UPDATE "Messages" SET content = \'[Mensaje eliminado]\', "updatedAt" = $1 WHERE id = $2 RETURNING *, "userId" as "senderId"';
+        values = [now, messageId];
+        
+        // Intentar agregar la columna deleted si no existe
+        await this.addDeletedColumn();
       }
+      
+      const result = await db.query(query, values);
       
       if (result.rows[0]) {
         return {
@@ -177,7 +195,8 @@ const messageModel = {
     
     return result.rows[0] ? {
       ...result.rows[0],
-      deleted: result.rows[0].deleted || false
+      deleted: result.rows[0].deleted || false,
+      edited: result.rows[0].edited || false
     } : null;
   },
   
@@ -201,57 +220,73 @@ const messageModel = {
     return result.rows[0]?.updated_count || 0;
   },
   
-  // Check if the deleted column exists
-  async checkDeletedColumn() {
+  // Check if columns exist
+  async checkColumns() {
     try {
       const result = await db.query(`
         SELECT column_name
         FROM information_schema.columns
-        WHERE table_name = 'Messages'
-        AND column_name = 'deleted';
+        WHERE table_name = 'Messages';
       `);
       
-      return result.rows.length > 0;
+      const columns = result.rows.map(row => row.column_name);
+      
+      return {
+        hasDeleted: columns.includes('deleted'),
+        hasEdited: columns.includes('edited')
+      };
     } catch (error) {
-      console.error("Error verificando columna deleted:", error);
-      return false;
+      console.error("Error verificando columnas:", error);
+      return {
+        hasDeleted: false,
+        hasEdited: false
+      };
     }
   },
   
   // Add deleted column if it doesn't exist
   async addDeletedColumn() {
     try {
-      const columnExists = await this.checkDeletedColumn();
+      const columnInfo = await this.checkColumns();
       
-      if (!columnExists) {
+      if (!columnInfo.hasDeleted) {
         console.log("Agregando columna 'deleted' a la tabla Messages...");
         await db.query(`
           ALTER TABLE "Messages"
           ADD COLUMN "deleted" BOOLEAN DEFAULT false;
         `);
         console.log("Columna 'deleted' agregada con éxito");
-        
-        // También agregar columna "edited" si es necesario
-        try {
-          await db.query(`
-            ALTER TABLE "Messages"
-            ADD COLUMN "edited" BOOLEAN DEFAULT false;
-          `);
-          console.log("Columna 'edited' agregada con éxito");
-        } catch (editedError) {
-          // Si ya existe, ignorar el error
-          if (editedError.code !== '42701') { // 42701 es el código para columna ya existente
-            console.error("Error al agregar columna 'edited':", editedError);
-          }
-        }
-        
         return true;
       }
       
-      console.log("La columna 'deleted' ya existe en la tabla Messages");
       return false;
     } catch (error) {
       console.error("Error al agregar columna deleted:", error);
+      return false;
+    }
+  },
+  
+  // Add edited column if it doesn't exist
+  async addEditedColumn() {
+    try {
+      const columnInfo = await this.checkColumns();
+      
+      if (!columnInfo.hasEdited) {
+        console.log("Agregando columna 'edited' a la tabla Messages...");
+        await db.query(`
+          ALTER TABLE "Messages"
+          ADD COLUMN "edited" BOOLEAN DEFAULT false;
+        `);
+        console.log("Columna 'edited' agregada con éxito");
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      // Si el error es porque la columna ya existe, ignoramos el error
+      if (error.code !== '42701') { // 42701 es el código para columna ya existente
+        console.error("Error al agregar columna edited:", error);
+      }
       return false;
     }
   }
