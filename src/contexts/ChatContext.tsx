@@ -26,6 +26,8 @@ export interface ChatContextType {
   addParticipantToChat: (chatId: string, userId: string) => Promise<boolean>;
   loadChats: () => Promise<void>;
   loadMessages: (chatId: string) => Promise<void>;
+  updateMessage: (messageId: string, content: string) => Promise<void>;
+  deleteMessage: (messageId: string) => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextType | null>(null);
@@ -188,6 +190,49 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         );
       });
 
+      // Add handler for deleted messages
+      newSocket.on('chat:message:delete', (chatId: string, deletedMessage: { id: string, deleted: boolean, content: string, timestamp: string }) => {
+        console.log("Received deleted message:", deletedMessage, "for chat:", chatId);
+        
+        // Update the message in the messages state to mark it as deleted
+        setMessages((prev) => {
+          const chatMessages = prev[chatId] || [];
+          const updatedMessages = chatMessages.map((msg) => 
+            msg.id === deletedMessage.id 
+              ? { 
+                  ...msg, 
+                  deleted: true, 
+                  content: '[Mensaje eliminado]',
+                  timestamp: deletedMessage.timestamp 
+                } 
+              : msg
+          );
+          
+          return {
+            ...prev,
+            [chatId]: updatedMessages
+          };
+        });
+        
+        // If the deleted message was the last message in the chat, update the chat's lastMessage
+        setChats((prev) =>
+          prev.map((chat) => {
+            if (chat.id === chatId && chat.lastMessage && 
+                chat.messages && chat.messages.length > 0 && 
+                chat.messages[chat.messages.length - 1].id === deletedMessage.id) {
+              return {
+                ...chat,
+                lastMessage: {
+                  content: '[Mensaje eliminado]',
+                  timestamp: deletedMessage.timestamp
+                }
+              };
+            }
+            return chat;
+          })
+        );
+      });
+
       setSocket(newSocket);
 
       // Load chats when user logs in
@@ -293,32 +338,67 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log("Sent message:", message);
       
-      // Add message to local state if the socket doesn't handle it immediately
-      setMessages((prev) => ({
-        ...prev,
-        [chatId]: [...(prev[chatId] || []), message]
-      }));
+      // No need to manually update local state as the socket will handle it
+      // The socket event 'chat:message' will update the UI
       
-      // Update chat lastMessage
-      setChats((prev) =>
-        prev.map((chat) =>
-          chat.id === chatId
-            ? {
-                ...chat,
-                lastMessage: {
-                  content: message.content,
-                  timestamp: message.timestamp || new Date().toISOString()
-                }
-              }
-            : chat
-        )
-      );
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "No se pudo enviar el mensaje"
+      });
+    }
+  };
+
+  // Update a message
+  const updateMessage = async (messageId: string, content: string) => {
+    if (!currentUser) return;
+    
+    try {
+      const updatedMessage = await messageService.updateMessage(messageId, content);
+      
+      console.log("Updated message:", updatedMessage);
+      
+      // No need to manually update local state as the socket will handle it
+      // The socket event 'chat:message:update' will update the UI
+      
+      toast({
+        title: "Mensaje actualizado",
+        description: "El mensaje ha sido actualizado correctamente"
+      });
+    } catch (error) {
+      console.error('Error updating message:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar el mensaje"
+      });
+    }
+  };
+
+  // Delete a message
+  const deleteMessage = async (messageId: string) => {
+    if (!currentUser) return;
+    
+    try {
+      await messageService.deleteMessage(messageId);
+      
+      console.log("Deleted message:", messageId);
+      
+      // No need to manually update local state as the socket will handle it
+      // The socket event 'chat:message:delete' will update the UI
+      
+      toast({
+        title: "Mensaje eliminado",
+        description: "El mensaje ha sido eliminado correctamente"
+      });
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo eliminar el mensaje"
       });
     }
   };
@@ -467,7 +547,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loadingMessages,
         addParticipantToChat,
         loadChats,
-        loadMessages
+        loadMessages,
+        updateMessage,
+        deleteMessage
       }}
     >
       {children}

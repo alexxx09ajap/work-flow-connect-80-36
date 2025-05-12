@@ -33,7 +33,6 @@ import { toast } from '@/components/ui/use-toast';
 import { ChatType, MessageType } from '@/types';
 import ChatMobileSheet from '@/components/ChatMobileSheet';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { messageService } from '@/services/api';
 
 const ChatsPage = () => {
   const { 
@@ -46,7 +45,9 @@ const ChatsPage = () => {
     addParticipantToChat,
     loadChats,
     loadingChats,
-    getMessages
+    getMessages,
+    updateMessage,
+    deleteMessage
   } = useChat();
   const { currentUser } = useAuth();
   const { getUserById } = useData();
@@ -181,11 +182,7 @@ const ChatsPage = () => {
     } else {
       // Finalizar edición
       try {
-        await messageService.updateMessage(id, editingMessage.content);
-        toast({
-          title: "Mensaje actualizado",
-          description: "El mensaje ha sido actualizado correctamente."
-        });
+        await updateMessage(editingMessage.id, editingMessage.content);
         setEditingMessage(null);
       } catch (error) {
         console.error('Error al actualizar mensaje:', error);
@@ -200,11 +197,7 @@ const ChatsPage = () => {
   
   const handleDeleteMessage = async (messageId: string) => {
     try {
-      await messageService.deleteMessage(messageId);
-      toast({
-        title: "Mensaje eliminado",
-        description: "El mensaje ha sido eliminado correctamente."
-      });
+      await deleteMessage(messageId);
       setIsConfirmingDelete(null);
     } catch (error) {
       console.error('Error al eliminar mensaje:', error);

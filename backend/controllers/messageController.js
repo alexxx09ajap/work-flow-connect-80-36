@@ -59,7 +59,7 @@ const messageController = {
       // Format message for response with sender info
       const formattedMessage = {
         ...message,
-        senderId: senderId, // Asegurarse que el senderId está explícitamente establecido
+        senderId: senderId, 
         senderName: sender ? sender.name : 'Unknown User',
         senderPhoto: sender ? sender.photoURL : null,
         timestamp: message.createdAt,
@@ -179,8 +179,9 @@ const messageController = {
         const participantIds = participants.map(p => p.id);
         
         // Notify all participants about the "deleted" message with updated content
-        socketService.notifyUsers(participantIds, 'chat:message:update', chatId, {
-          ...deletedMessage,
+        socketService.notifyUsers(participantIds, 'chat:message:delete', chatId, {
+          id: messageId,
+          chatId,
           deleted: true,
           content: '[Mensaje eliminado]',
           timestamp: deletedMessage.updatedAt
