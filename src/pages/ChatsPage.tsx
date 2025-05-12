@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useChat } from '@/contexts/ChatContext';
@@ -382,7 +383,7 @@ const ChatsPage = () => {
                   )}
                 </div>
                 
-                {/* Messages area - Modificado para que los mensajes enviados aparezcan a la derecha y los recibidos a la izquierda */}
+                {/* Messages area - Mensajes enviados a la derecha, recibidos a la izquierda */}
                 <ScrollArea id="messages-container" className="flex-1 p-4 bg-gray-50 dark:bg-gray-900">
                   {activeMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
@@ -418,8 +419,8 @@ const ChatsPage = () => {
                                 </div>
                               </div>
                             ) : (
-                              <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} w-full`}>
-                                {/* Avatar para mensajes recibidos - Solo se muestra en el lado izquierdo */}
+                              <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} w-full mb-2`}>
+                                {/* Avatar for received messages only */}
                                 {!isCurrentUser && (
                                   <Avatar className="h-8 w-8 mr-2 self-end flex-shrink-0">
                                     <AvatarImage src={sender?.photoURL} />
@@ -429,15 +430,15 @@ const ChatsPage = () => {
                                   </Avatar>
                                 )}
                                 
-                                <div className={`max-w-[70%] ${isCurrentUser ? 'order-1' : 'order-2'}`}>
-                                  {/* Nombre del remitente para chats grupales */}
+                                <div className="max-w-[70%]">
+                                  {/* Sender name for group chats */}
                                   {!isCurrentUser && activeChat.isGroup && (
                                     <div className="text-xs text-gray-500 ml-1 mb-1">
                                       {sender?.name || 'Usuario'}
                                     </div>
                                   )}
                                   
-                                  {/* Burbuja del mensaje con colores distintos según sea enviado o recibido */}
+                                  {/* Message bubble with different colors for sent/received */}
                                   <div className={`px-4 py-2 rounded-2xl ${
                                     isCurrentUser 
                                       ? 'bg-wfc-purple text-white rounded-br-none' 
@@ -446,13 +447,13 @@ const ChatsPage = () => {
                                     <p className="break-words">{message.content}</p>
                                   </div>
                                   
-                                  {/* Marca de tiempo del mensaje */}
-                                  <div className={`text-xs text-gray-400 mt-1 ${isCurrentUser ? 'text-right mr-2' : 'ml-2'}`}>
+                                  {/* Message timestamp */}
+                                  <div className={`text-xs text-gray-400 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
                                     {formatTime(message.timestamp)}
                                   </div>
                                 </div>
                                 
-                                {/* Avatar para mensajes enviados - Solo se muestra en el lado derecho */}
+                                {/* Avatar for sent messages only */}
                                 {isCurrentUser && (
                                   <Avatar className="h-8 w-8 ml-2 self-end flex-shrink-0">
                                     <AvatarImage src={currentUser.photoURL} />
