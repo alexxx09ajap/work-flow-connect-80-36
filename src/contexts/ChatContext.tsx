@@ -59,7 +59,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Format messages with additional timestamp field for compatibility
       const formattedMessages = messagesData.map(msg => ({
         ...msg,
-        timestamp: msg.createdAt
+        timestamp: msg.createdAt || msg.timestamp // Use createdAt or fallback to timestamp
       }));
       
       console.log("Loaded messages for chat", chatId, ":", formattedMessages);
@@ -130,7 +130,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   ...chat,
                   lastMessage: {
                     content: message.content,
-                    timestamp: message.timestamp || message.createdAt
+                    timestamp: message.timestamp || message.createdAt || new Date().toISOString()
                   }
                 }
               : chat
@@ -269,7 +269,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 ...chat,
                 lastMessage: {
                   content: message.content,
-                  timestamp: message.createdAt
+                  timestamp: message.timestamp || message.createdAt || new Date().toISOString()
                 }
               }
             : chat

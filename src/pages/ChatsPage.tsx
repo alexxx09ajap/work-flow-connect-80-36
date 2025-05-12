@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useChat } from '@/contexts/ChatContext';
@@ -383,7 +384,7 @@ const ChatsPage = () => {
                 </div>
                 
                 {/* Messages area - MODIFICADO PARA EL ESTILO MESSENGER/WHATSAPP */}
-                <ScrollArea id="messages-container" className="flex-1 p-4">
+                <ScrollArea id="messages-container" className="flex-1 p-4 bg-gray-50 dark:bg-gray-900">
                   {activeMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
                       <p className="text-gray-500">No hay mensajes aún</p>
@@ -418,8 +419,8 @@ const ChatsPage = () => {
                                 </div>
                               </div>
                             ) : (
-                              <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
-                                {/* Para mensajes recibidos - avatar al inicio */}
+                              <div className={`flex items-end ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}>
+                                {/* Avatar for received messages */}
                                 {!isCurrentUser && (
                                   <div className="flex-shrink-0 mr-2">
                                     <Avatar className="h-8 w-8">
@@ -431,15 +432,16 @@ const ChatsPage = () => {
                                   </div>
                                 )}
                                 
-                                {/* Burbuja de mensaje */}
-                                <div className="max-w-[75%]">
-                                  {/* Nombre del remitente para grupos */}
+                                <div className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'} max-w-[75%]`}>
+                                  {/* Sender name for groups */}
                                   {!isCurrentUser && activeChat.isGroup && (
-                                    <p className="text-xs text-gray-500 mb-1 ml-1">{sender?.name || 'Usuario'}</p>
+                                    <span className="text-xs text-gray-500 mb-1 ml-1">
+                                      {sender?.name || 'Usuario'}
+                                    </span>
                                   )}
                                   
-                                  {/* Contenido del mensaje */}
-                                  <div className={`px-4 py-2 rounded-lg ${
+                                  {/* Message bubble */}
+                                  <div className={`px-4 py-2 rounded-2xl ${
                                     isCurrentUser 
                                       ? 'bg-wfc-purple text-white rounded-br-none' 
                                       : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
@@ -447,19 +449,19 @@ const ChatsPage = () => {
                                     <p className="break-words">{message.content}</p>
                                   </div>
                                   
-                                  {/* Hora del mensaje */}
-                                  <p className={`text-xs text-gray-500 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
+                                  {/* Message timestamp */}
+                                  <span className="text-xs text-gray-400 mt-1 mx-1">
                                     {formatTime(message.timestamp)}
-                                  </p>
+                                  </span>
                                 </div>
                                 
-                                {/* Para mensajes enviados - avatar al final */}
+                                {/* Avatar for sent messages */}
                                 {isCurrentUser && (
                                   <div className="flex-shrink-0 ml-2">
                                     <Avatar className="h-8 w-8">
-                                      <AvatarImage src={currentUser?.photoURL} />
+                                      <AvatarImage src={currentUser.photoURL} />
                                       <AvatarFallback className="bg-wfc-purple text-white">
-                                        {currentUser?.name?.charAt(0).toUpperCase() || 'U'}
+                                        {currentUser.name?.charAt(0).toUpperCase() || 'Y'}
                                       </AvatarFallback>
                                     </Avatar>
                                   </div>
