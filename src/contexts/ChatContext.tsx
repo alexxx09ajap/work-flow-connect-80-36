@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { ChatType, MessageType, UserType } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
@@ -20,8 +20,10 @@ export interface ChatContextType {
   chats: ChatType[];
   onlineUsers: string[];
   loadingChats: boolean;
+  loadingMessages: boolean;
   addParticipantToChat: (chatId: string, userId: string) => Promise<boolean>;
   loadChats: () => Promise<void>;
+  loadMessages: (chatId: string) => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextType | null>(null);
@@ -43,6 +45,43 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [activeChat, setActiveChat] = useState<ChatType | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [loadingChats, setLoadingChats] = useState<boolean>(false);
+  const [loadingMessages, setLoadingMessages] = useState<boolean>(false);
+  
+  // Load messages for a specific chat
+  const loadMessages = useCallback(async (chatId: string) => {
+    if (!currentUser || !chatId) return;
+    
+    setLoadingMessages(true);
+    
+    try {
+      const messagesData = await messageService.getMessages(chatId);
+      
+      // Format messages with additional timestamp field for compatibility
+      const formattedMessages = messagesData.map(msg => ({
+        ...msg,
+        timestamp: msg.createdAt
+      }));
+      
+      console.log("Loaded messages for chat", chatId, ":", formattedMessages);
+      
+      setMessages(prev => ({
+        ...prev,
+        [chatId]: formattedMessages
+      }));
+      
+      // Mark messages as read since we've loaded them
+      markAsRead(chatId);
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron cargar los mensajes"
+      });
+    } finally {
+      setLoadingMessages(false);
+    }
+  }, [currentUser, toast]);
   
   // Connect to socket when user logs in
   useEffect(() => {
@@ -75,6 +114,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       newSocket.on('chat:message', (chatId: string, message: MessageType) => {
+        console.log("Received message:", message, "for chat:", chatId);
+        
         // Add message to messages state
         setMessages((prev) => ({
           ...prev,
@@ -89,7 +130,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   ...chat,
                   lastMessage: {
                     content: message.content,
-                    timestamp: message.timestamp
+                    timestamp: message.timestamp || message.createdAt
                   }
                 }
               : chat
@@ -101,8 +142,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           markAsRead(chatId);
         } else {
           // Show notification for new message
+          const senderName = message.senderName || 'Nuevo mensaje';
           toast({
-            title: `Nuevo mensaje de ${message.senderName}`,
+            title: senderName,
             description: message.content
           });
         }
@@ -112,6 +154,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Load chats when user logs in
       loadChats();
+      
+      // Configure online users initially
+      const onlineUsersArray: string[] = [];
+      setOnlineUsers(onlineUsersArray);
     } catch (error) {
       console.error("Failed to connect to socket:", error);
     }
@@ -123,6 +169,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
   }, [currentUser]);
+  
+  // Load messages when activeChat changes
+  useEffect(() => {
+    if (activeChat) {
+      loadMessages(activeChat.id);
+    }
+  }, [activeChat, loadMessages]);
 
   // Load user's chats
   const loadChats = async () => {
@@ -373,8 +426,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         chats,
         onlineUsers,
         loadingChats,
+        loadingMessages,
         addParticipantToChat,
-        loadChats
+        loadChats,
+        loadMessages
       }}
     >
       {children}

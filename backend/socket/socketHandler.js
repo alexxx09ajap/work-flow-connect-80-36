@@ -19,7 +19,7 @@ const socketHandler = (io) => {
     connectedUsers.set(userId.toString(), socket.id);
     
     // Notify all users about status change
-    io.emit('userStatusChanged', { userId, status: 'online' });
+    io.emit('user:online', userId);
     
     // Handle disconnect
     socket.on('disconnect', async () => {
@@ -32,7 +32,7 @@ const socketHandler = (io) => {
       connectedUsers.delete(userId.toString());
       
       // Notify all users about status change
-      io.emit('userStatusChanged', { userId, status: 'offline' });
+      io.emit('user:offline', userId);
     });
     
     // Handle sending messages
@@ -53,8 +53,20 @@ const socketHandler = (io) => {
           text
         });
         
+        // Get sender information
+        const result = await chatModel.getParticipants(chatId);
+        const sender = result.find(user => user.id === userId);
+        
+        // Format message with sender info
+        const formattedMessage = {
+          ...message,
+          senderName: sender ? sender.name : 'Unknown User',
+          senderPhoto: sender ? sender.photoURL : null,
+          timestamp: message.createdAt
+        };
+        
         // Update last message in chat
-        await chatModel.updateLastMessage(chatId, message.id);
+        await chatModel.updateLastMessage(chatId);
         
         // Get participants of the chat
         const participants = await chatModel.getParticipants(chatId);
@@ -63,7 +75,7 @@ const socketHandler = (io) => {
         participants.forEach((participant) => {
           const socketId = connectedUsers.get(participant.id.toString());
           if (socketId) {
-            io.to(socketId).emit('message', message);
+            io.to(socketId).emit('chat:message', chatId, formattedMessage);
           }
         });
       } catch (error) {
@@ -104,7 +116,7 @@ const socketHandler = (io) => {
         });
         
         // Update last message in chat
-        await chatModel.updateLastMessage(chatId, message.id);
+        await chatModel.updateLastMessage(chatId);
         
         // Message to send to clients (without binary data)
         const messageToSend = {
@@ -124,7 +136,7 @@ const socketHandler = (io) => {
         participants.forEach((participant) => {
           const socketId = connectedUsers.get(participant.id.toString());
           if (socketId) {
-            io.to(socketId).emit('message', messageToSend);
+            io.to(socketId).emit('chat:message', messageToSend);
           }
         });
       } catch (error) {
@@ -136,11 +148,11 @@ const socketHandler = (io) => {
   
   return {
     connectedUsers,
-    notifyUsers: (userIds, event, data) => {
+    notifyUsers: (userIds, event, ...data) => {
       userIds.forEach((userId) => {
         const socketId = connectedUsers.get(userId.toString());
         if (socketId) {
-          io.to(socketId).emit(event, data);
+          io.to(socketId).emit(event, ...data);
         }
       });
     }

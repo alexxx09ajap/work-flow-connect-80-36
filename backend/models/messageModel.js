@@ -24,7 +24,7 @@ const messageModel = {
   // Get messages for a chat
   async findByChatId(chatId) {
     const result = await db.query(
-      'SELECT * FROM "Messages" WHERE "chatId" = $1 ORDER BY "createdAt" ASC',
+      'SELECT m.*, u.name as "senderName", u."photoURL" as "senderPhoto" FROM "Messages" m LEFT JOIN "Users" u ON m."userId" = u.id WHERE m."chatId" = $1 ORDER BY m."createdAt" ASC',
       [chatId]
     );
     

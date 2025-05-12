@@ -46,10 +46,33 @@ const messageController = {
         text: content
       });
       
+      // Get sender information for real-time updates
+      const result = await chatModel.getParticipants(chatId);
+      const sender = result.find(user => user.id === req.user.userId);
+      
+      // Format message for response with sender info
+      const formattedMessage = {
+        ...message,
+        senderName: sender ? sender.name : 'Unknown User',
+        senderPhoto: sender ? sender.photoURL : null,
+        timestamp: message.createdAt
+      };
+      
       // Update last message in chat
       await chatModel.updateLastMessage(chatId);
       
-      res.status(201).json(message);
+      // Get the socket service from the app
+      const socketService = req.app.get('socketService');
+      if (socketService) {
+        // Get all participants of the chat
+        const participants = await chatModel.getParticipants(chatId);
+        const participantIds = participants.map(p => p.id);
+        
+        // Notify all participants about the new message
+        socketService.notifyUsers(participantIds, 'chat:message', chatId, formattedMessage);
+      }
+      
+      res.status(201).json(formattedMessage);
     } catch (error) {
       console.error('Error sending message:', error);
       res.status(500).json({ message: 'Server error' });

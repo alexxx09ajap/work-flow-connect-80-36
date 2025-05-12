@@ -25,4 +25,29 @@ router.post('/:chatId/leave', chatController.leaveChat);
 // Delete a chat
 router.delete('/:chatId', chatController.deleteChat);
 
+// Mark messages as read
+router.put('/:chatId/read', async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { userId } = req.user;
+    
+    // Check if user is a participant
+    const chatModel = require('../models/chatModel');
+    const isParticipant = await chatModel.isParticipant(chatId, userId);
+    
+    if (!isParticipant) {
+      return res.status(403).json({ message: 'You are not a participant in this chat' });
+    }
+    
+    // Mark messages as read
+    const messageModel = require('../models/messageModel');
+    await messageModel.markAsRead(chatId, userId);
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error marking messages as read:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
