@@ -72,15 +72,24 @@ const messageController = {
       // Update last message in chat
       await chatModel.updateLastMessage(chatId);
       
-      // Get the socket service from the app
-      const socketService = req.app.get('socketService');
-      if (socketService) {
-        // Get all participants of the chat
-        const participants = await chatModel.getParticipants(chatId);
-        const participantIds = participants.map(p => p.id);
-        
-        // Notify all participants about the new message
-        socketService.notifyUsers(participantIds, 'chat:message', chatId, formattedMessage);
+      // IMPORTANTE: No usamos socket desde aquí para evitar duplicados
+      // Ya que los clientes envían primero por socket y solo como fallback por HTTP
+      // El socketHandler ya se encarga de emitir el mensaje si llegó por socket
+      
+      // Solo enviamos por socket si la petición es explícitamente HTTP (no viene de socket)
+      const isSocketRequest = req.headers['x-socket-request'] === 'true';
+      
+      if (!isSocketRequest) {
+        // Get the socket service from the app
+        const socketService = req.app.get('socketService');
+        if (socketService) {
+          // Get all participants of the chat
+          const participants = await chatModel.getParticipants(chatId);
+          const participantIds = participants.map(p => p.id);
+          
+          // Notify all participants about the new message
+          socketService.notifyUsers(participantIds, 'chat:message', chatId, formattedMessage);
+        }
       }
       
       res.status(201).json(formattedMessage);

@@ -48,6 +48,15 @@ const socketHandler = (io) => {
         
         console.log(`Socket sendMessage: userId=${userId}, chatId=${chatId}, text=${text}`);
         
+        // Crear objeto para llamar a la API con indicador de que es una solicitud de socket
+        const requestOptions = {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${socket.handshake.auth.token || ''}`,
+            'X-Socket-Request': 'true' // Marcar como solicitud de socket
+          }
+        };
+        
         // Create message
         const message = await messageModel.create({
           chatId,

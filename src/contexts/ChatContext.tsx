@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { ChatType, MessageType, UserType } from '@/types';
@@ -23,7 +22,7 @@ export interface ChatContextType {
   loadingMessages: boolean;
   addParticipantToChat: (chatId: string, userId: string) => Promise<boolean>;
   loadChats: () => Promise<void>;
-  loadMessages: (chatId: string) => Promise<void>;
+  loadMessages: () => Promise<void>;
   updateMessage: (messageId: string, content: string) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
 }
@@ -353,27 +352,24 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  // Send a message
+  // Send a message - Modificada para evitar duplicación
   const sendMessage = async (chatId: string, content: string) => {
     if (!currentUser) return;
     
     try {
-      // If socket is connected, use socket for faster real-time updates
+      // Preferimos usar socket si está conectado
       if (socket && socket.connected) {
+        // Solo enviamos a través del socket y NO hacemos la petición HTTP
         socket.emit('sendMessage', { chatId, text: content });
         
-        // You can also send a HTTP request as backup or for confirmed persistence
-        messageService.sendMessage(chatId, content).then((message) => {
-          console.log("Message saved via HTTP:", message);
-        }).catch(err => {
-          console.error("Failed to save message via HTTP:", err);
-        });
+        // Ya no hacemos la petición HTTP como backup
+        // messageService.sendMessage(chatId, content).then((message) => {...})
       } else {
-        // Fallback to HTTP if socket isn't connected
+        // Solo si el socket no está disponible, usamos HTTP
         const message = await messageService.sendMessage(chatId, content);
-        console.log("Sent message via HTTP:", message);
+        console.log("Sent message via HTTP (socket unavailable):", message);
         
-        // Manually update UI since socket didn't do it
+        // Actualizamos manualmente la UI
         if (message) {
           setMessages((prev) => {
             const chatMessages = prev[chatId] || [];
@@ -411,23 +407,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Update a message
+  // Update a message - Similar change to avoid duplication
   const updateMessage = async (messageId: string, content: string) => {
     if (!currentUser) return;
     
     try {
-      // If socket is connected, use socket for faster real-time updates
       if (socket && socket.connected) {
+        // Only use socket, not both
         socket.emit('editMessage', { messageId, text: content });
-      }
-      
-      // Always send HTTP request (either as primary or backup)
-      const updatedMessage = await messageService.updateMessage(messageId, content);
-      
-      console.log("Updated message:", updatedMessage);
-      
-      // If socket isn't connected, we need to manually update the UI
-      if (!socket || !socket.connected) {
+      } else {
+        // Only if socket isn't connected, use HTTP
+        const updatedMessage = await messageService.updateMessage(messageId, content);
+        
+        console.log("Updated message via HTTP (socket unavailable):", updatedMessage);
+        
         // Find which chat this message belongs to
         let chatId = '';
         for (const [cId, msgs] of Object.entries(messages)) {
@@ -486,23 +479,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Delete a message
+  // Delete a message - Similar change to avoid duplication
   const deleteMessage = async (messageId: string) => {
     if (!currentUser) return;
     
     try {
-      // If socket is connected, use socket for faster real-time updates
       if (socket && socket.connected) {
+        // Only use socket, not both
         socket.emit('deleteMessage', messageId);
-      }
-      
-      // Always send HTTP request (either as primary or backup)
-      await messageService.deleteMessage(messageId);
-      
-      console.log("Deleted message:", messageId);
-      
-      // If socket isn't connected, we need to manually update the UI
-      if (!socket || !socket.connected) {
+      } else {
+        // Only if socket isn't connected, use HTTP
+        await messageService.deleteMessage(messageId);
+        
+        console.log("Deleted message via HTTP (socket unavailable):", messageId);
+        
         // Find which chat this message belongs to
         let chatId = '';
         for (const [cId, msgs] of Object.entries(messages)) {

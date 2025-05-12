@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 
 // Create axios instance with base URL
@@ -125,7 +126,14 @@ export const messageService = {
   
   sendMessage: async (chatId: string, content: string) => {
     try {
-      const response = await api.post('/messages', { chatId, content });
+      const response = await api.post('/messages', { 
+        chatId, 
+        content 
+      }, {
+        headers: {
+          'X-Socket-Request': 'false' // Marcar explícitamente como solicitud HTTP
+        }
+      });
       return response.data;
     } catch (err) {
       console.error("Error sending message:", err);
@@ -135,7 +143,13 @@ export const messageService = {
   
   updateMessage: async (messageId: string, text: string) => {
     try {
-      const response = await api.put(`/messages/${messageId}`, { text });
+      const response = await api.put(`/messages/${messageId}`, { 
+        text 
+      }, {
+        headers: {
+          'X-Socket-Request': 'false' // Marcar explícitamente como solicitud HTTP
+        }
+      });
       return response.data;
     } catch (err) {
       console.error("Error updating message:", err);
@@ -145,7 +159,11 @@ export const messageService = {
   
   deleteMessage: async (messageId: string) => {
     try {
-      const response = await api.delete(`/messages/${messageId}`);
+      const response = await api.delete(`/messages/${messageId}`, {
+        headers: {
+          'X-Socket-Request': 'false' // Marcar explícitamente como solicitud HTTP
+        }
+      });
       return response.data;
     } catch (err) {
       console.error("Error deleting message:", err);
