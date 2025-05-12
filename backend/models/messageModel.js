@@ -1,14 +1,18 @@
 
 const db = require('../config/database');
+const { v4: uuidv4 } = require('uuid');
 
 const messageModel = {
   // Create a new message
   async create(messageData) {
     const { chatId, senderId, text, fileId } = messageData;
     
+    // Generate UUID for the message
+    const messageId = uuidv4();
+    
     const result = await db.query(
-      'INSERT INTO "Messages" ("chatId", "userId", content, read) VALUES ($1, $2, $3, $4) RETURNING *',
-      [chatId, senderId, text, false]
+      'INSERT INTO "Messages" (id, "chatId", "userId", content, read) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [messageId, chatId, senderId, text, false]
     );
     
     return result.rows[0];
