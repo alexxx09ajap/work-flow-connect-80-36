@@ -1,4 +1,3 @@
-
 const jobModel = require('../models/jobModel');
 const userModel = require('../models/userModel');
 
@@ -13,6 +12,7 @@ const jobController = {
       
       // Validate required fields
       if (!title || !description || !budget || !category) {
+        console.error('Missing required fields:', { title, description, budget, category });
         return res.status(400).json({
           success: false,
           message: 'Missing required fields (title, description, budget, category)'
@@ -29,13 +29,15 @@ const jobController = {
         userId
       });
       
+      console.log('Job created successfully:', job);
+      
       // Get user info for the response
       const user = await userModel.findById(userId);
       
       const jobWithUser = {
         ...job,
-        userName: user.username,
-        userPhoto: user.avatar
+        userName: user ? user.username : 'Unknown',
+        userPhoto: user ? user.avatar : null
       };
       
       return res.status(201).json({
@@ -49,7 +51,8 @@ const jobController = {
       return res.status(500).json({
         success: false,
         message: 'Error creating job',
-        error: error.message
+        error: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   },

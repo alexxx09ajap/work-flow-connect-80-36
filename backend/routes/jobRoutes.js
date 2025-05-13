@@ -23,4 +23,7 @@ router.put('/:jobId', jobController.updateJob);
 // Delete a job
 router.delete('/:jobId', jobController.deleteJob);
 
+// Añadir este log para depuración
+console.log('Job routes initialized');
+
 module.exports = router;
