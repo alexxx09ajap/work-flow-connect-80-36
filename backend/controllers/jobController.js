@@ -1,3 +1,4 @@
+
 const jobModel = require('../models/jobModel');
 const userModel = require('../models/userModel');
 
@@ -48,10 +49,18 @@ const jobController = {
       
     } catch (error) {
       console.error('Error creating job:', error);
+      
+      // Proporcionar un mensaje más descriptivo basado en el error
+      let errorMessage = 'Error creating job';
+      if (error.code === '23502') { // Error de restricción de no nulo
+        errorMessage = `Required field "${error.column}" cannot be null`;
+      }
+      
       return res.status(500).json({
         success: false,
-        message: 'Error creating job',
+        message: errorMessage,
         error: error.message,
+        details: error.detail || null,
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }

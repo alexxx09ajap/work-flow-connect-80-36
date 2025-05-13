@@ -116,10 +116,20 @@ export const jobService = {
       throw new Error(errorMsg);
     } catch (error) {
       console.error("Error creating job:", error);
+      
+      let errorMessage = "Error al crear la propuesta";
+      if (axios.isAxiosError(error) && error.response?.data?.details) {
+        errorMessage += `: ${error.response.data.message || error.response.data.details}`;
+      } else if (axios.isAxiosError(error) && error.response?.data?.message) {
+        errorMessage += `: ${error.response.data.message}`;
+      } else if (axios.isAxiosError(error)) {
+        errorMessage += `: ${error.message}`;
+      }
+      
       toast({
         variant: "destructive",
         title: "Error",
-        description: `Error al crear la propuesta: ${axios.isAxiosError(error) ? (error.response?.data?.message || error.message) : 'Error desconocido'}`
+        description: errorMessage
       });
       throw error;
     }

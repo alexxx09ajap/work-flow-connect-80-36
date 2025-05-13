@@ -8,14 +8,16 @@ const jobModel = {
     const { title, description, budget, category, skills, userId } = jobData;
     const id = uuidv4();
     const status = 'open';
+    const now = new Date();
     
     const result = await db.query(
-      `INSERT INTO "Jobs" (id, title, description, budget, category, skills, status, "userId") 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+      `INSERT INTO "Jobs" (id, title, description, budget, category, skills, status, "userId", "createdAt", "updatedAt") 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
        RETURNING id, title, description, budget, category, skills, status, "userId", "createdAt", "updatedAt"`,
-      [id, title, description, budget, category, skills, status, userId]
+      [id, title, description, budget, category, skills, status, userId, now, now]
     );
     
+    console.log('Job created with dates:', { createdAt: now, updatedAt: now });
     return result.rows[0];
   },
   
@@ -110,8 +112,9 @@ const jobModel = {
       values.push(status);
     }
     
-    // Add updated_at
-    updates.push(`"updatedAt" = NOW()`);
+    // Add updated_at with current timestamp
+    updates.push(`"updatedAt" = $${updates.length + 1}`);
+    values.push(new Date());
     
     // Add jobId to values array
     values.push(jobId);
