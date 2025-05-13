@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/Layout/MainLayout';
-import { useData } from '@/contexts/DataContext';
+import { useJobs } from '@/contexts/JobContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { JobCard } from '@/components/JobCard';
 import { Button } from '@/components/ui/button';
@@ -12,13 +12,24 @@ import { X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const JobsPage = () => {
-  const { jobs, loading, jobCategories } = useData();
+  const { jobs, loading } = useJobs();
   const { currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [filteredJobs, setFilteredJobs] = useState(jobs);
+  const [filteredJobs, setFilteredJobs] = useState(jobs || []);
+  const [jobCategories, setJobCategories] = useState<string[]>([]);
+
+  // Extraer categorías únicas de los trabajos
+  useEffect(() => {
+    if (jobs && jobs.length > 0) {
+      const categories = [...new Set(jobs.map(job => job.category))];
+      setJobCategories(categories);
+    }
+  }, [jobs]);
 
   useEffect(() => {
+    if (!jobs) return;
+    
     let results = jobs;
     if (searchQuery) {
       results = results.filter(job => 
@@ -87,9 +98,15 @@ const JobsPage = () => {
         </div>
           
         <div className="space-y-4">
-          {filteredJobs.length > 0 ? (
+          {filteredJobs && filteredJobs.length > 0 ? (
             filteredJobs.map(job => (
-              <JobCard key={job.id} job={job} />
+              <JobCard 
+                key={job.id} 
+                job={{
+                  ...job,
+                  userName: job.userName || 'Usuario'
+                }}
+              />
             ))
           ) : (
             <div className="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">

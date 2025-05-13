@@ -1,89 +1,70 @@
-
 import React from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Clock, DollarSign, Briefcase, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { JobType } from '@/types';
 
-type JobProps = {
-  id: string;
-  title: string;
-  description: string;
-  budget: number;
-  category: string;
-  skills: string[];
-  userId: string;
-  userName: string;
-  timestamp: number;
-  status: 'open' | 'in-progress' | 'completed';
-  comments: any[];
-};
-
-export const JobCard = ({ job }: { job: JobProps }) => {
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+// Extendemos JobType para asegurarnos de que userName es obligatorio para JobProps
+export interface JobProps {
+  job: JobType & {
+    userName: string;
   };
+}
 
+export const JobCard = ({ job }: JobProps) => {
   return (
-    <Card className="hover:border-wfc-purple transition-colors w-full">
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-lg font-medium">{job.title}</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Publicado por {job.userName} • {formatDate(job.timestamp)}
-            </p>
-          </div>
-          <div className={`
-            text-xs px-2 py-1 rounded-full
-            ${job.status === 'open' ? 'bg-green-100 text-green-800' : 
-              job.status === 'in-progress' ? 'bg-blue-100 text-blue-800' : 
-              'bg-gray-100 text-gray-800'}
-          `}>
-            {job.status === 'open' ? 'Abierto' : 
-            job.status === 'in-progress' ? 'En progreso' : 
-            'Completado'}
+    <Card className="bg-white dark:bg-gray-800 shadow-sm">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div className="flex items-center space-x-4">
+          <Avatar>
+            <AvatarImage src={job.userPhoto} />
+            <AvatarFallback className="bg-wfc-purple-medium text-white">
+              {job.userName?.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col">
+            <Link to={`/users/${job.userId}`} className="text-sm font-medium dark:text-white hover:underline">{job.userName}</Link>
+            <p className="text-muted-foreground text-xs">{job.category}</p>
           </div>
         </div>
+        <Badge variant="secondary" className="dark:bg-gray-700 dark:text-white">
+          {job.status}
+        </Badge>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          <div>
-            <h3 className="text-sm font-medium mb-1">Descripción</h3>
-            <p className="text-sm text-gray-700 line-clamp-3">{job.description}</p>
-          </div>
-          
-          <div>
-            <h3 className="text-sm font-medium mb-1">Habilidades requeridas</h3>
-            <div className="flex flex-wrap gap-1">
-              {job.skills.map((skill, index) => (
-                <Badge key={index} variant="outline" className="text-xs">
-                  {skill}
-                </Badge>
-              ))}
-            </div>
-          </div>
-          
-          <div className="flex justify-between items-end">
-            <div>
-              <div className="text-sm font-medium">
-                Presupuesto: ${job.budget}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {job.comments.length} {job.comments.length === 1 ? 'comentario' : 'comentarios'}
-              </div>
-            </div>
-            <Link to={`/jobs/${job.id}`}>
-              <Button variant="outline" size="sm">Ver detalles</Button>
-            </Link>
-          </div>
+        <Link to={`/jobs/${job.id}`} className="block">
+          <h3 className="text-lg font-semibold dark:text-white hover:underline">{job.title}</h3>
+        </Link>
+        <p className="text-sm text-muted-foreground mt-2">
+          {job.description.substring(0, 100)}...
+        </p>
+        <div className="mt-4 flex items-center space-x-2">
+          <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm dark:text-gray-400">Budget: ${job.budget}</span>
         </div>
       </CardContent>
+      <CardFooter className="flex justify-between items-center">
+        <div className="flex items-center space-x-4 text-muted-foreground">
+          <div className="flex items-center">
+            <Clock className="h-4 w-4 mr-1" />
+            <span className="text-xs">
+              {new Date(job.createdAt).toLocaleDateString()}
+            </span>
+          </div>
+          <div className="flex items-center">
+            <Briefcase className="h-4 w-4 mr-1" />
+            <span className="text-xs">{job.skills?.join(', ') || 'No skills specified'}</span>
+          </div>
+        </div>
+        <Link to={`/jobs/${job.id}`}>
+          <Button size="sm">
+            Ver detalles
+          </Button>
+        </Link>
+      </CardFooter>
     </Card>
   );
 };

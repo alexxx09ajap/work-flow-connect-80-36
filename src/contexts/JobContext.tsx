@@ -1,11 +1,8 @@
-
 import { createContext, useContext, useState, useEffect } from 'react';
 import { JobType } from '@/types';
 import { jobService } from '@/lib/jobService';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/components/ui/use-toast';
-
-export type { JobType };
 
 export interface JobContextType {
   jobs: JobType[];
