@@ -1,113 +1,333 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import MainLayout from '@/components/Layout/MainLayout';
 import { useJobs } from '@/contexts/JobContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useData } from '@/contexts/DataContext';
 import { useChat } from '@/contexts/ChatContext';
-import MainLayout from '@/components/Layout/MainLayout';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Send, MessageCircle } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { MessageCircle, Calendar, DollarSign, User, Heart, Bookmark } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
+import { JobType } from '@/types';
 
+/**
+ * Componente de la página de detalles de una propuesta
+ */
 const JobDetail = () => {
-  const { jobId } = useParams();
-  const { getJobById } = useJobs();
-  const { currentUser } = useAuth();
-  const { getUserById } = useData();
-  const chat = useChat();
+  // Hooks de React Router para obtener el ID de la propuesta y navegación
+  const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
-  const [commentText, setCommentText] = useState("");
+  
+  // Hooks de contexto para acceder a datos y funcionalidades
+  const { getJobById, addComment } = useJobs(); // Funcionalidades de propuestas
+  const { currentUser } = useAuth(); // Información del usuario actual
+  const { createPrivateChat } = useChat(); // Funcionalidades de chat
+  const { getUserById } = useData(); // Para obtener datos de usuarios
+  
+  // Estados locales para el formulario de comentarios
+  const [commentText, setCommentText] = useState('');
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [job, setJob] = useState<JobType | null>(null);
+  
+  // Cargar trabajo cuando se monta el componente
+  useEffect(() => {
+    const loadJobDetails = async () => {
+      if (!jobId) return;
+      
+      setIsLoading(true);
+      try {
+        const jobData = getJobById(jobId);
+        
+        if (jobData) {
+          setJob(jobData);
+          console.log("Trabajo cargado:", jobData);
+        } else {
+          console.error("Trabajo no encontrado");
+        }
+      } catch (error) {
+        console.error("Error al cargar trabajo:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudo cargar la información de la propuesta"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadJobDetails();
+  }, [jobId, getJobById]);
 
-  const job = getJobById(jobId || "");
-  const user = job ? getUserById(job.userId) : null;
-
+  // Obtener información del propietario de la propuesta
+  const jobOwner = job ? getUserById(job.userId) : undefined;
+  
+  // Si está cargando, mostrar un indicador de carga
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="flex justify-center items-center py-20">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-wfc-purple mx-auto"></div>
+            <p className="mt-4 text-gray-600">Cargando propuesta...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+  
+  // Si no se encuentra la propuesta, mostrar mensaje de error
   if (!job) {
     return (
       <MainLayout>
-        <div>Job not found</div>
+        <div className="text-center py-12">
+          <h2 className="text-xl font-semibold">Propuesta no encontrada</h2>
+          <p className="text-gray-600 mt-2">La propuesta que estás buscando no existe o ha sido eliminada.</p>
+          <Button className="mt-4" onClick={() => navigate('/jobs')}>
+            Ver todas las propuestas
+          </Button>
+        </div>
       </MainLayout>
     );
   }
 
-  const handleContactFreelancer = async () => {
-    if (user) {
-      await chat.createPrivateChat(user.id);
+  /**
+   * Función para manejar el botón de contacto
+   */
+  const handleContactClick = async () => {
+    if (!currentUser || !job) return;
+    
+    try {
+      await createPrivateChat(job.userId);
       navigate('/chats');
+      toast({
+        title: "Chat iniciado",
+        description: `Has iniciado una conversación con ${jobOwner?.name || 'usuario'}`
+      });
+    } catch (error) {
+      console.error("Error al iniciar chat:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo iniciar el chat. Inténtalo de nuevo."
+      });
     }
   };
 
-  const handleSubmitComment = () => {
-    // Logic to submit comment
+  /**
+   * Función para enviar un nuevo comentario a la propuesta
+   */
+  const handleSubmitComment = async () => {
+    if (!commentText.trim() || !currentUser || !job) return;
+    
+    setIsSubmittingComment(true);
+    try {
+      // Llamar a la función para añadir el comentario a la propuesta
+      await addComment(job.id, commentText);
+      setCommentText(''); // Limpiar el campo de comentario
+      
+      toast({
+        title: "Comentario enviado",
+        description: "Tu comentario ha sido publicado correctamente"
+      });
+    } catch (error) {
+      console.error("Error al enviar comentario:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo enviar el comentario"
+      });
+    } finally {
+      setIsSubmittingComment(false);
+    }
   };
 
+  /**
+   * Función para formatear fechas (día/mes/año)
+   */
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  // Renderizado del componente
   return (
     <MainLayout>
       <div className="container-custom">
-        <Card className="w-full max-w-3xl mx-auto">
-          <CardContent className="p-6">
-            <div className="mb-4">
-              <h1 className="text-2xl font-bold">{job.title}</h1>
-              <div className="mt-2 flex items-center space-x-2">
-                {job.skills &&
-                  job.skills.map((skill) => (
-                    <Badge key={skill}>{skill}</Badge>
-                  ))}
-              </div>
-            </div>
-
-            <Separator className="my-4" />
-
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold mb-2">Descripción</h2>
-              <p>{job.description}</p>
-            </div>
-
-            <Separator className="my-4" />
-
+        <div className="space-y-6">
+          {/* Cabecera con título y acciones */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-gray-200">
             <div>
-              <h2 className="text-xl font-semibold mb-2">Detalles del Freelancer</h2>
-              {user ? (
-                <div className="flex items-center space-x-4">
-                  <Avatar>
-                    <AvatarImage src={user.photoURL} alt={user.name} />
-                    <AvatarFallback className="bg-wfc-purple-medium text-white">
-                      {user.name?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold">{user.name}</p>
-                    <p className="text-sm text-gray-500">{user.email}</p>
-                    <Button onClick={handleContactFreelancer} size="sm">
-                      <MessageCircle className="mr-2 h-4 w-4" />
-                      Contactar
+              <h1 className="text-2xl font-bold">{job.title}</h1>
+              <p className="text-gray-600 mt-1">
+                Publicado por {jobOwner?.name || 'Usuario'} • {formatDate(job.createdAt)}
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {/* Badge que muestra el estado de la propuesta */}
+              <Badge className={`
+                ${job.status === 'open' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 
+                  job.status === 'in progress' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' : 
+                  'bg-gray-100 text-gray-800 hover:bg-gray-200'}
+              `}>
+                {job.status === 'open' ? 'Abierto' : 
+                 job.status === 'in progress' ? 'En progreso' : 
+                 'Completado'}
+              </Badge>
+            </div>
+          </div>
+          
+          {/* Layout principal con contenido y sidebar */}
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Columna principal (2/3 del ancho) */}
+            <div className="md:col-span-2 space-y-6">
+              {/* Tarjeta de descripción de la propuesta */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Descripción</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-700 whitespace-pre-line">{job.description}</p>
+                  
+                  {/* Sección de habilidades requeridas */}
+                  {job.skills && job.skills.length > 0 && (
+                    <div className="mt-6">
+                      <h3 className="font-medium mb-2">Habilidades requeridas</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {job.skills.map((skill, index) => (
+                          <Badge key={index} variant="outline" className="bg-gray-50">
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              
+              {/* Tarjeta de comentarios */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Comentarios</CardTitle>
+                  <CardDescription>
+                    Deja un comentario sobre esta propuesta
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {/* Formulario para añadir un nuevo comentario */}
+                  <div className="space-y-4">
+                    <Textarea
+                      placeholder="Escribe tu comentario aquí..."
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      className="min-h-[100px]"
+                    />
+                    <Button 
+                      onClick={handleSubmitComment} 
+                      disabled={isSubmittingComment || !commentText.trim()}
+                      className="bg-wfc-purple hover:bg-wfc-purple-medium"
+                    >
+                      {isSubmittingComment ? 'Enviando...' : 'Enviar comentario'}
                     </Button>
                   </div>
-                </div>
-              ) : (
-                <p>Freelancer information not available.</p>
-              )}
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-          <CardFooter className="flex justify-between items-center p-6">
-            <div>
-              <h3 className="text-lg font-semibold">Comentarios</h3>
-              <Textarea
-                placeholder="Escribe tu comentario..."
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                className="mt-2"
-              />
-              <Button onClick={handleSubmitComment} className="mt-2">
-                Enviar <Send className="ml-2 h-4 w-4" />
-              </Button>
+            
+            {/* Sidebar (1/3 del ancho) */}
+            <div className="space-y-6">
+              {/* Tarjeta con detalles de la propuesta */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Detalles de la propuesta</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Presupuesto */}
+                  <div className="flex items-center">
+                    <DollarSign className="h-5 w-5 text-gray-500 mr-2" />
+                    <div>
+                      <h4 className="text-sm text-gray-600">Presupuesto</h4>
+                      <p className="font-medium">${job.budget}</p>
+                    </div>
+                  </div>
+                  {/* Fecha de publicación */}
+                  <div className="flex items-center">
+                    <Calendar className="h-5 w-5 text-gray-500 mr-2" />
+                    <div>
+                      <h4 className="text-sm text-gray-600">Fecha de publicación</h4>
+                      <p className="font-medium">{formatDate(job.createdAt)}</p>
+                    </div>
+                  </div>
+                  {/* Categoría */}
+                  <div className="flex items-center">
+                    <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 mr-2">
+                      {job.category}
+                    </Badge>
+                    <span className="text-sm text-gray-600">Categoría</span>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Tarjeta con información del cliente */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Cliente</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Información básica del cliente */}
+                  {jobOwner && (
+                    <div className="flex items-center space-x-3">
+                      <Avatar>
+                        <AvatarImage src={jobOwner.photoURL || ''} alt={jobOwner.name} />
+                        <AvatarFallback className="bg-wfc-purple-medium text-white">
+                          {jobOwner.name?.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{jobOwner.name}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Botón de contacto (solo para usuarios autenticados que no son el dueño) */}
+                  {currentUser && jobOwner && currentUser.id !== job.userId && (
+                    <Button
+                      variant="outline"
+                      className="w-full mt-2 border-wfc-purple text-wfc-purple hover:bg-wfc-purple/10"
+                      onClick={handleContactClick}
+                    >
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Contactar
+                    </Button>
+                  )}
+                  
+                  {/* Botón para ver perfil completo */}
+                  {jobOwner && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => navigate(`/user/${job.userId}`)}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Ver perfil
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
             </div>
-          </CardFooter>
-        </Card>
+          </div>
+        </div>
       </div>
     </MainLayout>
   );
