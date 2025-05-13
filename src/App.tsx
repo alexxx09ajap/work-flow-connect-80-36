@@ -43,7 +43,7 @@ function App() {
                       <JobsPage />
                     </ProtectedRoute>
                   } />
-                  {/* Important: More specific route comes before dynamic route */}
+                  {/* Importante: La ruta más específica viene antes de la ruta dinámica */}
                   <Route path="/jobs/create" element={
                     <ProtectedRoute>
                       <CreateJobPage />
@@ -69,6 +69,7 @@ function App() {
                       <UserProfile />
                     </ProtectedRoute>
                   } />
+                  {/* Ruta por defecto para páginas no encontradas */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <Toaster />
