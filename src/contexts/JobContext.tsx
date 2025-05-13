@@ -19,6 +19,7 @@ export interface JobContextType {
   unsaveJob: (jobId: string) => Promise<void>;
   savedJobs: JobType[];
   deleteComment: (commentId: string) => void;
+  createJob: (jobData: Partial<JobType>) => Promise<JobType | null>;
 }
 
 const JobContext = createContext<JobContextType | null>(null);
@@ -50,21 +51,19 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const allJobs = await jobService.getAllJobs();
       setJobs(allJobs);
+      setFilteredJobs(allJobs);
 
       if (currentUser) {
-        // Usamos el método correcto según lo que está disponible en jobService
         const userJobsData = await jobService.getJobsByUser(currentUser.id);
         setUserJobs(userJobsData);
 
         // Para los trabajos guardados, usamos una solución temporal hasta implementar la función
-        // Como no existe getSavedJobs, usaremos allJobs y filtraremos después
         // Esta parte debe ser implementada correctamente en jobService
         const savedJobsTemp = allJobs.slice(0, 2); // Temporal: simulamos 2 trabajos guardados
         setSavedJobs(savedJobsTemp);
       }
 
       // Para los trabajos populares, usamos los primeros 3 trabajos temporalmente
-      // hasta que se implemente getPopularJobs
       const popularJobsTemp = allJobs.slice(0, 3);
       setPopularJobs(popularJobsTemp);
     } catch (error) {
@@ -72,7 +71,7 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to load jobs."
+        description: "Error al cargar los trabajos."
       });
     } finally {
       setLoading(false);
@@ -81,6 +80,30 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
 
   const getJobById = (id: string) => {
     return jobs.find(job => job.id === id);
+  };
+
+  const createJob = async (jobData: Partial<JobType>): Promise<JobType | null> => {
+    try {
+      const createdJob = await jobService.createJob(jobData);
+      
+      // Refresh jobs after creating a new one
+      await refreshJobs();
+      
+      toast({
+        title: "Propuesta creada",
+        description: "La propuesta se ha creado correctamente."
+      });
+      
+      return createdJob;
+    } catch (error) {
+      console.error("Error creating job:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al crear la propuesta."
+      });
+      return null;
+    }
   };
 
   const addComment = async (jobId: string, comment: string) => {
@@ -192,7 +215,8 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
     saveJob,
     unsaveJob,
     savedJobs,
-    deleteComment
+    deleteComment,
+    createJob
   };
 
   return (

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import MainLayout from '@/components/Layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,12 +14,28 @@ import { useData } from '@/contexts/DataContext';
 import { useJobs } from '@/contexts/JobContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+
+// Define the form validation schema
+const formSchema = z.object({
+  title: z.string().min(3, {
+    message: "El título debe tener al menos 3 caracteres.",
+  }),
+  description: z.string().min(10, {
+    message: "La descripción debe tener al menos 10 caracteres.",
+  }),
+  category: z.string().min(1, {
+    message: "Debes seleccionar una categoría.",
+  }),
+  budget: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
+    message: "El presupuesto debe ser un número mayor que 0.",
+  })
+});
 
 const CreateJobPage = () => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
-  const [budget, setBudget] = useState('');
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [currentSkill, setCurrentSkill] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,6 +44,17 @@ const CreateJobPage = () => {
   const { createJob } = useJobs();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+
+  // Initialize the form
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      category: "",
+      budget: ""
+    },
+  });
 
   const handleAddSkill = () => {
     if (currentSkill && !selectedSkills.includes(currentSkill)) {
@@ -40,18 +67,7 @@ const CreateJobPage = () => {
     setSelectedSkills(selectedSkills.filter(s => s !== skill));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!title || !description || !category || !budget) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Por favor, completa todos los campos obligatorios."
-      });
-      return;
-    }
-
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!currentUser) {
       toast({
         variant: "destructive",
@@ -66,20 +82,13 @@ const CreateJobPage = () => {
     try {
       // Create the job using the JobContext's createJob function
       await createJob({
-        title,
-        description,
-        budget: Number(budget),
-        category,
+        title: values.title,
+        description: values.description,
+        budget: Number(values.budget),
+        category: values.category,
         skills: selectedSkills,
         userId: currentUser.id,
-        userName: currentUser.name,
-        userPhoto: currentUser.photoURL,
         status: 'open'
-      });
-
-      toast({
-        title: "Éxito",
-        description: "La propuesta se ha creado correctamente."
       });
 
       // Redirect to the jobs page
@@ -102,127 +111,155 @@ const CreateJobPage = () => {
         <Card>
           <CardContent className="p-8">
             <h1 className="text-2xl font-semibold mb-6 dark:text-white">Crear una nueva propuesta</h1>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="title" className="mb-1 block dark:text-gray-200">Título de la propuesta*</Label>
-                <Input
-                  type="text"
-                  id="title"
-                  placeholder="Ej: Diseño de logo para empresa de tecnología"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  required
-                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="mb-1 block dark:text-gray-200">Título de la propuesta*</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Ej: Diseño de logo para empresa de tecnología"
+                          className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              
-              <div>
-                <Label htmlFor="description" className="mb-1 block dark:text-gray-200">Descripción*</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Describe detalladamente lo que necesitas..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={5}
-                  required
-                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="mb-1 block dark:text-gray-200">Descripción*</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Describe detalladamente lo que necesitas..."
+                          rows={5}
+                          className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              
-              <div>
-                <Label htmlFor="category" className="mb-1 block dark:text-gray-200">Categoría*</Label>
-                <Select value={category} onValueChange={setCategory} required>
-                  <SelectTrigger className="dark:bg-gray-800 dark:border-gray-700 dark:text-white">
-                    <SelectValue placeholder="Selecciona una categoría" />
-                  </SelectTrigger>
-                  <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                    {jobCategories.map((cat) => (
-                      <SelectItem key={cat} value={cat} className="dark:text-white dark:focus:text-white dark:focus:bg-gray-700">
-                        {cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="skills" className="mb-1 block dark:text-gray-200">Habilidades requeridas</Label>
-                <div className="flex space-x-2 mb-2">
-                  <Select value={currentSkill} onValueChange={setCurrentSkill}>
-                    <SelectTrigger className="flex-1 dark:bg-gray-800 dark:border-gray-700 dark:text-white">
-                      <SelectValue placeholder="Selecciona las habilidades necesarias" />
-                    </SelectTrigger>
-                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                      {skillsList
-                        .filter(skill => !selectedSkills.includes(skill))
-                        .map((skill) => (
-                          <SelectItem key={skill} value={skill} className="dark:text-white dark:focus:text-white dark:focus:bg-gray-700">
-                            {skill}
-                          </SelectItem>
+                
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="mb-1 block dark:text-gray-200">Categoría*</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+                            <SelectValue placeholder="Selecciona una categoría" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                          {jobCategories.map((cat) => (
+                            <SelectItem key={cat} value={cat} className="dark:text-white dark:focus:text-white dark:focus:bg-gray-700">
+                              {cat}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div>
+                  <Label htmlFor="skills" className="mb-1 block dark:text-gray-200">Habilidades requeridas</Label>
+                  <div className="flex space-x-2 mb-2">
+                    <Select value={currentSkill} onValueChange={setCurrentSkill}>
+                      <SelectTrigger className="flex-1 dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+                        <SelectValue placeholder="Selecciona las habilidades necesarias" />
+                      </SelectTrigger>
+                      <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                        {skillsList
+                          .filter(skill => !selectedSkills.includes(skill))
+                          .map((skill) => (
+                            <SelectItem key={skill} value={skill} className="dark:text-white dark:focus:text-white dark:focus:bg-gray-700">
+                              {skill}
+                            </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      type="button" 
+                      onClick={handleAddSkill}
+                      disabled={!currentSkill}
+                      variant="outline"
+                      className="dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:bg-gray-700"
+                    >
+                      Agregar
+                    </Button>
+                  </div>
+                  
+                  {selectedSkills.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {selectedSkills.map(skill => (
+                        <Badge key={skill} variant="outline" className="flex items-center space-x-1 dark:bg-gray-700 dark:text-white">
+                          <span>{skill}</span>
+                          <button 
+                            type="button" 
+                            onClick={() => handleRemoveSkill(skill)}
+                            className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
                       ))}
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    type="button" 
-                    onClick={handleAddSkill}
-                    disabled={!currentSkill}
-                    variant="outline"
-                    className="dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:bg-gray-700"
-                  >
-                    Agregar
-                  </Button>
+                    </div>
+                  )}
                 </div>
                 
-                {selectedSkills.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {selectedSkills.map(skill => (
-                      <Badge key={skill} variant="outline" className="flex items-center space-x-1 dark:bg-gray-700 dark:text-white">
-                        <span>{skill}</span>
-                        <button 
-                          type="button" 
-                          onClick={() => handleRemoveSkill(skill)}
-                          className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              <div>
-                <Label htmlFor="budget" className="mb-1 block dark:text-gray-200">Presupuesto (USD)*</Label>
-                <Input
-                  type="number"
-                  id="budget"
-                  placeholder="Ingresa el presupuesto"
-                  min={1}
-                  value={budget}
-                  onChange={(e) => setBudget(e.target.value)}
-                  required
-                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                <FormField
+                  control={form.control}
+                  name="budget"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="mb-1 block dark:text-gray-200">Presupuesto (USD)*</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="Ingresa el presupuesto"
+                          min={1}
+                          className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              
-              <div className="flex justify-end space-x-3 pt-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => navigate('/jobs')}
-                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:bg-gray-700"
-                >
-                  Cancelar
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="bg-wfc-purple hover:bg-wfc-purple-medium"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Creando...' : 'Crear propuesta'}
-                </Button>
-              </div>
-            </form>
+                
+                <div className="flex justify-end space-x-3 pt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => navigate('/jobs')}
+                    className="dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:bg-gray-700"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    className="bg-wfc-purple hover:bg-wfc-purple-medium"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Creando...' : 'Crear propuesta'}
+                  </Button>
+                </div>
+              </form>
+            </Form>
           </CardContent>
         </Card>
       </div>
