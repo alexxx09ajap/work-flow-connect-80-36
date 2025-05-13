@@ -32,11 +32,13 @@ const userController = {
   // Update user profile
   async updateProfile(req, res) {
     try {
-      const { username, avatar } = req.body;
+      const { username, avatar, bio, skills } = req.body;
       
       const updatedUser = await userModel.updateProfile(req.user.userId, {
         username,
-        avatar
+        avatar,
+        bio,
+        skills
       });
       
       res.json(updatedUser);

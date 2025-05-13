@@ -1,3 +1,4 @@
+
 export interface UserType {
   id: string;
   name: string;
@@ -5,13 +6,29 @@ export interface UserType {
   photoURL: string | null;
   role: 'client' | 'freelancer';
   skills?: string[];
-  description?: string;
+  bio?: string;
+  joinedAt?: number;
+}
+
+export interface AuthState {
+  user: UserType | null;
+  token: string | null;
+  loading: boolean;
+  error: string | null;
+  isAuthenticated: boolean;
 }
 
 export interface ChatType {
   id: string;
   users: string[];
   messages: MessageType[];
+  name?: string;
+  isGroup?: boolean;
+  participants?: any[];
+  lastMessage?: {
+    content?: string;
+    timestamp?: Date;
+  };
 }
 
 export interface MessageType {
@@ -19,6 +36,12 @@ export interface MessageType {
   senderId: string;
   text: string;
   timestamp: Date;
+  content?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  deleted?: boolean;
+  edited?: boolean;
+  senderName?: string;
 }
 
 export interface JobType {
@@ -34,4 +57,17 @@ export interface JobType {
   updatedAt: Date;
   userName?: string;
   userPhoto?: string;
+  timestamp?: number;
+  comments?: CommentType[];
+}
+
+export interface CommentType {
+  id: string;
+  userId: string;
+  jobId: string;
+  text: string;
+  timestamp: number;
+  userName: string;
+  userPhoto?: string;
+  replies?: CommentType[];
 }

@@ -1,22 +1,22 @@
-
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthState, User } from '@/types';
+import { AuthState, UserType } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
+import { authService } from '@/services/api';
 
 // Define actions
 type AuthAction =
   | { type: 'LOGIN_START' }
-  | { type: 'LOGIN_SUCCESS'; payload: { user: User; token: string } }
+  | { type: 'LOGIN_SUCCESS'; payload: { user: UserType; token: string } }
   | { type: 'LOGIN_FAILURE'; payload: string }
   | { type: 'REGISTER_START' }
-  | { type: 'REGISTER_SUCCESS'; payload: { user: User; token: string } }
+  | { type: 'REGISTER_SUCCESS'; payload: { user: UserType; token: string } }
   | { type: 'REGISTER_FAILURE'; payload: string }
   | { type: 'LOGOUT' }
   | { type: 'VERIFY_TOKEN_START' }
-  | { type: 'VERIFY_TOKEN_SUCCESS'; payload: { user: User } }
+  | { type: 'VERIFY_TOKEN_SUCCESS'; payload: { user: UserType } }
   | { type: 'VERIFY_TOKEN_FAILURE'; payload: string }
-  | { type: 'UPDATE_PROFILE'; payload: { user: User } };
+  | { type: 'UPDATE_PROFILE'; payload: { user: UserType } };
 
 // Initial state
 const initialState: AuthState = {
@@ -90,10 +90,10 @@ export interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string, role?: string) => Promise<void>;
   logout: () => void;
-  currentUser: User | null;
+  currentUser: UserType | null;
   isAuthenticated: boolean;
-  updateUserProfile?: (userData: Partial<User>) => Promise<void>;
-  uploadProfilePhoto?: (file: File) => Promise<string>;
+  updateUserProfile: (userData: Partial<UserType>) => Promise<void>;
+  uploadProfilePhoto: (file: File) => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -268,6 +268,127 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     navigate('/login');
   };
 
+  // Function to update user profile
+  const updateUserProfile = async (userData: Partial<UserType>) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token || !state.user) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No has iniciado sesión",
+        });
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/users/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          username: userData.name,
+          avatar: userData.photoURL,
+          bio: userData.bio,
+          skills: userData.skills
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: errorData.message || "Error al actualizar el perfil",
+        });
+        return;
+      }
+
+      const data = await response.json();
+      
+      // Update user in state
+      const updatedUser = {
+        ...state.user,
+        name: data.name || state.user.name,
+        photoURL: data.avatar || state.user.photoURL,
+        bio: userData.bio || state.user.bio,
+        skills: userData.skills || state.user.skills
+      };
+
+      dispatch({
+        type: 'UPDATE_PROFILE',
+        payload: { user: updatedUser }
+      });
+
+      toast({
+        title: "Perfil actualizado",
+        description: "Tu perfil ha sido actualizado correctamente",
+      });
+
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al actualizar el perfil",
+      });
+    }
+  };
+
+  // Function to upload profile photo
+  const uploadProfilePhoto = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token || !state.user) {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "No has iniciado sesión",
+          });
+          reject("No has iniciado sesión");
+          return;
+        }
+
+        // Create form data to upload file
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // For now, we'll simulate uploading and just return a data URL
+        const reader = new FileReader();
+        reader.onloadend = async function() {
+          try {
+            // In a real implementation, you would upload to server:
+            // const response = await fetch(`${API_URL}/users/upload-avatar`, {
+            //   method: 'POST',
+            //   headers: { 'Authorization': `Bearer ${token}` },
+            //   body: formData
+            // });
+            
+            // For now, just update the profile with the base64 image
+            const base64Image = reader.result as string;
+            
+            await updateUserProfile({
+              photoURL: base64Image
+            });
+            
+            resolve(base64Image);
+          } catch (error) {
+            reject(error);
+          }
+        };
+        
+        reader.onerror = () => reject("Error reading file");
+        reader.readAsDataURL(file);
+        
+      } catch (error) {
+        console.error('Error uploading profile photo:', error);
+        reject(error);
+      }
+    });
+  };
+
   // Export convenient values and functions
   const contextValue: AuthContextType = {
     state,
@@ -275,7 +396,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     register,
     logout,
     currentUser: state.user,
-    isAuthenticated: state.isAuthenticated
+    isAuthenticated: state.isAuthenticated,
+    updateUserProfile,
+    uploadProfilePhoto
   };
 
   return (
