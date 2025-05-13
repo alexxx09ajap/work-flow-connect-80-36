@@ -1,9 +1,10 @@
+
 import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, DollarSign, Briefcase, AlertCircle } from 'lucide-react';
+import { Clock, DollarSign, Briefcase } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { JobType } from '@/types';
 
@@ -16,7 +17,7 @@ export interface JobProps {
 
 export const JobCard = ({ job }: JobProps) => {
   return (
-    <Card className="bg-white dark:bg-gray-800 shadow-sm">
+    <Card className="bg-background dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700 hover:border-wfc-purple dark:hover:border-wfc-purple-light transition-colors">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center space-x-4">
           <Avatar>
@@ -30,13 +31,13 @@ export const JobCard = ({ job }: JobProps) => {
             <p className="text-muted-foreground text-xs">{job.category}</p>
           </div>
         </div>
-        <Badge variant="secondary" className="dark:bg-gray-700 dark:text-white">
-          {job.status}
+        <Badge variant="outline" className={`${job.status === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100'} rounded-full px-3 py-1`}>
+          {job.status === 'open' ? 'Abierto' : job.status}
         </Badge>
       </CardHeader>
       <CardContent>
         <Link to={`/jobs/${job.id}`} className="block">
-          <h3 className="text-lg font-semibold dark:text-white hover:underline">{job.title}</h3>
+          <h3 className="text-lg font-semibold dark:text-white hover:text-wfc-purple dark:hover:text-wfc-purple-light hover:underline transition-colors">{job.title}</h3>
         </Link>
         <p className="text-sm text-muted-foreground mt-2">
           {job.description.substring(0, 100)}...
@@ -60,7 +61,7 @@ export const JobCard = ({ job }: JobProps) => {
           </div>
         </div>
         <Link to={`/jobs/${job.id}`}>
-          <Button size="sm">
+          <Button size="sm" className="bg-wfc-purple hover:bg-wfc-purple-medium text-white rounded-full">
             Ver detalles
           </Button>
         </Link>

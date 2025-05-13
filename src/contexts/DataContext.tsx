@@ -43,7 +43,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       // Transform backend user data to match our frontend UserType
       const transformedUsers: UserType[] = userData.map((user: any) => ({
         id: user.id.toString(),
-        name: user.username || user.name, // Support both username and name
+        name: user.username || user.name || `Usuario ${user.id.substring(0, 4)}`, // Fallback to ensure we always have a name
         email: user.email,
         role: user.role || "freelancer", // Default role, could be different based on your backend
         photoURL: user.avatar || user.photoURL,
@@ -70,6 +70,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const getUserById = (userId: string) => {
+    if (!userId) return undefined;
     return users.find(user => user.id === userId);
   };
   

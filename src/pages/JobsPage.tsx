@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useJobs } from '@/contexts/JobContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useData } from '@/contexts/DataContext';
 import { JobCard } from '@/components/JobCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,7 @@ import { Link } from 'react-router-dom';
 const JobsPage = () => {
   const { jobs, loading } = useJobs();
   const { currentUser } = useAuth();
+  const { getUserById } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [filteredJobs, setFilteredJobs] = useState(jobs || []);
@@ -27,10 +29,23 @@ const JobsPage = () => {
     }
   }, [jobs]);
 
-  useEffect(() => {
-    if (!jobs) return;
+  // Enriquecer los trabajos con información de usuario
+  const enrichedJobs = React.useMemo(() => {
+    if (!jobs) return [];
     
-    let results = jobs;
+    return jobs.map(job => {
+      const user = getUserById(job.userId);
+      return {
+        ...job,
+        userName: user?.name || job.userName || 'Usuario'
+      };
+    });
+  }, [jobs, getUserById]);
+
+  useEffect(() => {
+    if (!enrichedJobs) return;
+    
+    let results = enrichedJobs;
     if (searchQuery) {
       results = results.filter(job => 
         job.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -41,7 +56,7 @@ const JobsPage = () => {
       results = results.filter(job => job.category === categoryFilter);
     }
     setFilteredJobs(results);
-  }, [jobs, searchQuery, categoryFilter]);
+  }, [enrichedJobs, searchQuery, categoryFilter]);
 
   if (loading) {
     return <MainLayout>Cargando...</MainLayout>;
@@ -59,7 +74,7 @@ const JobsPage = () => {
           )}
         </div>
 
-        <div className="mb-4 flex space-x-2">
+        <div className="mb-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
           <Input 
             type="text" 
             placeholder="Buscar trabajos..." 
@@ -68,7 +83,7 @@ const JobsPage = () => {
             className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
           />
           <Select onValueChange={setCategoryFilter} defaultValue={categoryFilter}>
-            <SelectTrigger className="w-[180px] dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+            <SelectTrigger className="w-full sm:w-[180px] dark:bg-gray-800 dark:border-gray-700 dark:text-white">
               <SelectValue placeholder="Filtrar por categoría" />
             </SelectTrigger>
             <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
@@ -102,10 +117,7 @@ const JobsPage = () => {
             filteredJobs.map(job => (
               <JobCard 
                 key={job.id} 
-                job={{
-                  ...job,
-                  userName: job.userName || 'Usuario'
-                }}
+                job={job}
               />
             ))
           ) : (
