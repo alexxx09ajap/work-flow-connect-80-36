@@ -14,6 +14,7 @@ const userRoutes = require('./routes/userRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const fileRoutes = require('./routes/fileRoutes');
+const jobRoutes = require('./routes/jobRoutes');
 
 // Socket handler
 const socketHandler = require('./socket/socketHandler');
@@ -44,6 +45,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/files', fileRoutes);
+app.use('/api/jobs', jobRoutes);
 
 // Socket.IO setup
 const io = socketIo(server, {

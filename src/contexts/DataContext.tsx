@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { JobType, UserType } from '@/types';
 import { userService } from '@/services/api';
-import { mockJobs, JOB_CATEGORIES, SKILLS_LIST } from '@/lib/mockData';
+import { JOB_CATEGORIES, SKILLS_LIST } from '@/lib/mockData';
 
 export type { UserType };
 
@@ -29,7 +29,7 @@ export const useData = () => {
 
 export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const [users, setUsers] = useState<UserType[]>([]);
-  const [jobs, setJobs] = useState<JobType[]>(mockJobs);
+  const [jobs, setJobs] = useState<JobType[]>([]);
   const [loading, setLoading] = useState(false);
   const [jobCategories, setJobCategories] = useState<string[]>(JOB_CATEGORIES);
   const [skillsList, setSkillsList] = useState<string[]>(SKILLS_LIST);
@@ -53,8 +53,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("Loaded users:", transformedUsers);
       setUsers(transformedUsers);
       
-      // For now, we're still using mock data for jobs
-      setJobs(mockJobs);
+      // For categories and skills, we still use predefined lists
+      // In a more complete implementation, these could come from the backend too
       setJobCategories(JOB_CATEGORIES);
       setSkillsList(SKILLS_LIST);
     } catch (error) {

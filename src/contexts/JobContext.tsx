@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect } from 'react';
 import { JobType } from '@/types';
 import { jobService } from '@/lib/jobService';
@@ -57,13 +58,12 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
         const userJobsData = await jobService.getJobsByUser(currentUser.id);
         setUserJobs(userJobsData);
 
-        // Para los trabajos guardados, usamos una solución temporal hasta implementar la función
-        // Esta parte debe ser implementada correctamente en jobService
-        const savedJobsTemp = allJobs.slice(0, 2); // Temporal: simulamos 2 trabajos guardados
-        setSavedJobs(savedJobsTemp);
+        // In a real implementation, we would fetch saved jobs from the backend
+        // This is a placeholder until that endpoint is implemented
+        setSavedJobs([]);
       }
 
-      // Para los trabajos populares, usamos los primeros 3 trabajos temporalmente
+      // For popular jobs, we're showing the first 3 most recent jobs
       const popularJobsTemp = allJobs.slice(0, 3);
       setPopularJobs(popularJobsTemp);
     } catch (error) {
@@ -107,98 +107,43 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const addComment = async (jobId: string, comment: string) => {
-    try {
-      // Simulamos la función addComment hasta que esté implementada en jobService
-      console.log(`Adding comment to job ${jobId}: ${comment}`);
-      await refreshJobs();
-      toast({
-        title: "Comment added",
-        description: "Your comment has been added successfully."
-      });
-    } catch (error) {
-      console.error("Error adding comment:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to add comment."
-      });
-    }
+    // This will be implemented when comment functionality is added
+    toast({
+      title: "Funcionalidad no implementada",
+      description: "La funcionalidad de comentarios será implementada próximamente."
+    });
   };
 
   const deleteComment = async (commentId: string) => {
-    try {
-      // Simulamos la función deleteComment hasta que esté implementada en jobService
-      console.log(`Deleting comment ${commentId}`);
-      await refreshJobs();
-      toast({
-        title: "Comment deleted",
-        description: "Your comment has been deleted successfully."
-      });
-    } catch (error) {
-      console.error("Error deleting comment:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete comment."
-      });
-    }
+    // This will be implemented when comment functionality is added
+    toast({
+      title: "Funcionalidad no implementada",
+      description: "La funcionalidad de eliminar comentarios será implementada próximamente."
+    });
   };
 
   const addReply = async (commentId: string, reply: string) => {
-    try {
-      // Simulamos la función addReply hasta que esté implementada en jobService
-      console.log(`Adding reply to comment ${commentId}: ${reply}`);
-      await refreshJobs();
-      toast({
-        title: "Reply added",
-        description: "Your reply has been added successfully."
-      });
-    } catch (error) {
-      console.error("Error adding reply:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to add reply."
-      });
-    }
+    // This will be implemented when comment functionality is added
+    toast({
+      title: "Funcionalidad no implementada",
+      description: "La funcionalidad de respuestas será implementada próximamente."
+    });
   };
 
   const saveJob = async (jobId: string) => {
-    try {
-      // Simulamos la función saveJob hasta que esté implementada en jobService
-      console.log(`Saving job ${jobId}`);
-      await refreshJobs();
-      toast({
-        title: "Job saved",
-        description: "This job has been saved to your list."
-      });
-    } catch (error) {
-      console.error("Error saving job:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to save job."
-      });
-    }
+    // This will be implemented when job saving functionality is added
+    toast({
+      title: "Funcionalidad no implementada",
+      description: "La funcionalidad de guardar trabajos será implementada próximamente."
+    });
   };
 
   const unsaveJob = async (jobId: string) => {
-    try {
-      // Simulamos la función unsaveJob hasta que esté implementada en jobService
-      console.log(`Unsaving job ${jobId}`);
-      await refreshJobs();
-      toast({
-        title: "Job unsaved",
-        description: "This job has been removed from your saved list."
-      });
-    } catch (error) {
-      console.error("Error unsaving job:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to unsave job."
-      });
-    }
+    // This will be implemented when job saving functionality is added
+    toast({
+      title: "Funcionalidad no implementada",
+      description: "La funcionalidad de quitar trabajos guardados será implementada próximamente."
+    });
   };
 
   const value: JobContextType = {

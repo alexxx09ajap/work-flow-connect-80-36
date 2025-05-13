@@ -8,6 +8,8 @@ export interface UserType {
   skills?: string[];
   bio?: string;
   joinedAt?: number;
+  isOnline?: boolean;
+  location?: string;
 }
 
 export interface AuthState {

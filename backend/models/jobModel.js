@@ -10,28 +10,21 @@ const jobModel = {
     const status = 'open';
     
     const result = await db.query(
-      `INSERT INTO jobs (id, title, description, budget, category, skills, status, user_id) 
+      `INSERT INTO "Jobs" (id, title, description, budget, category, skills, status, "userId") 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-       RETURNING id, title, description, budget, category, skills, status, user_id AS "userId", created_at, updated_at`,
+       RETURNING id, title, description, budget, category, skills, status, "userId", "createdAt", "updatedAt"`,
       [id, title, description, budget, category, skills, status, userId]
     );
     
-    // Convert snake_case to camelCase
-    const job = result.rows[0];
-    job.createdAt = job.created_at;
-    job.updatedAt = job.updated_at;
-    delete job.created_at;
-    delete job.updated_at;
-    
-    return job;
+    return result.rows[0];
   },
   
   // Get all jobs with optional filtering
   async findAll(filter = {}) {
     let query = `
       SELECT j.id, j.title, j.description, j.budget, j.category, j.skills, j.status, 
-             j.user_id AS "userId", j.created_at, j.updated_at
-      FROM jobs j
+             j."userId", j."createdAt", j."updatedAt"
+      FROM "Jobs" j
     `;
     
     const params = [];
@@ -56,26 +49,18 @@ const jobModel = {
       query += ` WHERE ${conditions.join(' AND ')}`;
     }
     
-    query += ` ORDER BY j.created_at DESC`;
+    query += ` ORDER BY j."createdAt" DESC`;
     
     const result = await db.query(query, params);
-    
-    // Convert snake_case to camelCase for each row
-    return result.rows.map(job => {
-      job.createdAt = job.created_at;
-      job.updatedAt = job.updated_at;
-      delete job.created_at;
-      delete job.updated_at;
-      return job;
-    });
+    return result.rows;
   },
   
   // Find job by ID
   async findById(jobId) {
     const result = await db.query(
       `SELECT j.id, j.title, j.description, j.budget, j.category, j.skills, j.status, 
-              j.user_id AS "userId", j.created_at, j.updated_at
-       FROM jobs j
+              j."userId", j."createdAt", j."updatedAt"
+       FROM "Jobs" j
        WHERE j.id = $1`,
       [jobId]
     );
@@ -84,13 +69,7 @@ const jobModel = {
       return null;
     }
     
-    const job = result.rows[0];
-    job.createdAt = job.created_at;
-    job.updatedAt = job.updated_at;
-    delete job.created_at;
-    delete job.updated_at;
-    
-    return job;
+    return result.rows[0];
   },
   
   // Update a job
@@ -132,32 +111,26 @@ const jobModel = {
     }
     
     // Add updated_at
-    updates.push(`updated_at = NOW()`);
+    updates.push(`"updatedAt" = NOW()`);
     
     // Add jobId to values array
     values.push(jobId);
     
     const query = `
-      UPDATE jobs 
+      UPDATE "Jobs" 
       SET ${updates.join(', ')} 
       WHERE id = $${values.length} 
-      RETURNING id, title, description, budget, category, skills, status, user_id AS "userId", created_at, updated_at
+      RETURNING id, title, description, budget, category, skills, status, "userId", "createdAt", "updatedAt"
     `;
     
     const result = await db.query(query, values);
     
-    const job = result.rows[0];
-    job.createdAt = job.created_at;
-    job.updatedAt = job.updated_at;
-    delete job.created_at;
-    delete job.updated_at;
-    
-    return job;
+    return result.rows[0];
   },
   
   // Delete a job
   async delete(jobId) {
-    await db.query('DELETE FROM jobs WHERE id = $1', [jobId]);
+    await db.query('DELETE FROM "Jobs" WHERE id = $1', [jobId]);
     return true;
   }
 };
