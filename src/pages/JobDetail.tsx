@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { MessageCircle, Calendar, DollarSign, User, Heart, Bookmark, AlertCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { JobType } from '@/types';
+import { formatDate } from '@/lib/utils';
 
 /**
  * Componente de la página de detalles de una propuesta
@@ -56,6 +57,7 @@ const JobDetail = () => {
         
         if (jobData) {
           console.log("Trabajo encontrado localmente:", jobData);
+          console.log("Fecha de creación:", jobData.createdAt);
           setJob(jobData);
         } else {
           console.error("Trabajo no encontrado");
@@ -192,19 +194,6 @@ const JobDetail = () => {
     } finally {
       setIsSubmittingComment(false);
     }
-  };
-
-  /**
-   * Función para formatear fechas (día/mes/año)
-   */
-  const formatDate = (date: Date) => {
-    return date instanceof Date 
-      ? date.toLocaleDateString('es-ES', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-        })
-      : 'Fecha desconocida';
   };
 
   // Renderizado del componente
