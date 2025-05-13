@@ -71,5 +71,17 @@ export interface CommentType {
   timestamp: number;
   userName: string;
   userPhoto?: string;
-  replies?: CommentType[];
+  content?: string;
+  replies?: ReplyType[];
+}
+
+export interface ReplyType {
+  id: string;
+  userId: string;
+  commentId: string;
+  text: string;
+  timestamp: number;
+  userName: string;
+  userPhoto?: string;
+  content?: string;
 }

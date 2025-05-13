@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageSquare, UserIcon } from 'lucide-react';
-import { CommentType, useJobs } from '@/contexts/JobContext';
+import { MessageCircle } from 'lucide-react';
+import { CommentType, ReplyType } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { useJobs } from '@/contexts/JobContext';
 import { toast } from '@/components/ui/use-toast';
 
 type CommentItemProps = {
@@ -26,13 +27,15 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
     
     setIsSubmittingReply(true);
     try {
-      await addReplyToComment(jobId, comment.id, replyContent, currentUser);
-      setReplyContent('');
-      setShowReplyForm(false);
-      toast({
-        title: "Respuesta enviada",
-        description: "Tu respuesta ha sido publicada correctamente"
-      });
+      if (currentUser) {
+        await addReplyToComment(jobId, comment.id, replyContent, currentUser);
+        setReplyContent('');
+        setShowReplyForm(false);
+        toast({
+          title: "Respuesta enviada",
+          description: "Tu respuesta ha sido publicada correctamente"
+        });
+      }
     } catch (error) {
       toast({
         variant: "destructive",
@@ -78,14 +81,14 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
               {formatDate(comment.timestamp)} {formatTime(comment.timestamp)}
             </span>
           </div>
-          <p className="text-gray-700 text-sm mt-1">{comment.content}</p>
+          <p className="text-gray-700 text-sm mt-1">{comment.text || comment.content}</p>
           
           {currentUser && (
             <button
               onClick={() => setShowReplyForm(!showReplyForm)}
               className="text-xs text-wfc-purple mt-1 flex items-center"
             >
-              <MessageSquare className="h-3 w-3 mr-1" />
+              <MessageCircle className="h-3 w-3 mr-1" />
               {showReplyForm ? 'Cancelar' : 'Responder'}
             </button>
           )}
@@ -123,9 +126,9 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
       )}
 
       {/* Respuestas */}
-      {comment.replies.length > 0 && (
+      {comment.replies && comment.replies.length > 0 && (
         <div className="ml-11 space-y-3 border-l-2 border-gray-100 pl-3">
-          {comment.replies.map((reply) => (
+          {comment.replies.map((reply: ReplyType) => (
             <div key={reply.id} className="flex space-x-3">
               <Avatar className="h-6 w-6">
                 <AvatarImage src={reply.userPhoto} alt={reply.userName} />
@@ -140,7 +143,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
                     {formatDate(reply.timestamp)} {formatTime(reply.timestamp)}
                   </span>
                 </div>
-                <p className="text-gray-700 text-xs mt-1">{reply.content}</p>
+                <p className="text-gray-700 text-xs mt-1">{reply.text || reply.content}</p>
               </div>
             </div>
           ))}

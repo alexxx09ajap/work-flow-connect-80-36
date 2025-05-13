@@ -12,21 +12,20 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageCircle, Calendar, DollarSign, User, Heart, Bookmark, AlertCircle } from 'lucide-react';
+import { MessageCircle, Calendar, DollarSign, User } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { JobType } from '@/types';
 import { formatDate } from '@/lib/utils';
+import { CommentsList } from '@/components/Comments/CommentsList';
+import { Skeleton } from '@/components/ui/skeleton';
 
-/**
- * Componente de la página de detalles de una propuesta
- */
 const JobDetail = () => {
   // Hooks de React Router para obtener el ID de la propuesta y navegación
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
   
   // Hooks de contexto para acceder a datos y funcionalidades
-  const { getJobById, addComment, jobs } = useJobs(); // Accedemos a jobs para tener los trabajos disponibles
+  const { getJobById, addComment, jobs } = useJobs(); 
   const { currentUser } = useAuth(); // Información del usuario actual
   const { createPrivateChat } = useChat(); // Funcionalidades de chat
   const { getUserById } = useData(); // Para obtener datos de usuarios
@@ -37,6 +36,7 @@ const JobDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [job, setJob] = useState<JobType | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
   
   console.log("JobDetail: jobId =", jobId);
   console.log("JobDetail: jobs disponibles =", jobs?.length || 0);
@@ -86,10 +86,66 @@ const JobDetail = () => {
   if (isLoading) {
     return (
       <MainLayout>
-        <div className="flex justify-center items-center py-20">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-wfc-purple mx-auto"></div>
-            <p className="mt-4 text-gray-600">Cargando propuesta...</p>
+        <div className="container-custom">
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-gray-200">
+              <div>
+                <Skeleton className="h-8 w-64" />
+                <Skeleton className="h-4 w-32 mt-2" />
+              </div>
+              <Skeleton className="h-6 w-24" />
+            </div>
+            
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="md:col-span-2 space-y-6">
+                <Card>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-32" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full mt-2" />
+                    <Skeleton className="h-4 w-3/4 mt-2" />
+                    <div className="mt-6">
+                      <Skeleton className="h-4 w-40" />
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <Skeleton className="h-6 w-20" />
+                        <Skeleton className="h-6 w-24" />
+                        <Skeleton className="h-6 w-16" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-40" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-10 w-32 mt-4" />
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-40" />
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center">
+                      <Skeleton className="h-12 w-12 rounded-full mr-3" />
+                      <div>
+                        <Skeleton className="h-5 w-32" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </div>
         </div>
       </MainLayout>
@@ -104,7 +160,13 @@ const JobDetail = () => {
           <Card className="mt-6">
             <CardContent className="pt-6">
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+                <div className="text-red-500 mb-4 rounded-full bg-red-100 p-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                </div>
                 <h2 className="text-xl font-semibold">{error}</h2>
                 <p className="text-gray-600 mt-2">No se pudo cargar la información solicitada.</p>
                 <div className="flex flex-col sm:flex-row gap-4 mt-6">
@@ -131,7 +193,13 @@ const JobDetail = () => {
           <Card className="mt-6">
             <CardContent className="pt-6">
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <AlertCircle className="h-12 w-12 text-amber-500 mb-4" />
+                <div className="text-amber-500 mb-4 rounded-full bg-amber-100 p-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                </div>
                 <h2 className="text-xl font-semibold">Propuesta no encontrada</h2>
                 <p className="text-gray-600 mt-2">La propuesta que estás buscando no existe o ha sido eliminada.</p>
                 <Button className="mt-6" onClick={() => navigate('/jobs')}>
@@ -262,20 +330,32 @@ const JobDetail = () => {
                 </CardHeader>
                 <CardContent>
                   {/* Formulario para añadir un nuevo comentario */}
-                  <div className="space-y-4">
-                    <Textarea
-                      placeholder="Escribe tu comentario aquí..."
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      className="min-h-[100px]"
+                  {currentUser && (
+                    <div className="space-y-4 mb-8">
+                      <Textarea
+                        placeholder="Escribe tu comentario aquí..."
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        className="min-h-[100px]"
+                      />
+                      <Button 
+                        onClick={handleSubmitComment} 
+                        disabled={isSubmittingComment || !commentText.trim()}
+                        className="bg-wfc-purple hover:bg-wfc-purple-medium"
+                      >
+                        {isSubmittingComment ? 'Enviando...' : 'Enviar comentario'}
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Lista de comentarios existentes */}
+                  <div className="mt-6">
+                    <Separator className="mb-6" />
+                    <CommentsList 
+                      comments={job.comments} 
+                      jobId={job.id}
+                      loading={isLoadingComments}
                     />
-                    <Button 
-                      onClick={handleSubmitComment} 
-                      disabled={isSubmittingComment || !commentText.trim()}
-                      className="bg-wfc-purple hover:bg-wfc-purple-medium"
-                    >
-                      {isSubmittingComment ? 'Enviando...' : 'Enviar comentario'}
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
