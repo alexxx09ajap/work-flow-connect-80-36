@@ -84,12 +84,16 @@ const userModel = {
   async updateProfile(userId, userData) {
     const { username, avatar, bio, skills } = userData;
     
-    // Convert skills array to JSON string if it exists
-    const skillsJson = skills ? JSON.stringify(skills) : null;
+    // Modificación aquí: en lugar de convertir a JSON, convertimos a la sintaxis de array de PostgreSQL
+    let skillsArray = null;
+    if (skills && Array.isArray(skills)) {
+      // Convertir el array de JavaScript a formato de array de PostgreSQL
+      skillsArray = `{${skills.map(skill => `"${skill}"`).join(',')}}`;
+    }
     
     const result = await db.query(
       'UPDATE "Users" SET name = COALESCE($1, name), "photoURL" = COALESCE($2, "photoURL"), bio = COALESCE($3, bio), skills = COALESCE($4, skills), "updatedAt" = CURRENT_TIMESTAMP WHERE id = $5 RETURNING id, name, email, "photoURL" as avatar, "isOnline" as status, bio, skills',
-      [username, avatar, bio, skillsJson, userId]
+      [username, avatar, bio, skillsArray, userId]
     );
     
     const user = result.rows[0];
