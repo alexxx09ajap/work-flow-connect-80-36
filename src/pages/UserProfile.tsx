@@ -1,57 +1,101 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import MainLayout from '@/components/Layout/MainLayout';
 import { useData } from '@/contexts/DataContext';
+import { useJobs } from '@/contexts/JobContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
-import { UserType } from '@/types';
-import MainLayout from '@/components/Layout/MainLayout';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Verified } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { MessageCircle, Calendar, Verified } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { formatDate } from '@/lib/utils';
+import { UserType, JobType } from '@/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
+/**
+ * Componente de Página de Perfil de Usuario
+ * 
+ * Esta página muestra el perfil de otro usuario incluyendo:
+ * - Información personal del usuario y foto de perfil
+ * - Biografía y habilidades del usuario
+ * - Botón para contactar/chatear con el usuario
+ * - Lista de propuestas publicadas por el usuario
+ * 
+ * Maneja la lógica para crear un nuevo chat o navegar a uno existente
+ * cuando se hace clic en el botón "Contactar".
+ */
 const UserProfile = () => {
-  const { userId } = useParams();
+  // Obtener el ID del usuario de los parámetros de la URL
+  const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const { getUserById } = useData();
-  const { currentUser } = useAuth();
-  const { createPrivateChat } = useChat();
-  const { toast } = useToast();
-  const [profileUser, setProfileUser] = useState<UserType | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   
+  // Hooks de contexto para acceder a datos y funcionalidades
+  const { getUserById } = useData(); // Para obtener datos del usuario
+  const { jobs } = useJobs(); // Para obtener propuestas
+  const { currentUser } = useAuth(); // Usuario actual autenticado
+  const { createPrivateChat, findExistingChat } = useChat(); // Funcionalidades de chat
+  const { toast } = useToast();
+  
+  // Estados para manejo de carga y datos
+  const [profileUser, setProfileUser] = useState<UserType | null>(null);
+  const [userJobs, setUserJobs] = useState<JobType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Efecto para cargar datos del usuario y sus propuestas
   useEffect(() => {
     const fetchProfileUser = async () => {
       setIsLoading(true);
       if (userId) {
         const user = getUserById(userId);
         setProfileUser(user || null);
+        
+        // Filtrar propuestas de este usuario
+        const jobsByUser = jobs.filter(job => job.userId === userId);
+        setUserJobs(jobsByUser);
       }
       setIsLoading(false);
     };
     
     fetchProfileUser();
-  }, [userId, getUserById]);
+  }, [userId, getUserById, jobs]);
   
-  const handleContactUser = async () => {
-    if (!profileUser) return;
+  /**
+   * Manejar el clic en el botón "Contactar"
+   * Esta función abre un chat existente o crea uno nuevo
+   */
+  const handleContactClick = async () => {
+    if (!currentUser || !profileUser) return;
     
     try {
-      console.log("Attempting to create chat with user:", profileUser.id);
-      const chatCreated = await createPrivateChat(profileUser.id);
+      // Verificar si ya existe un chat con este usuario
+      const existingChat = findExistingChat ? 
+        findExistingChat(profileUser.id) : 
+        undefined;
       
-      if (chatCreated) {
-        toast({
-          title: "Chat creado",
-          description: `Ahora puedes chatear con ${profileUser.name}`
-        });
+      if (existingChat) {
+        // Si existe un chat, navegar a él
         navigate('/chats');
+        toast({
+          title: "Chat existente",
+          description: `Abriendo la conversación con ${profileUser.name}`
+        });
+      } else {
+        // Si no, crear uno nuevo
+        const chatCreated = await createPrivateChat(profileUser.id);
+        if (chatCreated) {
+          navigate('/chats');
+          toast({
+            title: "Chat iniciado",
+            description: `Has iniciado una conversación con ${profileUser.name}`
+          });
+        }
       }
     } catch (error) {
-      console.error("Error creating chat:", error);
+      console.error("Error al gestionar el chat:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -59,18 +103,46 @@ const UserProfile = () => {
       });
     }
   };
-  
+
+  // Mostrar pantalla de carga
   if (isLoading) {
     return (
       <MainLayout>
-        <div className="container-custom">
-          <Card className="w-full max-w-md mx-auto">
-            <CardContent className="p-4">
-              <div className="flex flex-col items-center space-y-4">
-                <Skeleton className="h-24 w-24 rounded-full" />
-                <Skeleton className="h-6 w-48" />
-                <Skeleton className="h-4 w-64" />
-                <Skeleton className="h-10 w-32" />
+        <div className="space-y-8">
+          <Card>
+            <CardContent className="p-6">
+              <div className="grid gap-6 md:grid-cols-[200px_1fr]">
+                <div className="flex flex-col items-center text-center">
+                  <Skeleton className="h-32 w-32 rounded-full" />
+                  <Skeleton className="h-7 w-40 mt-4" />
+                  <Skeleton className="h-10 w-full mt-4" />
+                </div>
+                <div className="space-y-6">
+                  <div>
+                    <Skeleton className="h-6 w-40 mb-2" />
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+                  <div>
+                    <Skeleton className="h-6 w-40 mb-2" />
+                    <div className="flex flex-wrap gap-2">
+                      <Skeleton className="h-6 w-20" />
+                      <Skeleton className="h-6 w-24" />
+                      <Skeleton className="h-6 w-16" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-48" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
               </div>
             </CardContent>
           </Card>
@@ -78,51 +150,165 @@ const UserProfile = () => {
       </MainLayout>
     );
   }
-  
+
+  // Mostrar mensaje si no se encuentra el usuario
   if (!profileUser) {
     return (
       <MainLayout>
-        <div className="container-custom">
-          <Card className="w-full max-w-md mx-auto">
-            <CardContent className="p-4">
-              <p className="text-center text-gray-500">
-                Usuario no encontrado
-              </p>
-            </CardContent>
-          </Card>
+        <div className="text-center py-12">
+          <h2 className="text-xl font-semibold">Usuario no encontrado</h2>
+          <p className="text-gray-600 mt-2">El usuario que estás buscando no existe o ha sido eliminado.</p>
+          <Button className="mt-4" onClick={() => navigate('/dashboard')}>
+            Volver al inicio
+          </Button>
         </div>
       </MainLayout>
     );
   }
-  
+
   return (
     <MainLayout>
-      <div className="container-custom">
-        <Card className="w-full max-w-md mx-auto">
-          <CardContent className="p-4">
-            <div className="flex flex-col items-center space-y-4">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={profileUser.photoURL} alt={profileUser.name} />
-                <AvatarFallback className="bg-wfc-purple-medium text-white">
-                  {profileUser.name?.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <h2 className="text-xl font-semibold flex items-center">
-                {profileUser.name}
-                {(profileUser as any).isVerified && (
-                  <Verified className="ml-1 h-4 w-4 text-blue-500" />
+      <div className="space-y-8">
+        {/* Tarjeta de perfil de usuario */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="grid gap-6 md:grid-cols-[200px_1fr]">
+              {/* Foto de perfil y botón de contacto */}
+              <div className="flex flex-col items-center text-center">
+                <Avatar className="h-32 w-32">
+                  <AvatarImage src={profileUser.photoURL || ''} alt={profileUser.name} />
+                  <AvatarFallback className="bg-wfc-purple-medium text-white text-4xl">
+                    {profileUser.name?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <h2 className="text-xl font-bold mt-4 flex items-center">
+                  {profileUser.name}
+                  {(profileUser as any).isVerified && (
+                    <Verified className="ml-1 h-5 w-5 text-blue-500" />
+                  )}
+                </h2>
+                
+                {/* Solo mostrar botón de contacto si no es el usuario actual */}
+                {currentUser && currentUser.id !== userId && (
+                  <Button 
+                    className="mt-4 w-full bg-wfc-purple hover:bg-wfc-purple-medium"
+                    onClick={handleContactClick}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Contactar
+                  </Button>
                 )}
-              </h2>
-              <p className="text-gray-500">{profileUser.email}</p>
-              {currentUser && profileUser.id !== currentUser.id && (
-                <Button 
-                  onClick={handleContactUser} 
-                  className="bg-wfc-purple hover:bg-wfc-purple-medium"
-                >
-                  Contactar
-                </Button>
-              )}
+              </div>
+              
+              {/* Información del usuario */}
+              <div className="space-y-6">
+                {/* Biografía */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Biografía</h3>
+                  {profileUser.bio ? (
+                    <p className="text-gray-700">{profileUser.bio}</p>
+                  ) : (
+                    <p className="text-gray-500 italic">Este usuario no ha agregado una biografía.</p>
+                  )}
+                </div>
+                
+                {/* Habilidades */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Habilidades</h3>
+                  {profileUser.skills && profileUser.skills.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {profileUser.skills.map((skill, index) => (
+                        <Badge key={index} className="bg-wfc-purple-medium text-white">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">No se han agregado habilidades</p>
+                  )}
+                </div>
+                
+                {/* Información adicional */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-sm text-gray-600 mb-1">Email</h4>
+                    <p>{profileUser.email}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm text-gray-600 mb-1">Miembro desde</h4>
+                    <p>
+                      {profileUser.joinedAt ? (
+                        <span className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {formatDate(new Date(profileUser.joinedAt))}
+                        </span>
+                      ) : (
+                        "Fecha no disponible"
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
+          </CardContent>
+        </Card>
+        
+        {/* Propuestas del usuario */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Propuestas de {profileUser.name}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {userJobs.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-gray-500">Este usuario aún no ha publicado propuestas</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {userJobs.map((job) => (
+                  <div 
+                    key={job.id} 
+                    className="border border-gray-200 rounded-lg p-4 hover:border-wfc-purple cursor-pointer transition-colors"
+                    onClick={() => navigate(`/jobs/${job.id}`)}
+                  >
+                    <div className="flex flex-col md:flex-row justify-between">
+                      <div>
+                        <h3 className="font-medium">{job.title}</h3>
+                        <p className="text-sm text-gray-500">
+                          Publicado el {formatDate(job.createdAt)}
+                        </p>
+                      </div>
+                      <div className="mt-2 md:mt-0">
+                        <Badge className={`
+                          ${job.status === 'open' ? 'bg-green-100 text-green-800' : 
+                            job.status === 'in progress' ? 'bg-blue-100 text-blue-800' : 
+                            'bg-gray-100 text-gray-800'}
+                        `}>
+                          {job.status === 'open' ? 'Abierto' : 
+                            job.status === 'in progress' ? 'En progreso' : 
+                            'Completado'}
+                        </Badge>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-700 mt-2 line-clamp-2">{job.description}</p>
+                    {job.skills && job.skills.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {job.skills.slice(0, 3).map((skill, index) => (
+                          <Badge key={index} variant="outline" className="bg-gray-50 text-xs">
+                            {skill}
+                          </Badge>
+                        ))}
+                        {job.skills.length > 3 && (
+                          <Badge variant="outline" className="bg-gray-50 text-xs">
+                            +{job.skills.length - 3} más
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
