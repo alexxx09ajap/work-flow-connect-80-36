@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageCircle, Calendar, DollarSign, User, Heart, Bookmark } from 'lucide-react';
+import { MessageCircle, Calendar, DollarSign, User, Heart, Bookmark, AlertCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { JobType } from '@/types';
 
@@ -25,7 +25,7 @@ const JobDetail = () => {
   const navigate = useNavigate();
   
   // Hooks de contexto para acceder a datos y funcionalidades
-  const { getJobById, addComment } = useJobs(); // Funcionalidades de propuestas
+  const { getJobById, addComment, jobs } = useJobs(); // Accedemos a jobs para tener los trabajos disponibles
   const { currentUser } = useAuth(); // Información del usuario actual
   const { createPrivateChat } = useChat(); // Funcionalidades de chat
   const { getUserById } = useData(); // Para obtener datos de usuarios
@@ -35,24 +35,35 @@ const JobDetail = () => {
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [job, setJob] = useState<JobType | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  
+  console.log("JobDetail: jobId =", jobId);
+  console.log("JobDetail: jobs disponibles =", jobs?.length || 0);
   
   // Cargar trabajo cuando se monta el componente
   useEffect(() => {
     const loadJobDetails = async () => {
-      if (!jobId) return;
+      if (!jobId) {
+        setError("ID de trabajo no proporcionado");
+        setIsLoading(false);
+        return;
+      }
       
       setIsLoading(true);
       try {
+        // Intentar obtener el trabajo del caché local primero
         const jobData = getJobById(jobId);
         
         if (jobData) {
+          console.log("Trabajo encontrado localmente:", jobData);
           setJob(jobData);
-          console.log("Trabajo cargado:", jobData);
         } else {
           console.error("Trabajo no encontrado");
+          setError("No se pudo encontrar la propuesta solicitada");
         }
       } catch (error) {
         console.error("Error al cargar trabajo:", error);
+        setError("Error al cargar los detalles de la propuesta");
         toast({
           variant: "destructive",
           title: "Error",
@@ -64,7 +75,7 @@ const JobDetail = () => {
     };
     
     loadJobDetails();
-  }, [jobId, getJobById]);
+  }, [jobId, getJobById, jobs]);
 
   // Obtener información del propietario de la propuesta
   const jobOwner = job ? getUserById(job.userId) : undefined;
@@ -83,16 +94,50 @@ const JobDetail = () => {
     );
   }
   
+  // Si hay un error, mostrar el mensaje de error
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="container-custom">
+          <Card className="mt-6">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+                <h2 className="text-xl font-semibold">{error}</h2>
+                <p className="text-gray-600 mt-2">No se pudo cargar la información solicitada.</p>
+                <div className="flex flex-col sm:flex-row gap-4 mt-6">
+                  <Button onClick={() => navigate('/jobs')}>
+                    Ver todas las propuestas
+                  </Button>
+                  <Button variant="outline" onClick={() => window.location.reload()}>
+                    Intentar nuevamente
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    );
+  }
+  
   // Si no se encuentra la propuesta, mostrar mensaje de error
   if (!job) {
     return (
       <MainLayout>
-        <div className="text-center py-12">
-          <h2 className="text-xl font-semibold">Propuesta no encontrada</h2>
-          <p className="text-gray-600 mt-2">La propuesta que estás buscando no existe o ha sido eliminada.</p>
-          <Button className="mt-4" onClick={() => navigate('/jobs')}>
-            Ver todas las propuestas
-          </Button>
+        <div className="container-custom">
+          <Card className="mt-6">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <AlertCircle className="h-12 w-12 text-amber-500 mb-4" />
+                <h2 className="text-xl font-semibold">Propuesta no encontrada</h2>
+                <p className="text-gray-600 mt-2">La propuesta que estás buscando no existe o ha sido eliminada.</p>
+                <Button className="mt-6" onClick={() => navigate('/jobs')}>
+                  Ver todas las propuestas
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </MainLayout>
     );
@@ -153,11 +198,13 @@ const JobDetail = () => {
    * Función para formatear fechas (día/mes/año)
    */
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
+    return date instanceof Date 
+      ? date.toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        })
+      : 'Fecha desconocida';
   };
 
   // Renderizado del componente
@@ -317,7 +364,7 @@ const JobDetail = () => {
                     <Button
                       variant="outline"
                       className="w-full"
-                      onClick={() => navigate(`/user/${job.userId}`)}
+                      onClick={() => navigate(`/users/${job.userId}`)}
                     >
                       <User className="h-4 w-4 mr-2" />
                       Ver perfil
