@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Calendar, Verified } from 'lucide-react';
+import { MessageCircle, Calendar, Verified, User } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { formatDate } from '@/lib/utils';
 import { UserType, JobType } from '@/types';
@@ -50,18 +50,35 @@ const UserProfile = () => {
     const fetchProfileUser = async () => {
       setIsLoading(true);
       if (userId) {
-        const user = getUserById(userId);
-        setProfileUser(user || null);
-        
-        // Filtrar propuestas de este usuario
-        const jobsByUser = jobs.filter(job => job.userId === userId);
-        setUserJobs(jobsByUser);
+        try {
+          // Intentar obtener el usuario de la caché local
+          const user = getUserById(userId);
+          console.log("UserProfile: Usuario recuperado:", user);
+          setProfileUser(user || null);
+          
+          // Filtrar propuestas de este usuario
+          if (jobs && jobs.length > 0) {
+            const jobsByUser = jobs.filter(job => job.userId === userId);
+            console.log("UserProfile: Propuestas del usuario:", jobsByUser);
+            setUserJobs(jobsByUser);
+          } else {
+            console.log("UserProfile: No hay propuestas disponibles");
+            setUserJobs([]);
+          }
+        } catch (error) {
+          console.error("Error al cargar datos del perfil:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "No se pudieron cargar los datos del usuario"
+          });
+        }
       }
       setIsLoading(false);
     };
     
     fetchProfileUser();
-  }, [userId, getUserById, jobs]);
+  }, [userId, getUserById, jobs, toast]);
   
   /**
    * Manejar el clic en el botón "Contactar"
@@ -275,7 +292,7 @@ const UserProfile = () => {
                       <div>
                         <h3 className="font-medium">{job.title}</h3>
                         <p className="text-sm text-gray-500">
-                          Publicado el {formatDate(job.createdAt)}
+                          Publicado el {formatDate(job.createdAt instanceof Date ? job.createdAt : new Date(job.createdAt))}
                         </p>
                       </div>
                       <div className="mt-2 md:mt-0">
