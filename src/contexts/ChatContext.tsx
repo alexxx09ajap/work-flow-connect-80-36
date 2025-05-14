@@ -142,17 +142,18 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Update chat's lastMessage
         setChats((prev) =>
-          prev.map((chat) =>
-            chat.id === chatId
-              ? {
-                  ...chat,
-                  lastMessage: {
-                    content: message.content,
-                    timestamp: message.timestamp || message.createdAt || new Date().toISOString()
-                  }
+          prev.map((chat) => {
+            if (chat.id === chatId) {
+              return {
+                ...chat,
+                lastMessage: {
+                  content: message.content,
+                  timestamp: message.timestamp || message.createdAt || new Date().toISOString()
                 }
-              : chat
-          )
+              };
+            }
+            return chat;
+          })
         );
 
         // If this chat is active, mark messages as read
@@ -352,7 +353,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  // Send a message - Modificada para evitar duplicación
+  // Send a message
   const sendMessage = async (chatId: string, content: string) => {
     if (!currentUser) return;
     
@@ -383,17 +384,18 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
           
           setChats((prev) =>
-            prev.map((chat) =>
-              chat.id === chatId
-                ? {
-                    ...chat,
-                    lastMessage: {
-                      content: message.content,
-                      timestamp: message.timestamp || message.createdAt || new Date().toISOString()
-                    }
+            prev.map((chat) => {
+              if (chat.id === chatId) {
+                return {
+                  ...chat,
+                  lastMessage: {
+                    content: message.content,
+                    timestamp: message.timestamp || message.createdAt || new Date().toISOString()
                   }
-                : chat
-            )
+                };
+              }
+              return chat;
+            })
           );
         }
       }
@@ -407,7 +409,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Update a message - Similar change to avoid duplication
+  // Update a message
   const updateMessage = async (messageId: string, content: string) => {
     if (!currentUser) return;
     
@@ -479,7 +481,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Delete a message - Similar change to avoid duplication
+  // Delete a message
   const deleteMessage = async (messageId: string) => {
     if (!currentUser) return;
     

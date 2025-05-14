@@ -1,15 +1,16 @@
 
-import React from 'react';
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { ChevronLeft, Info } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import React, { useRef, useEffect } from 'react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { MessageType } from '@/types';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Info, MoreVertical, Edit, Trash2, ArrowLeft } from 'lucide-react';
+import EmojiPicker from './EmojiPicker';
 
 interface ChatMobileSheetProps {
   isOpen: boolean;
@@ -18,11 +19,11 @@ interface ChatMobileSheetProps {
   messages: MessageType[];
   isGroup?: boolean;
   children?: React.ReactNode;
-  onEditMessage?: (messageId: string, content: string) => void;
-  onDeleteMessage?: (messageId: string) => void;
+  onEditMessage: (id: string, content: string) => void;
+  onDeleteMessage: (id: string) => void;
 }
 
-const ChatMobileSheet = ({
+const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
   isOpen,
   onClose,
   title,
@@ -31,49 +32,66 @@ const ChatMobileSheet = ({
   children,
   onEditMessage,
   onDeleteMessage
-}: ChatMobileSheetProps) => {
+}) => {
   const { currentUser } = useAuth();
   const { getUserById } = useData();
-
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (isOpen) {
+      scrollToBottom();
+    }
+  }, [messages.length, isOpen]);
+  
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  
+  const formatTime = (timestamp: string | Date) => {
+    // Convert to Date object if it's a string
+    const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+    
     return date.toLocaleTimeString('es-ES', {
       hour: '2-digit',
       minute: '2-digit'
     });
   };
 
-  const formatDate = (timestamp: string) => {
-    const date = new Date(timestamp);
+  const formatDate = (timestamp: string | Date) => {
+    // Convert to Date object if it's a string
+    const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+    
     return date.toLocaleDateString('es-ES', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
   };
-
-  // Verificar que currentUser tenga un ID válido
-  console.log("Current User ID:", currentUser?.id);
-
+  
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="left" className="sm:max-w-md w-full p-0">
+      <SheetContent side="right" className="w-full h-full p-0 flex flex-col sm:max-w-md">
         <SheetHeader className="p-4 border-b">
           <div className="flex items-center">
             <Button variant="ghost" size="icon" onClick={onClose} className="mr-2">
-              <ChevronLeft className="h-5 w-5" />
+              <ArrowLeft className="h-5 w-5" />
             </Button>
-            <SheetTitle>{title}</SheetTitle>
+            <SheetTitle className="flex-1 text-left">{title}</SheetTitle>
           </div>
         </SheetHeader>
-        <ScrollArea className="h-[calc(100vh-4rem)]">
-          <div className="p-4 space-y-4">
-            {messages.length > 0 ? (
-              messages.map((message, index) => {
+        
+        {/* Messages area */}
+        <ScrollArea className="flex-1 p-4 bg-gray-50 dark:bg-gray-900">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <p className="text-gray-500">No hay mensajes aún</p>
+              <p className="text-sm text-gray-400 mt-2">Envía un mensaje para iniciar la conversación</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map((message, index, messages) => {
                 const isCurrentUser = currentUser && message.senderId === currentUser.id;
-                // Debug information
-                console.log(`Message ${index}: senderId=${message.senderId}, currentUserId=${currentUser?.id}, isCurrentUser=${isCurrentUser}`);
-                
                 const isSystemMessage = message.senderId === "system";
                 const sender = isSystemMessage ? null : getUserById(message.senderId);
                 const isDeleted = message.deleted;
@@ -101,9 +119,8 @@ const ChatMobileSheet = ({
                       </div>
                     ) : (
                       <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} group mb-2`}>
-                        {/* Avatar para mensajes recibidos solamente */}
                         {!isCurrentUser && (
-                          <Avatar className="h-8 w-8 mr-2 self-end flex-shrink-0">
+                          <Avatar className="h-8 w-8 mr-2 self-end">
                             <AvatarImage src={sender?.photoURL} />
                             <AvatarFallback className="bg-gray-300 text-gray-700 text-xs">
                               {sender?.name?.charAt(0).toUpperCase() || '?'}
@@ -112,25 +129,23 @@ const ChatMobileSheet = ({
                         )}
                         
                         <div className="max-w-[70%]">
-                          {/* Nombre del remitente para chats grupales */}
                           {!isCurrentUser && isGroup && (
                             <div className="text-xs text-gray-500 ml-1 mb-1">
                               {sender?.name || 'Usuario'}
                             </div>
                           )}
                           
-                          {/* Burbuja de mensaje con diferentes colores para enviados/recibidos */}
-                          <div className={`px-4 py-2 rounded-2xl ${
+                          <div className={`px-4 py-2 rounded-2xl relative ${
                             isDeleted
                               ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 italic'
                               : isCurrentUser 
                                 ? 'bg-[#9b87f5] text-white rounded-br-none' 
                                 : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
-                          } relative group`}>
+                          } group`}>
                             <p className="break-words">{message.content}</p>
                             
-                            {/* Opciones de mensaje (editar/eliminar) para mensajes propios no eliminados */}
-                            {isCurrentUser && !isDeleted && onEditMessage && onDeleteMessage && (
+                            {/* Message options */}
+                            {isCurrentUser && !isDeleted && (
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <Button 
@@ -165,17 +180,20 @@ const ChatMobileSheet = ({
                                 </PopoverContent>
                               </Popover>
                             )}
+                            
+                            {/* Edited indicator */}
+                            {message.edited && !isDeleted && (
+                              <span className="text-xs opacity-70 ml-1">(editado)</span>
+                            )}
                           </div>
                           
-                          {/* Marca de tiempo del mensaje */}
                           <div className={`text-xs text-gray-400 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
                             {formatTime(message.timestamp)}
                           </div>
                         </div>
                         
-                        {/* Avatar para mensajes enviados solamente */}
                         {isCurrentUser && (
-                          <Avatar className="h-8 w-8 ml-2 self-end flex-shrink-0">
+                          <Avatar className="h-8 w-8 ml-2 self-end">
                             <AvatarImage src={currentUser.photoURL} />
                             <AvatarFallback className="bg-[#9b87f5] text-white text-xs">
                               {currentUser.name?.charAt(0).toUpperCase() || 'Y'}
@@ -186,20 +204,16 @@ const ChatMobileSheet = ({
                     )}
                   </React.Fragment>
                 );
-              })
-            ) : (
-              <div className="flex flex-col items-center justify-center h-64 text-center">
-                <p className="text-gray-500">No hay mensajes aún</p>
-                <p className="text-sm text-gray-400 mt-2">Envía un mensaje para iniciar la conversación</p>
-              </div>
-            )}
-          </div>
-          {children && (
-            <div className="p-4 border-t">
-              {children}
+              })}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </ScrollArea>
+        
+        {/* Message input with emoji picker */}
+        <div className="p-4 border-t">
+          {children}
+        </div>
       </SheetContent>
     </Sheet>
   );

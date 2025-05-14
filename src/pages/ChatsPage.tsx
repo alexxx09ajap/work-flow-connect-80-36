@@ -33,6 +33,7 @@ import { toast } from '@/components/ui/use-toast';
 import { ChatType, MessageType } from '@/types';
 import ChatMobileSheet from '@/components/ChatMobileSheet';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import EmojiPicker from '@/components/EmojiPicker';
 
 const ChatsPage = () => {
   const { 
@@ -64,6 +65,11 @@ const ChatsPage = () => {
   
   // Get messages for the active chat
   const activeMessages = activeChat ? getMessages(activeChat.id) : [];
+  
+  // Add emoji to message text
+  const handleEmojiClick = (emoji: string) => {
+    setMessageText(prev => prev + emoji);
+  };
   
   useEffect(() => {
     scrollToBottom();
@@ -596,9 +602,10 @@ const ChatsPage = () => {
                   )}
                 </ScrollArea>
                 
-                {/* Message input */}
+                {/* Message input with emoji picker */}
                 <div className="p-4 border-t">
-                  <div className="flex space-x-2">
+                  <div className="flex items-center space-x-2">
+                    <EmojiPicker onEmojiClick={handleEmojiClick} />
                     <Input
                       placeholder="Escribe un mensaje..."
                       value={messageText}
@@ -660,7 +667,7 @@ const ChatsPage = () => {
         </div>
       </div>
       
-      {/* Mobile chat view */}
+      {/* Mobile chat view with emoji support */}
       {activeChat && (
         <ChatMobileSheet
           isOpen={isMobileChat}
@@ -671,7 +678,8 @@ const ChatsPage = () => {
           onEditMessage={(id, content) => setEditingMessage({ id, content })}
           onDeleteMessage={(id) => setIsConfirmingDelete(id)}
         >
-          <div className="flex space-x-2">
+          <div className="flex items-center space-x-2">
+            <EmojiPicker onEmojiClick={handleEmojiClick} />
             <Input
               placeholder="Escribe un mensaje..."
               value={messageText}
