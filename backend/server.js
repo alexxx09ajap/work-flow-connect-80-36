@@ -21,6 +21,7 @@ const socketHandler = require('./socket/socketHandler');
 
 // Importar el script de verificación de esquema
 const { checkAndUpdateDbSchema } = require('./scripts/checkDbSchema');
+const fileModel = require('./models/fileModel');
 
 // Create Express app
 const app = express();
@@ -72,16 +73,26 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, async () => {
   console.log(`Server running on port ${PORT} with Socket.IO support`);
   
-  // Verificar y actualizar el esquema de la base de datos al iniciar
-  await checkAndUpdateDbSchema();
-  
-  // Asegurarnos de que las columnas necesarias existan
-  const messageModel = require('./models/messageModel');
   try {
+    // Verificar y actualizar el esquema de la base de datos al iniciar
+    await checkAndUpdateDbSchema();
+    
+    // Asegurarnos de que las columnas necesarias existan en la tabla Messages
+    const messageModel = require('./models/messageModel');
     await messageModel.addDeletedColumn();
     await messageModel.addEditedColumn();
-    console.log('Verificadas las columnas necesarias en la tabla de mensajes al iniciar el servidor');
+    
+    // Asegurar que la tabla Files exista
+    const filesTableCreated = await fileModel.ensureFilesTableExists();
+    if (filesTableCreated) {
+      console.log('Tabla Files creada al iniciar el servidor');
+    } else {
+      console.log('Tabla Files verificada correctamente');
+    }
+    
+    console.log('Verificación de esquema de base de datos completada con éxito');
   } catch (err) {
-    console.error('Error al verificar columnas en inicio de servidor:', err);
+    console.error('Error al verificar/actualizar esquema de base de datos:', err);
+    console.log('ADVERTENCIA: La aplicación puede no funcionar correctamente si faltan tablas o columnas');
   }
 });

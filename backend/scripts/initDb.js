@@ -28,7 +28,7 @@ async function initDb() {
     const checkTablesQuery = `
       SELECT table_name 
       FROM information_schema.tables 
-      WHERE table_schema='public' AND table_name IN ('Chats', 'ChatParticipants', 'Messages');
+      WHERE table_schema='public' AND table_name IN ('Chats', 'ChatParticipants', 'Messages', 'Files', 'files');
     `;
     
     const existingTables = await pool.query(checkTablesQuery);
@@ -47,6 +47,9 @@ async function initDb() {
     }
     if (!tableNames.includes('messages')) {
       missingTables.push('Messages');
+    }
+    if (!tableNames.includes('files') && !tableNames.includes('Files')) {
+      missingTables.push('Files');
     }
     
     if (missingTables.length > 0) {
@@ -84,6 +87,21 @@ async function initDb() {
           "chatId" UUID REFERENCES "Chats"(id) ON DELETE SET NULL,
           "userId" UUID REFERENCES "Users"(id) ON DELETE SET NULL
         );
+        
+        -- Files Table
+        CREATE TABLE IF NOT EXISTS "Files" (
+          id SERIAL PRIMARY KEY,
+          filename VARCHAR(255) NOT NULL,
+          content_type VARCHAR(100) NOT NULL,
+          size INTEGER NOT NULL,
+          data BYTEA NOT NULL,
+          uploaded_by UUID REFERENCES "Users"(id) ON DELETE CASCADE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        -- Create view for lowercase 'files' to ensure compatibility
+        CREATE OR REPLACE VIEW files AS SELECT * FROM "Files";
       `;
       
       await pool.query(createTablesSQL);
