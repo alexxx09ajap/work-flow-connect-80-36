@@ -7,6 +7,9 @@ const router = express.Router();
 
 router.use(authenticateToken);
 
+// Search messages across all chats
+router.get('/search', messageController.searchMessages);
+
 // Get messages for a chat
 router.get('/:chatId', messageController.getMessages);
 

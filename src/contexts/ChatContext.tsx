@@ -26,6 +26,7 @@ export interface ChatContextType {
   loadMessages: (chatId: string) => Promise<void>;
   updateMessage: (messageId: string, content: string) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
+  searchMessages: (query: string, chatId?: string) => Promise<MessageType[]>;
 }
 
 const ChatContext = createContext<ChatContextType | null>(null);
@@ -582,6 +583,36 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Search messages in chats
+  const searchMessages = async (query: string, chatId?: string): Promise<MessageType[]> => {
+    if (!currentUser || query.trim().length < 2) {
+      return [];
+    }
+
+    try {
+      let result: MessageType[];
+      
+      if (chatId) {
+        // Búsqueda solo en el chat actual
+        result = await messageService.searchMessagesInChat(chatId, query);
+      } else {
+        // Búsqueda global en todos los chats
+        result = await messageService.searchMessages(query);
+      }
+      
+      console.log(`Found ${result.length} messages matching "${query}"${chatId ? ` in chat ${chatId}` : ''}`);
+      return result;
+    } catch (error) {
+      console.error('Error searching messages:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al buscar mensajes"
+      });
+      return [];
+    }
+  };
+
   // Get messages for a chat
   const getMessages = (chatId: string) => {
     return messages[chatId] || [];
@@ -728,7 +759,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loadChats,
         loadMessages,
         updateMessage,
-        deleteMessage
+        deleteMessage,
+        searchMessages
       }}
     >
       {children}

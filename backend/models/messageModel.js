@@ -1,3 +1,4 @@
+
 const db = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
@@ -67,13 +68,26 @@ const messageModel = {
     }
   },
   
-  // Get messages for a chat
-  async findByChatId(chatId) {
+  // Get messages for a chat with optional search filter
+  async findByChatId(chatId, searchText = null) {
     try {
-      const result = await db.query(
-        'SELECT m.*, m."userId" as "senderId", u.name as "senderName", u."photoURL" as "senderPhoto" FROM "Messages" m LEFT JOIN "Users" u ON m."userId" = u.id WHERE m."chatId" = $1 ORDER BY m."createdAt" ASC',
-        [chatId]
-      );
+      let query = `
+        SELECT m.*, m."userId" as "senderId", u.name as "senderName", u."photoURL" as "senderPhoto" 
+        FROM "Messages" m 
+        LEFT JOIN "Users" u ON m."userId" = u.id 
+        WHERE m."chatId" = $1
+      `;
+      
+      const params = [chatId];
+      
+      if (searchText) {
+        query += ` AND (LOWER(m.content) LIKE LOWER($2))`;
+        params.push(`%${searchText}%`);
+      }
+      
+      query += ` ORDER BY m."createdAt" ASC`;
+      
+      const result = await db.query(query, params);
       
       // Nos aseguramos de que cada mensaje tenga un senderId explícito para la coherencia en la interfaz
       return result.rows.map(row => {
@@ -91,6 +105,47 @@ const messageModel = {
       });
     } catch (error) {
       console.error("Error al obtener mensajes:", error);
+      return [];
+    }
+  },
+  
+  // Search messages across all chats where user is participant
+  async searchUserMessages(userId, searchText) {
+    try {
+      const query = `
+        SELECT 
+          m.*,
+          m."userId" as "senderId",
+          u.name as "senderName",
+          u."photoURL" as "senderPhoto",
+          c.name as "chatName",
+          c."isGroup" as "chatIsGroup"
+        FROM "Messages" m
+        LEFT JOIN "Users" u ON m."userId" = u.id
+        JOIN "Chats" c ON m."chatId" = c.id
+        JOIN "ChatParticipants" cp ON c.id = cp."chatId" AND cp."userId" = $1
+        WHERE LOWER(m.content) LIKE LOWER($2)
+        ORDER BY m."createdAt" DESC
+        LIMIT 50
+      `;
+      
+      const result = await db.query(query, [userId, `%${searchText}%`]);
+      
+      // Format messages for compatibility with frontend
+      return result.rows.map(row => {
+        const deleted = typeof row.deleted !== 'undefined' ? row.deleted : false;
+        const edited = typeof row.edited !== 'undefined' ? row.edited : false;
+        
+        return {
+          ...row,
+          senderId: row.userId || row.senderId,
+          timestamp: row.createdAt,
+          deleted: deleted,
+          edited: edited
+        };
+      });
+    } catch (error) {
+      console.error("Error al buscar mensajes:", error);
       return [];
     }
   },

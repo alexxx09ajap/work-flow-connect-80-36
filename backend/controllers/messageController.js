@@ -8,6 +8,7 @@ const messageController = {
   async getMessages(req, res) {
     try {
       const { chatId } = req.params;
+      const { search } = req.query;
       
       // Check if user is a participant
       const isParticipant = await chatModel.isParticipant(chatId, req.user.userId);
@@ -15,14 +16,14 @@ const messageController = {
         return res.status(403).json({ message: 'You are not a participant in this chat' });
       }
       
-      // Get messages
-      const messages = await messageModel.findByChatId(chatId);
+      // Get messages, with optional search filter
+      const messages = await messageModel.findByChatId(chatId, search);
       
       // Mark messages as read
       await messageModel.markAsRead(chatId, req.user.userId);
       
       // Log message info for debugging
-      console.log(`Retrieved ${messages.length} messages for chat ${chatId}. User ID: ${req.user.userId}`);
+      console.log(`Retrieved ${messages.length} messages for chat ${chatId}. User ID: ${req.user.userId}${search ? `, Search: "${search}"` : ''}`);
       
       res.json(messages);
     } catch (error) {
@@ -200,6 +201,28 @@ const messageController = {
       res.json({ message: 'Message deleted', messageId });
     } catch (error) {
       console.error('Error deleting message:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  },
+
+  // Search messages in all chats
+  async searchMessages(req, res) {
+    try {
+      const { query } = req.query;
+      const userId = req.user.userId;
+      
+      if (!query || query.trim().length < 2) {
+        return res.status(400).json({ message: 'Search query must be at least 2 characters long' });
+      }
+
+      // Get messages from all user's chats containing the search query
+      const messages = await messageModel.searchUserMessages(userId, query);
+      
+      console.log(`Found ${messages.length} messages matching query "${query}" for user ${userId}`);
+      
+      res.json(messages);
+    } catch (error) {
+      console.error('Error searching messages:', error);
       res.status(500).json({ message: 'Server error' });
     }
   }

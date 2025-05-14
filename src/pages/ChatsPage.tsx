@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useChat } from '@/contexts/ChatContext';
@@ -37,6 +38,7 @@ import EmojiPicker from '@/components/EmojiPicker';
 import FileAttachment from '@/components/FileAttachment';
 import FileUpload from '@/components/FileUpload';
 import { fileService } from '@/services/api';
+import MessageSearch from '@/components/MessageSearch';
 
 const ChatsPage = () => {
   const { 
@@ -51,7 +53,8 @@ const ChatsPage = () => {
     loadingChats,
     getMessages,
     updateMessage,
-    deleteMessage
+    deleteMessage,
+    searchMessages
   } = useChat();
   const { currentUser } = useAuth();
   const { getUserById } = useData();
@@ -65,6 +68,7 @@ const ChatsPage = () => {
   const [editingMessage, setEditingMessage] = useState<{id: string, content: string} | null>(null);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Get messages for the active chat
@@ -239,6 +243,37 @@ const ChatsPage = () => {
       });
     } finally {
       setIsUploading(false);
+    }
+  };
+  
+  // Función para abrir el diálogo de búsqueda de mensajes
+  const handleOpenSearch = () => {
+    setIsSearching(true);
+  };
+
+  // Manejador para cuando se selecciona un mensaje en la búsqueda
+  const handleSearchMessageSelect = (message: MessageType) => {
+    if (message.chatId) {
+      // Buscar el chat al que pertenece el mensaje
+      const chat = chats.find(c => c.id === message.chatId);
+      if (chat) {
+        setActiveChat(chat);
+        // Cerrar el diálogo de búsqueda
+        setIsSearching(false);
+        
+        // Dar tiempo para que se carguen los mensajes y luego hacer scroll al mensaje
+        setTimeout(() => {
+          const messageElement = document.getElementById(`message-${message.id}`);
+          if (messageElement) {
+            messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Destacar el mensaje brevemente
+            messageElement.classList.add('bg-yellow-100', 'dark:bg-yellow-900');
+            setTimeout(() => {
+              messageElement.classList.remove('bg-yellow-100', 'dark:bg-yellow-900');
+            }, 2000);
+          }
+        }, 500);
+      }
     }
   };
   
@@ -448,6 +483,22 @@ const ChatsPage = () => {
                       }
                     </p>
                   </div>
+
+                  {/* Botón de búsqueda en el chat */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={handleOpenSearch}
+                        >
+                          <Search className="h-5 w-5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Buscar en este chat</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   
                   {activeChat.isGroup && (
                     <TooltipProvider>
@@ -505,7 +556,10 @@ const ChatsPage = () => {
                                 </div>
                               </div>
                             ) : (
-                              <div className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} group mb-2`}>
+                              <div 
+                                id={`message-${message.id}`} 
+                                className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} group mb-2 transition-colors duration-300`}
+                              >
                                 {/* Avatar for received messages only */}
                                 {!isCurrentUser && (
                                   <Avatar className="h-8 w-8 mr-2 self-end flex-shrink-0">
@@ -743,6 +797,15 @@ const ChatsPage = () => {
           </div>
         </ChatMobileSheet>
       )}
+      
+      {/* Diálogo de búsqueda de mensajes */}
+      <MessageSearch 
+        isOpen={isSearching} 
+        onOpenChange={setIsSearching}
+        activeChat={activeChat}
+        onSearchResultClick={handleSearchMessageSelect}
+        searchMessages={searchMessages}
+      />
       
       {/* Dialogs */}
       <Dialog open={isCreatingGroup} onOpenChange={setIsCreatingGroup}>

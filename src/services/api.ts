@@ -1,192 +1,219 @@
 
 import axios from 'axios';
-import { ChatType, JobType, UserType, MessageType } from '@/types';
+import { UserType, JobType, ChatType, MessageType, FileType } from '@/types';
 
-const API_URL = 'http://localhost:5000/api';
-
-// Create axios instance
+// Configurando la instancia de axios
 const api = axios.create({
-  baseURL: API_URL
+  baseURL: 'http://localhost:5000/api',
 });
 
-// Add request interceptor to include token in all requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Auth service
-export const authService = {
-  login: async (credentials: any) => {
-    const response = await api.post('/auth/login', credentials);
-    localStorage.setItem('token', response.data.token);
-    return response.data;
-  },
-  register: async (userData: any) => {
-    const response = await api.post('/auth/register', userData);
-    localStorage.setItem('token', response.data.token);
-    return response.data;
-  },
-  logout: () => {
-    localStorage.removeItem('token');
-  },
-  getCurrentUser: async () => {
-    try {
-      const response = await api.get('/auth/me');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching current user:', error);
-      return null;
+// Interceptor para agregar token de autorización
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-  }
-};
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-// User service
+// Servicios de usuario
 export const userService = {
-  getUsers: async (): Promise<UserType[]> => {
+  async getUsers(): Promise<UserType[]> {
     const response = await api.get('/users');
     return response.data;
   },
-  getUser: async (id: string): Promise<UserType> => {
-    const response = await api.get(`/users/${id}`);
+
+  async getUserById(userId: string): Promise<UserType> {
+    const response = await api.get(`/users/${userId}`);
     return response.data;
   },
-  updateUser: async (id: string, data: any): Promise<UserType> => {
-    const response = await api.put(`/users/${id}`, data);
+
+  async updateUserProfile(userId: string, userData: Partial<UserType>): Promise<UserType> {
+    const response = await api.put(`/users/${userId}`, userData);
     return response.data;
-  },
-  deleteUser: async (id: string): Promise<void> => {
-    await api.delete(`/users/${id}`);
   }
 };
 
-// Chat service
-export const chatService = {
-  getChats: async (): Promise<ChatType[]> => {
-    const response = await api.get('/chats');
-    return response.data;
-  },
-  createPrivateChat: async (userId: string): Promise<ChatType> => {
-    const response = await api.post('/chats/private', { userId });
-    return response.data;
-  },
-  createGroupChat: async (name: string, participantIds: string[]): Promise<ChatType> => {
-    const response = await api.post('/chats/group', { name, participantIds });
-    return response.data;
-  },
-  addUsersToChat: async (chatId: string, userIds: string[]): Promise<void> => {
-    await api.post(`/chats/${chatId}/users`, { userIds });
-  },
-  leaveChat: async (chatId: string): Promise<void> => {
-    await api.post(`/chats/${chatId}/leave`);
-  },
-  deleteChat: async (chatId: string): Promise<void> => {
-    await api.delete(`/chats/${chatId}`);
-  }
-};
-
-// Message service
-export const messageService = {
-  getMessages: async (chatId: string): Promise<MessageType[]> => {
-    const response = await api.get(`/messages/${chatId}`);
-    return response.data;
-  },
-  sendMessage: async (chatId: string, content: string): Promise<MessageType> => {
-    const response = await api.post('/messages', { chatId, content });
-    return response.data;
-  },
-  updateMessage: async (messageId: string, content: string): Promise<MessageType> => {
-    const response = await api.put(`/messages/${messageId}`, { content });
-    return response.data;
-  },
-  deleteMessage: async (messageId: string): Promise<void> => {
-    await api.delete(`/messages/${messageId}`);
-  }
-};
-
-// Job service
+// Servicios de trabajos
 export const jobService = {
-  getJobs: async (): Promise<JobType[]> => {
+  async getAllJobs(): Promise<JobType[]> {
     const response = await api.get('/jobs');
     return response.data;
   },
-  getJob: async (id: string): Promise<JobType> => {
-    const response = await api.get(`/jobs/${id}`);
+  
+  async getJobById(jobId: string): Promise<JobType> {
+    const response = await api.get(`/jobs/${jobId}`);
     return response.data;
   },
-  createJob: async (jobData: any): Promise<JobType> => {
+  
+  async createJob(jobData: Partial<JobType>): Promise<JobType> {
     const response = await api.post('/jobs', jobData);
     return response.data;
   },
-  updateJob: async (id: string, jobData: any): Promise<JobType> => {
-    const response = await api.put(`/jobs/${id}`, jobData);
+  
+  async updateJob(jobId: string, jobData: Partial<JobType>): Promise<JobType> {
+    const response = await api.put(`/jobs/${jobId}`, jobData);
     return response.data;
   },
-  deleteJob: async (id: string): Promise<void> => {
-    await api.delete(`/jobs/${id}`);
+  
+  async deleteJob(jobId: string): Promise<void> {
+    await api.delete(`/jobs/${jobId}`);
+  },
+  
+  async applyToJob(jobId: string): Promise<void> {
+    await api.post(`/jobs/${jobId}/apply`);
+  },
+  
+  async toggleSavedJob(jobId: string): Promise<{ message: string }> {
+    const response = await api.post(`/jobs/${jobId}/toggle-save`);
+    return response.data;
+  },
+  
+  async getSavedJobs(): Promise<JobType[]> {
+    const response = await api.get('/jobs/saved');
+    return response.data;
+  },
+  
+  async getAppliedJobs(): Promise<JobType[]> {
+    const response = await api.get('/jobs/applied');
+    return response.data;
+  },
+  
+  async getPostedJobs(): Promise<JobType[]> {
+    const response = await api.get('/jobs/posted');
+    return response.data;
+  },
+  
+  async getJobApplicants(jobId: string): Promise<UserType[]> {
+    const response = await api.get(`/jobs/${jobId}/applicants`);
+    return response.data;
+  },
+  
+  async updateJobStatus(jobId: string, status: string): Promise<JobType> {
+    const response = await api.put(`/jobs/${jobId}/status`, { status });
+    return response.data;
   }
 };
 
-// File service
+// Servicios de chats
+export const chatService = {
+  async getChats(): Promise<ChatType[]> {
+    const response = await api.get('/chats');
+    return response.data;
+  },
+  
+  async getChatById(chatId: string): Promise<ChatType> {
+    const response = await api.get(`/chats/${chatId}`);
+    return response.data;
+  },
+  
+  async createGroupChat(name: string, participantIds: string[]): Promise<ChatType> {
+    const response = await api.post('/chats/group', { name, participants: participantIds });
+    return response.data;
+  },
+  
+  async createPrivateChat(userId: string): Promise<ChatType> {
+    const response = await api.post('/chats/private', { userId });
+    return response.data;
+  },
+  
+  async deleteChat(chatId: string): Promise<void> {
+    await api.delete(`/chats/${chatId}`);
+  },
+  
+  async addUsersToChat(chatId: string, userIds: string[]): Promise<void> {
+    await api.post(`/chats/${chatId}/participants`, { userIds });
+  },
+  
+  async removeUserFromChat(chatId: string, userId: string): Promise<void> {
+    await api.delete(`/chats/${chatId}/participants/${userId}`);
+  }
+};
+
+// Servicios de mensajes
+export const messageService = {
+  async getMessages(chatId: string): Promise<MessageType[]> {
+    const response = await api.get(`/messages/${chatId}`);
+    return response.data;
+  },
+  
+  async sendMessage(chatId: string, content: string): Promise<MessageType> {
+    const response = await api.post('/messages', { chatId, content });
+    return response.data;
+  },
+  
+  async updateMessage(messageId: string, text: string): Promise<MessageType> {
+    const response = await api.put(`/messages/${messageId}`, { text });
+    return response.data;
+  },
+  
+  async deleteMessage(messageId: string): Promise<void> {
+    await api.delete(`/messages/${messageId}`);
+  },
+  
+  async searchMessages(query: string): Promise<MessageType[]> {
+    const response = await api.get(`/messages/search?query=${encodeURIComponent(query)}`);
+    return response.data;
+  },
+  
+  async searchMessagesInChat(chatId: string, search: string): Promise<MessageType[]> {
+    const response = await api.get(`/messages/${chatId}?search=${encodeURIComponent(search)}`);
+    return response.data;
+  }
+};
+
+// Servicios de archivos
 export const fileService = {
-  // Upload a file
-  uploadFile: async (chatId: string, file: File) => {
-    try {
-      // Convert file to base64 for sending through API
-      const base64Data = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => {
-          const base64 = reader.result as string;
-          // Remove the data URL prefix (e.g., "data:image/png;base64,")
-          const base64Content = base64.split(',')[1];
-          resolve(base64Content);
-        };
-        reader.onerror = error => reject(error);
-      });
-
-      // Send file data to server
-      const response = await api.post('/files', {
-        filename: file.name,
-        contentType: file.type,
-        size: file.size,
-        data: base64Data,
-        chatId: chatId
-      });
-      
-      return response.data;
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      throw error;
-    }
+  async uploadFile(chatId: string, file: File): Promise<FileType> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('chatId', chatId);
+    
+    const response = await api.post('/files/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    return response.data;
   },
-
-  // Get a file URL for download
-  getFileUrl: (fileId: string) => {
-    const token = localStorage.getItem('token');
-    return `${API_URL}/files/${fileId}?token=${token}`;
+  
+  async getFile(fileId: string): Promise<FileType> {
+    const response = await api.get(`/files/${fileId}`);
+    return response.data;
   },
-
-  // Delete a file
-  deleteFile: async (fileId: string) => {
-    try {
-      const response = await api.delete(`/files/${fileId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error deleting file:', error);
-      throw error;
-    }
+  
+  async deleteFile(fileId: string): Promise<void> {
+    await api.delete(`/files/${fileId}`);
+  },
+  
+  getFileUrl(fileId: string): string {
+    return `http://localhost:5000/api/files/${fileId}/download`;
   }
 };
 
-export default {
-  auth: authService,
-  users: userService,
-  chats: chatService,
-  messages: messageService,
-  jobs: jobService,
-  files: fileService
+// Servicios de autenticación
+export const authService = {
+  async login(email: string, password: string): Promise<{ user: UserType; token: string }> {
+    const response = await api.post('/auth/login', { email, password });
+    return response.data;
+  },
+  
+  async register(userData: {
+    email: string;
+    password: string;
+    name: string;
+    role?: string;
+  }): Promise<{ user: UserType; token: string }> {
+    const response = await api.post('/auth/register', userData);
+    return response.data;
+  },
+  
+  async verifyToken(): Promise<UserType> {
+    const response = await api.get('/auth/verify');
+    return response.data;
+  }
 };
