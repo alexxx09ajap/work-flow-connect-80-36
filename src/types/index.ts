@@ -1,3 +1,4 @@
+
 export interface UserType {
   id: string;
   name: string;
@@ -14,6 +15,29 @@ export interface UserType {
   updatedAt?: Date | string;
 }
 
+export interface CommentType {
+  id: string;
+  content: string;
+  jobId: string;
+  userId: string;
+  userName?: string;
+  userPhoto?: string;
+  createdAt: Date | string;
+  updatedAt?: Date | string;
+  replies?: ReplyType[];
+}
+
+export interface ReplyType {
+  id: string;
+  content: string;
+  createdAt: Date | string;
+  updatedAt?: Date | string;
+  userId: string;
+  userName?: string;
+  userPhoto?: string;
+  commentId: string;
+}
+
 export interface JobType {
   id: string;
   title: string;
@@ -23,8 +47,12 @@ export interface JobType {
   skills: string[];
   status: 'open' | 'in progress' | 'completed';
   userId: string;
+  userName?: string;
+  userPhoto?: string;
   createdAt: Date | string;
   updatedAt: Date | string;
+  timestamp?: string;
+  comments?: CommentType[];
 }
 
 export interface MessageType {
@@ -40,6 +68,7 @@ export interface MessageType {
   deleted?: boolean;
   fileId?: string;
   file?: {
+    id?: string;
     filename: string;
     contentType?: string;
     size?: number;
@@ -67,6 +96,12 @@ export interface FileType {
   contentType: string;
   size: number;
   uploadedBy: string;
-  chatId: string;
-  createdAt: Date | string;
+  chatId?: string;
+  createdAt?: Date | string;
+}
+
+export interface AuthState {
+  currentUser: UserType | null;
+  loading: boolean;
+  error: string | null;
 }

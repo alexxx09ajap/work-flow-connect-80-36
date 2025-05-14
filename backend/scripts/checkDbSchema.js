@@ -1,24 +1,26 @@
 
 const messageModel = require('../models/messageModel');
 const db = require('../config/database');
+const fileModel = require('../models/fileModel');
 
 async function checkAndUpdateDbSchema() {
   console.log('Verificando y actualizando esquema de base de datos...');
 
   try {
-    // Verificar y agregar columna deleted a la tabla Messages
+    // Verificar y agregar columnas a la tabla Messages
     const deletedColumnAdded = await messageModel.addDeletedColumn();
+    const editedColumnAdded = await messageModel.addEditedColumn();
+    const fileIdColumnAdded = await messageModel.addFileIdColumn();
     
-    if (deletedColumnAdded) {
+    if (deletedColumnAdded || editedColumnAdded || fileIdColumnAdded) {
       console.log('Esquema de la tabla Messages actualizado con éxito');
     } else {
       console.log('El esquema de la tabla Messages ya está actualizado');
     }
 
     // Verificar si la tabla Files existe, si no, crearla
-    const filesTableExists = await checkTableExists('Files');
-    if (!filesTableExists) {
-      await createFilesTable();
+    const filesTableCreated = await fileModel.ensureFilesTableExists();
+    if (filesTableCreated) {
       console.log('Tabla Files creada con éxito');
     } else {
       console.log('La tabla Files ya existe');
@@ -47,34 +49,6 @@ async function checkTableExists(tableName) {
   } catch (error) {
     console.error(`Error al verificar la existencia de la tabla ${tableName}:`, error);
     return false;
-  }
-}
-
-// Función para crear la tabla Files
-async function createFilesTable() {
-  try {
-    await db.query(`
-      CREATE TABLE "Files" (
-        id SERIAL PRIMARY KEY,
-        filename VARCHAR(255) NOT NULL,
-        content_type VARCHAR(100) NOT NULL,
-        size INTEGER NOT NULL,
-        data BYTEA NOT NULL,
-        uploaded_by UUID REFERENCES "Users"(id) ON DELETE CASCADE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-    
-    // También verificamos si necesitamos crear la tabla files (minúsculas) como alias
-    await db.query(`
-      CREATE VIEW files AS SELECT * FROM "Files";
-    `);
-    
-    console.log('Vista files creada como alias de Files');
-  } catch (error) {
-    console.error('Error al crear la tabla Files:', error);
-    throw error;
   }
 }
 

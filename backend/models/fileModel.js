@@ -7,6 +7,9 @@ const fileModel = {
     const { filename, contentType, size, data, uploadedBy } = fileData;
     
     try {
+      // Asegurémonos de que la tabla existe antes de insertar
+      await this.ensureFilesTableExists();
+      
       const result = await db.query(
         'INSERT INTO "Files" (filename, content_type, size, data, uploaded_by) VALUES ($1, $2, $3, $4, $5) RETURNING id, filename, content_type, size, uploaded_by',
         [filename, contentType, size, data, uploadedBy]
@@ -64,6 +67,8 @@ const fileModel = {
       
       // If table doesn't exist, create it
       if (!tableExists.rows[0].exists) {
+        console.log('Creando tabla "Files"...');
+        
         await db.query(`
           CREATE TABLE IF NOT EXISTS "Files" (
             id SERIAL PRIMARY KEY,
@@ -75,10 +80,22 @@ const fileModel = {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           );
-          
-          -- Create view for lowercase 'files' to ensure compatibility
-          CREATE OR REPLACE VIEW files AS SELECT * FROM "Files";
         `);
+        
+        // Verificar si existe la vista files, si no, crearla
+        const viewExists = await db.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'files'
+          );
+        `);
+        
+        if (!viewExists.rows[0].exists) {
+          await db.query(`
+            CREATE OR REPLACE VIEW files AS SELECT * FROM "Files";
+          `);
+          console.log('Vista "files" creada como alias de "Files"');
+        }
         
         return true; // Table was created
       }

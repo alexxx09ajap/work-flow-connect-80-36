@@ -26,6 +26,7 @@ const messageModel = require('../models/messageModel');
     // Verificar primero la columna deleted ya que es más probable que exista
     const deletedAdded = await messageModel.addDeletedColumn();
     const editedAdded = await messageModel.addEditedColumn();
+    const fileIdAdded = await messageModel.addFileIdColumn();
     
     if (deletedAdded) {
       console.log('Columna "deleted" añadida a la tabla de mensajes');
@@ -35,7 +36,11 @@ const messageModel = require('../models/messageModel');
       console.log('Columna "edited" añadida a la tabla de mensajes');
     }
     
-    if (!deletedAdded && !editedAdded) {
+    if (fileIdAdded) {
+      console.log('Columna "fileId" añadida a la tabla de mensajes');
+    }
+    
+    if (!deletedAdded && !editedAdded && !fileIdAdded) {
       console.log('Verificadas las columnas necesarias en la tabla de mensajes');
     }
   } catch (err) {

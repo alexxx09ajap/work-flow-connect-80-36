@@ -1,3 +1,4 @@
+
 const db = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
@@ -39,7 +40,17 @@ const messageModel = {
         valueIndex++;
       }
       
-      if (fileId) {
+      if (columnInfo.hasFileId) {
+        if (fileId) {
+          query += ', "fileId"';
+          valueParams += `, $${valueIndex}`;
+          values.push(fileId);
+          valueIndex++;
+        }
+      } else if (fileId) {
+        // Si tenemos fileId pero la columna no existe, intentamos agregarla primero
+        await this.addFileIdColumn();
+        // Añadir fileId a la consulta
         query += ', "fileId"';
         valueParams += `, $${valueIndex}`;
         values.push(fileId);
@@ -271,13 +282,15 @@ const messageModel = {
       
       return {
         hasDeleted: columns.includes('deleted'),
-        hasEdited: columns.includes('edited')
+        hasEdited: columns.includes('edited'),
+        hasFileId: columns.includes('fileId')
       };
     } catch (error) {
       console.error("Error verificando columnas:", error);
       return {
         hasDeleted: false,
-        hasEdited: false
+        hasEdited: false,
+        hasFileId: false
       };
     }
   },
@@ -325,6 +338,28 @@ const messageModel = {
       if (error.code !== '42701') { // 42701 es el código para columna ya existente
         console.error("Error al agregar columna edited:", error);
       }
+      return false;
+    }
+  },
+  
+  // Add fileId column if it doesn't exist
+  async addFileIdColumn() {
+    try {
+      const columnInfo = await this.checkColumns();
+      
+      if (!columnInfo.hasFileId) {
+        console.log("Agregando columna 'fileId' a la tabla Messages...");
+        await db.query(`
+          ALTER TABLE "Messages"
+          ADD COLUMN "fileId" INTEGER REFERENCES "Files"(id) ON DELETE SET NULL;
+        `);
+        console.log("Columna 'fileId' agregada con éxito");
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("Error al agregar columna fileId:", error);
       return false;
     }
   }

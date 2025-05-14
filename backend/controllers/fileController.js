@@ -34,54 +34,67 @@ const fileController = {
       
       console.log(`Processing file: ${filename}, size: ${size}, type: ${contentType}`);
       
-      // Create file
-      const file = await fileModel.create({
-        filename,
-        contentType,
-        size,
-        data: fileBuffer,
-        uploadedBy: req.user.userId
-      });
-      
-      console.log(`File saved with ID: ${file.id}`);
-      
-      // Create message with file reference
-      const message = await messageModel.create({
-        chatId,
-        senderId: req.user.userId,
-        text: `File: ${filename}`,
-        fileId: file.id
-      });
-      
-      // Update last message in chat
-      await chatModel.updateLastMessage(chatId, message.id);
-      
-      // Return message with file data (without the binary data)
-      const messageWithFile = {
-        ...message,
-        file: {
-          id: file.id,
-          filename: file.filename,
-          contentType: file.content_type,
-          size: file.size
-        }
-      };
-      
-      // Get the socket service from the app to notify participants
-      const socketService = req.app.get('socketService');
-      if (socketService) {
-        const participants = await chatModel.getParticipants(chatId);
-        const participantIds = participants.map(p => p.id);
+      try {
+        // Create file
+        const file = await fileModel.create({
+          filename,
+          contentType,
+          size,
+          data: fileBuffer,
+          uploadedBy: req.user.userId
+        });
         
-        // Notify all participants about the file message
-        socketService.notifyUsers(participantIds, 'chat:message', chatId, messageWithFile);
+        console.log(`File saved with ID: ${file.id}`);
+        
+        // Create message with file reference
+        const message = await messageModel.create({
+          chatId,
+          senderId: req.user.userId,
+          text: `File: ${filename}`,
+          fileId: file.id
+        });
+        
+        // Update last message in chat
+        await chatModel.updateLastMessage(chatId, message.id);
+        
+        // Return message with file data (without the binary data)
+        const messageWithFile = {
+          ...message,
+          file: {
+            id: file.id,
+            filename: file.filename,
+            contentType: file.content_type,
+            size: file.size
+          }
+        };
+        
+        // Get the socket service from the app to notify participants
+        const socketService = req.app.get('socketService');
+        if (socketService) {
+          const participants = await chatModel.getParticipants(chatId);
+          const participantIds = participants.map(p => p.id);
+          
+          // Notify all participants about the file message
+          socketService.notifyUsers(participantIds, 'chat:message', chatId, messageWithFile);
+        }
+        
+        console.log('File upload successful');
+        res.status(201).json(messageWithFile);
+      } catch (error) {
+        console.error('Error during file upload:', error);
+        res.status(500).json({ 
+          message: 'Error durante la subida del archivo', 
+          error: error.message,
+          code: error.code
+        });
       }
-      
-      console.log('File upload successful');
-      res.status(201).json(messageWithFile);
     } catch (error) {
       console.error('Error uploading file:', error);
-      res.status(500).json({ message: 'Server error during file upload' });
+      res.status(500).json({ 
+        message: 'Server error during file upload',
+        error: error.message,
+        code: error.code
+      });
     }
   },
   
