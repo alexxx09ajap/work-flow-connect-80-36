@@ -4,6 +4,7 @@ import { JobType, CommentType, ReplyType, UserType } from '@/types';
 import { jobService } from '@/lib/jobService';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import { useData } from './DataContext';
 
 export interface JobContextType {
   jobs: JobType[];
@@ -44,6 +45,7 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
   const [savedJobs, setSavedJobs] = useState<JobType[]>([]);
   const [loading, setLoading] = useState(false);
   const { currentUser } = useAuth();
+  const { getUserById } = useData();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -59,7 +61,9 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
       const processedJobs = allJobs.map(job => ({
         ...job,
         createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
-        updatedAt: job.updatedAt ? new Date(job.updatedAt) : new Date()
+        updatedAt: job.updatedAt ? new Date(job.updatedAt) : new Date(),
+        // Asegurarnos de que el nombre de usuario esté presente
+        userName: job.userName || 'Usuario desconocido'
       }));
       
       setJobs(processedJobs);
@@ -71,7 +75,9 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
         const processedUserJobs = userJobsData.map(job => ({
           ...job,
           createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
-          updatedAt: job.updatedAt ? new Date(job.updatedAt) : new Date()
+          updatedAt: job.updatedAt ? new Date(job.updatedAt) : new Date(),
+          // Asegurarnos de que el nombre de usuario esté presente
+          userName: job.userName || 'Usuario desconocido'
         }));
         setUserJobs(processedUserJobs);
 

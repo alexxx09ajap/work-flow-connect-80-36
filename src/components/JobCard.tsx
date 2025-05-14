@@ -12,9 +12,7 @@ import { es } from 'date-fns/locale';
 
 // Extendemos JobType para asegurarnos de que userName es obligatorio para JobProps
 export interface JobProps {
-  job: JobType & {
-    userName: string;
-  };
+  job: JobType;
 }
 
 export const JobCard = ({ job }: JobProps) => {

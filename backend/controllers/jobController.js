@@ -37,7 +37,7 @@ const jobController = {
       
       const jobWithUser = {
         ...job,
-        userName: user ? user.username : 'Unknown',
+        userName: user ? user.name : 'Usuario desconocido',
         userPhoto: user ? user.avatar : null
       };
       
@@ -95,7 +95,7 @@ const jobController = {
         const user = await userModel.findById(job.userId);
         return {
           ...job,
-          userName: user ? user.username : 'Unknown',
+          userName: user ? user.name : 'Usuario desconocido',
           userPhoto: user ? user.avatar : null
         };
       }));
@@ -134,7 +134,7 @@ const jobController = {
       
       const jobWithUser = {
         ...job,
-        userName: user ? user.username : 'Unknown',
+        userName: user ? user.name : 'Usuario desconocido',
         userPhoto: user ? user.avatar : null
       };
       
@@ -194,7 +194,7 @@ const jobController = {
       
       const jobWithUser = {
         ...updatedJob,
-        userName: user ? user.username : 'Unknown',
+        userName: user ? user.name : 'Usuario desconocido',
         userPhoto: user ? user.avatar : null
       };
       

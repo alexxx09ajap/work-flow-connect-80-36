@@ -58,6 +58,8 @@ const JobDetail = () => {
         if (jobData) {
           console.log("Trabajo encontrado localmente:", jobData);
           console.log("Fecha de creación:", jobData.createdAt);
+          console.log("Nombre de usuario:", jobData.userName);
+          console.log("ID de usuario:", jobData.userId);
           
           // Asegúrese de que la fecha sea un objeto Date válido
           if (jobData.createdAt && typeof jobData.createdAt === 'string') {
@@ -280,7 +282,7 @@ const JobDetail = () => {
             <div>
               <h1 className="text-2xl font-bold">{job?.title}</h1>
               <p className="text-gray-600 mt-1">
-                Publicado por {jobOwner?.name || 'Usuario'} • {job?.createdAt ? formatDate(job.createdAt) : 'Fecha desconocida'}
+                Publicado por {job?.userName || 'Usuario'} • {job?.createdAt ? formatDate(job.createdAt) : 'Fecha desconocida'}
               </p>
             </div>
             
@@ -408,22 +410,22 @@ const JobDetail = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Información básica del cliente */}
-                  {jobOwner && (
+                  {job && (
                     <div className="flex items-center space-x-3">
                       <Avatar>
-                        <AvatarImage src={jobOwner.photoURL || ''} alt={jobOwner.name} />
+                        <AvatarImage src={job.userPhoto || ''} alt={job.userName} />
                         <AvatarFallback className="bg-wfc-purple-medium text-white">
-                          {jobOwner.name?.charAt(0).toUpperCase()}
+                          {job.userName?.charAt(0).toUpperCase() || 'U'}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{jobOwner.name || 'Usuario desconocido'}</p>
+                        <p className="font-medium">{job.userName || 'Usuario desconocido'}</p>
                       </div>
                     </div>
                   )}
                   
                   {/* Botón de contacto (solo para usuarios autenticados que no son el dueño) */}
-                  {currentUser && jobOwner && job && currentUser.id !== job.userId && (
+                  {currentUser && job && currentUser.id !== job.userId && (
                     <Button
                       variant="outline"
                       className="w-full mt-2 border-wfc-purple text-wfc-purple hover:bg-wfc-purple/10"
@@ -435,7 +437,7 @@ const JobDetail = () => {
                   )}
                   
                   {/* Botón para ver perfil completo */}
-                  {jobOwner && job && (
+                  {job && (
                     <Button
                       variant="outline"
                       className="w-full"
