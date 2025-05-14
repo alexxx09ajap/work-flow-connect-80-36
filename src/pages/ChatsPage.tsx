@@ -643,7 +643,7 @@ const ChatsPage = () => {
                   )}
                 </ScrollArea>
                 
-                {/* Message input with emoji picker */}
+                {/* Message input with emoji picker and file upload */}
                 <div className="p-4 border-t">
                   <div className="flex items-center space-x-2">
                     <EmojiPicker onEmojiClick={handleEmojiClick} />

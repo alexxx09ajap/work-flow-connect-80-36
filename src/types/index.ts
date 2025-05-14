@@ -1,49 +1,17 @@
-
 export interface UserType {
   id: string;
   name: string;
   email: string;
-  photoURL: string | null;
-  role: 'client' | 'freelancer';
-  skills?: string[];
+  role: string;
+  photoURL?: string;
   bio?: string;
-  joinedAt?: number;
-  isOnline?: boolean;
+  skills?: string[];
   location?: string;
-}
-
-export interface AuthState {
-  user: UserType | null;
-  token: string | null;
-  loading: boolean;
-  error: string | null;
-  isAuthenticated: boolean;
-}
-
-export interface ChatType {
-  id: string;
-  users: string[];
-  messages: MessageType[];
-  name?: string;
-  isGroup?: boolean;
-  participants?: any[];
-  lastMessage?: {
-    content?: string;
-    timestamp?: Date;
-  };
-}
-
-export interface MessageType {
-  id: string;
-  senderId: string;
-  text: string;
-  timestamp: Date;
-  content?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-  deleted?: boolean;
-  edited?: boolean;
-  senderName?: string;
+  hourlyRate?: number;
+  isOnline?: boolean;
+  lastSeen?: Date | string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
 }
 
 export interface JobType {
@@ -52,36 +20,53 @@ export interface JobType {
   description: string;
   budget: number;
   category: string;
-  skills?: string[];
-  status: "open" | "in progress" | "completed";
+  skills: string[];
+  status: 'open' | 'in progress' | 'completed';
   userId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  userName?: string;
-  userPhoto?: string;
-  timestamp?: number;
-  comments?: CommentType[];
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
-export interface CommentType {
+export interface MessageType {
   id: string;
-  userId: string;
-  jobId: string;
-  text: string;
-  timestamp: number;
-  userName: string;
-  userPhoto?: string;
-  content?: string;
-  replies?: ReplyType[];
+  chatId?: string;
+  senderId: string;
+  senderName?: string;
+  content: string;
+  timestamp: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  edited?: boolean;
+  deleted?: boolean;
+  fileId?: string;
+  file?: {
+    filename: string;
+    contentType?: string;
+    size?: number;
+  };
 }
 
-export interface ReplyType {
+export interface ChatType {
   id: string;
-  userId: string;
-  commentId: string;
-  text: string;
-  timestamp: number;
-  userName: string;
-  userPhoto?: string;
-  content?: string;
+  name?: string;
+  isGroup?: boolean;
+  participants: string[];
+  lastMessage?: {
+    content: string;
+    timestamp: string;
+  };
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  users?: string[];
+  messages?: MessageType[];
+}
+
+export interface FileType {
+  id: string;
+  filename: string;
+  contentType: string;
+  size: number;
+  uploadedBy: string;
+  chatId: string;
+  createdAt: Date | string;
 }

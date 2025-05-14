@@ -1,11 +1,14 @@
 import axios from 'axios';
+import { ChatType, JobType, UserType, MessageType } from '@/types';
 
-// Create axios instance with base URL
+const API_URL = 'http://localhost:5000/api';
+
+// Create axios instance
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api'
+  baseURL: API_URL
 });
 
-// Interceptor to add auth token to requests
+// Add request interceptor to include token in all requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -14,234 +17,162 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor to handle auth errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response && error.response.status === 401) {
-      // Unauthorized - clear token and redirect to login
-      localStorage.removeItem('token');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
-      }
-    }
-    return Promise.reject(error);
-  }
-);
-
+// Auth service
 export const authService = {
-  login: async (email: string, password: string) => {
-    const response = await api.post('/auth/login', { email, password });
+  login: async (credentials: any) => {
+    const response = await api.post('/auth/login', credentials);
+    localStorage.setItem('token', response.data.token);
     return response.data;
   },
-  
-  register: async (username: string, email: string, password: string, role: string = 'client') => {
-    const response = await api.post('/auth/register', { username, email, password, role });
+  register: async (userData: any) => {
+    const response = await api.post('/auth/register', userData);
+    localStorage.setItem('token', response.data.token);
     return response.data;
   },
-  
-  verifyToken: async () => {
-    const response = await api.get('/auth/verify');
-    return response.data.user;
+  logout: () => {
+    localStorage.removeItem('token');
   },
-  
-  updateProfile: async (userData: any) => {
-    const response = await api.put('/users/profile', userData);
-    return response.data;
+  getCurrentUser: async () => {
+    try {
+      const response = await api.get('/auth/me');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+      return null;
+    }
   }
 };
 
+// User service
 export const userService = {
-  getAllUsers: async () => {
+  getUsers: async (): Promise<UserType[]> => {
     const response = await api.get('/users');
     return response.data;
   },
-  
-  getUserById: async (userId: string) => {
-    const response = await api.get(`/users/${userId}`);
+  getUser: async (id: string): Promise<UserType> => {
+    const response = await api.get(`/users/${id}`);
     return response.data;
   },
-  
-  updateProfile: async (userData: any) => {
-    const response = await api.put('/users/profile', userData);
+  updateUser: async (id: string, data: any): Promise<UserType> => {
+    const response = await api.put(`/users/${id}`, data);
     return response.data;
+  },
+  deleteUser: async (id: string): Promise<void> => {
+    await api.delete(`/users/${id}`);
   }
 };
 
+// Chat service
 export const chatService = {
-  getChats: async () => {
-    try {
-      const response = await api.get('/chats');
-      console.log("Chat service - fetched chats:", response.data);
-      return response.data;
-    } catch (err) {
-      console.error("Error fetching chats:", err);
-      return [];
-    }
-  },
-  
-  createPrivateChat: async (userId: string) => {
-    try {
-      console.log("Creating private chat with user ID:", userId);
-      const response = await api.post('/chats/private', { userId });
-      console.log("Chat service - created private chat response:", response.data);
-      return response.data;
-    } catch (err) {
-      console.error("Error creating private chat:", err);
-      throw err;
-    }
-  },
-  
-  createGroupChat: async (name: string, participants: string[]) => {
-    const response = await api.post('/chats/group', { name, participants });
+  getChats: async (): Promise<ChatType[]> => {
+    const response = await api.get('/chats');
     return response.data;
   },
-  
-  addUsersToChat: async (chatId: string, userIds: string[]) => {
-    const response = await api.post(`/chats/${chatId}/users`, { userIds });
+  createPrivateChat: async (userId: string): Promise<ChatType> => {
+    const response = await api.post('/chats/private', { userId });
     return response.data;
   },
-  
-  leaveChat: async (chatId: string) => {
-    const response = await api.post(`/chats/${chatId}/leave`);
+  createGroupChat: async (name: string, participantIds: string[]): Promise<ChatType> => {
+    const response = await api.post('/chats/group', { name, participantIds });
     return response.data;
   },
-  
-  deleteChat: async (chatId: string) => {
-    const response = await api.delete(`/chats/${chatId}`);
-    return response.data;
+  addUsersToChat: async (chatId: string, userIds: string[]): Promise<void> => {
+    await api.post(`/chats/${chatId}/users`, { userIds });
+  },
+  leaveChat: async (chatId: string): Promise<void> => {
+    await api.post(`/chats/${chatId}/leave`);
+  },
+  deleteChat: async (chatId: string): Promise<void> => {
+    await api.delete(`/chats/${chatId}`);
   }
 };
 
+// Message service
 export const messageService = {
-  getMessages: async (chatId: string) => {
-    try {
-      const response = await api.get(`/messages/${chatId}`);
-      return response.data;
-    } catch (err) {
-      console.error("Error fetching messages:", err);
-      return [];
-    }
-  },
-  
-  sendMessage: async (chatId: string, content: string) => {
-    try {
-      const response = await api.post('/messages', { 
-        chatId, 
-        content 
-      }, {
-        headers: {
-          'X-Socket-Request': 'false' // Marcar explícitamente como solicitud HTTP
-        }
-      });
-      return response.data;
-    } catch (err) {
-      console.error("Error sending message:", err);
-      throw err;
-    }
-  },
-  
-  updateMessage: async (messageId: string, text: string) => {
-    try {
-      const response = await api.put(`/messages/${messageId}`, { 
-        text 
-      }, {
-        headers: {
-          'X-Socket-Request': 'false' // Marcar explícitamente como solicitud HTTP
-        }
-      });
-      return response.data;
-    } catch (err) {
-      console.error("Error updating message:", err);
-      throw err;
-    }
-  },
-  
-  deleteMessage: async (messageId: string) => {
-    try {
-      const response = await api.delete(`/messages/${messageId}`, {
-        headers: {
-          'X-Socket-Request': 'false' // Marcar explícitamente como solicitud HTTP
-        }
-      });
-      return response.data;
-    } catch (err) {
-      console.error("Error deleting message:", err);
-      throw err;
-    }
-  }
-};
-
-export const fileService = {
-  uploadFile: async (chatId: string, file: File) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      
-      reader.onload = async (e) => {
-        try {
-          const data = e.target?.result?.toString().split(',')[1]; // Get base64 data
-          
-          if (!data) {
-            throw new Error('Failed to read file');
-          }
-          
-          // Validate file size (5MB limit)
-          if (file.size > 5 * 1024 * 1024) {
-            throw new Error('File size exceeds the maximum allowed (5MB)');
-          }
-          
-          const response = await api.post('/files', {
-            chatId,
-            filename: file.name,
-            contentType: file.type,
-            size: file.size,
-            data
-          });
-          
-          resolve(response.data);
-        } catch (error) {
-          reject(error);
-        }
-      };
-      
-      reader.onerror = () => {
-        reject(new Error('Failed to read file'));
-      };
-      
-      reader.readAsDataURL(file);
-    });
-  },
-  
-  getFileUrl: (fileId: string) => {
-    const token = localStorage.getItem('token');
-    return `http://localhost:5000/api/files/${fileId}?token=${token}`;
-  },
-  
-  deleteFile: async (fileId: string) => {
-    const response = await api.delete(`/files/${fileId}`);
+  getMessages: async (chatId: string): Promise<MessageType[]> => {
+    const response = await api.get(`/messages/${chatId}`);
     return response.data;
+  },
+  sendMessage: async (chatId: string, content: string): Promise<MessageType> => {
+    const response = await api.post('/messages', { chatId, content });
+    return response.data;
+  },
+  updateMessage: async (messageId: string, content: string): Promise<MessageType> => {
+    const response = await api.put(`/messages/${messageId}`, { content });
+    return response.data;
+  },
+  deleteMessage: async (messageId: string): Promise<void> => {
+    await api.delete(`/messages/${messageId}`);
   }
 };
 
-export const socketService = {
-  socket: null as any,
-  
-  connect: (token: string) => {
-    const io = require('socket.io-client');
-    
-    socketService.socket = io('http://localhost:5000', {
-      auth: { token }
-    });
-    
-    return socketService.socket;
+// Job service
+export const jobService = {
+  getJobs: async (): Promise<JobType[]> => {
+    const response = await api.get('/jobs');
+    return response.data;
   },
-  
-  disconnect: () => {
-    if (socketService.socket) {
-      socketService.socket.disconnect();
-      socketService.socket = null;
+  getJob: async (id: string): Promise<JobType> => {
+    const response = await api.get(`/jobs/${id}`);
+    return response.data;
+  },
+  createJob: async (jobData: any): Promise<JobType> => {
+    const response = await api.post('/jobs', jobData);
+    return response.data;
+  },
+  updateJob: async (id: string, jobData: any): Promise<JobType> => {
+    const response = await api.put(`/jobs/${id}`, jobData);
+    return response.data;
+  },
+  deleteJob: async (id: string): Promise<void> => {
+    await api.delete(`/jobs/${id}`);
+  }
+};
+
+// File service
+export const fileService = {
+  // Upload a file
+  uploadFile: async (chatId: string, file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('chatId', chatId);
+
+      const response = await api.post('/files', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw error;
+    }
+  },
+
+  // Get a file URL for download
+  getFileUrl: (fileId: string) => {
+    return `${API_URL}/files/${fileId}`;
+  },
+
+  // Delete a file
+  deleteFile: async (fileId: string) => {
+    try {
+      const response = await api.delete(`/files/${fileId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      throw error;
     }
   }
 };
 
-export default api;
+export default {
+  auth: authService,
+  users: userService,
+  chats: chatService,
+  messages: messageService,
+  jobs: jobService,
+  files: fileService
+};

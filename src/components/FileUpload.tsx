@@ -1,7 +1,7 @@
 
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { PaperClip, X, UploadCloud } from 'lucide-react';
+import { Paperclip, X, UploadCloud } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 interface FileUploadProps {
@@ -69,7 +69,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
           className="rounded-full"
           title="Adjuntar archivo"
         >
-          <PaperClip className="h-5 w-5" />
+          <Paperclip className="h-5 w-5" />
         </Button>
       ) : (
         <div className="flex items-center space-x-2 p-2 bg-gray-100 dark:bg-gray-800 rounded-md">

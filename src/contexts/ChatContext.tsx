@@ -23,7 +23,7 @@ export interface ChatContextType {
   loadingMessages: boolean;
   addParticipantToChat: (chatId: string, userId: string) => Promise<boolean>;
   loadChats: () => Promise<void>;
-  loadMessages: () => Promise<void>;
+  loadMessages: (chatId: string) => Promise<void>;
   updateMessage: (messageId: string, content: string) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
 }
@@ -234,16 +234,17 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Update the message in the messages state to mark it as deleted
         setMessages((prev) => {
           const chatMessages = prev[chatId] || [];
-          const updatedMessages = chatMessages.map((msg): MessageType => 
-            msg.id === deletedMessage.id 
-              ? { 
-                  ...msg, 
-                  deleted: true, 
-                  content: '[Mensaje eliminado]',
-                  timestamp: deletedMessage.timestamp 
-                } 
-              : msg
-          );
+          const updatedMessages = chatMessages.map((msg) => {
+            if (msg.id === deletedMessage.id) {
+              return {
+                ...msg,
+                deleted: true,
+                content: '[Mensaje eliminado]',
+                timestamp: deletedMessage.timestamp
+              } as MessageType;
+            }
+            return msg;
+          });
           
           return {
             ...prev,
@@ -529,15 +530,16 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Update the message in state
           setMessages((prev) => {
             const chatMessages = prev[chatId] || [];
-            const updatedMessages = chatMessages.map((msg) => 
-              msg.id === messageId 
-                ? { 
-                    ...msg, 
-                    deleted: true, 
-                    content: '[Mensaje eliminado]' 
-                  } 
-                : msg
-            );
+            const updatedMessages = chatMessages.map((msg) => {
+              if (msg.id === messageId) {
+                return {
+                  ...msg, 
+                  deleted: true, 
+                  content: '[Mensaje eliminado]' 
+                } as MessageType;
+              }
+              return msg;
+            });
             
             return {
               ...prev,
