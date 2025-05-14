@@ -58,6 +58,12 @@ const JobDetail = () => {
         if (jobData) {
           console.log("Trabajo encontrado localmente:", jobData);
           console.log("Fecha de creación:", jobData.createdAt);
+          
+          // Asegúrese de que la fecha sea un objeto Date válido
+          if (jobData.createdAt && typeof jobData.createdAt === 'string') {
+            jobData.createdAt = new Date(jobData.createdAt);
+          }
+          
           setJob(jobData);
         } else {
           console.error("Trabajo no encontrado");
@@ -272,21 +278,21 @@ const JobDetail = () => {
           {/* Cabecera con título y acciones */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-gray-200">
             <div>
-              <h1 className="text-2xl font-bold">{job.title}</h1>
+              <h1 className="text-2xl font-bold">{job?.title}</h1>
               <p className="text-gray-600 mt-1">
-                Publicado por {jobOwner?.name || 'Usuario'} • {formatDate(job.createdAt)}
+                Publicado por {jobOwner?.name || 'Usuario'} • {job?.createdAt ? formatDate(job.createdAt) : 'Fecha desconocida'}
               </p>
             </div>
             
             <div className="flex items-center gap-2">
               {/* Badge que muestra el estado de la propuesta */}
               <Badge className={`
-                ${job.status === 'open' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 
-                  job.status === 'in progress' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' : 
+                ${job?.status === 'open' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 
+                  job?.status === 'in progress' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' : 
                   'bg-gray-100 text-gray-800 hover:bg-gray-200'}
               `}>
-                {job.status === 'open' ? 'Abierto' : 
-                 job.status === 'in progress' ? 'En progreso' : 
+                {job?.status === 'open' ? 'Abierto' : 
+                 job?.status === 'in progress' ? 'En progreso' : 
                  'Completado'}
               </Badge>
             </div>
@@ -374,7 +380,7 @@ const JobDetail = () => {
                     <DollarSign className="h-5 w-5 text-gray-500 mr-2" />
                     <div>
                       <h4 className="text-sm text-gray-600">Presupuesto</h4>
-                      <p className="font-medium">${job.budget}</p>
+                      <p className="font-medium">${job?.budget}</p>
                     </div>
                   </div>
                   {/* Fecha de publicación */}
@@ -382,13 +388,13 @@ const JobDetail = () => {
                     <Calendar className="h-5 w-5 text-gray-500 mr-2" />
                     <div>
                       <h4 className="text-sm text-gray-600">Fecha de publicación</h4>
-                      <p className="font-medium">{formatDate(job.createdAt)}</p>
+                      <p className="font-medium">{job?.createdAt ? formatDate(job.createdAt) : 'Fecha desconocida'}</p>
                     </div>
                   </div>
                   {/* Categoría */}
                   <div className="flex items-center">
                     <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 mr-2">
-                      {job.category}
+                      {job?.category || 'Sin categoría'}
                     </Badge>
                     <span className="text-sm text-gray-600">Categoría</span>
                   </div>
@@ -411,13 +417,13 @@ const JobDetail = () => {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{jobOwner.name}</p>
+                        <p className="font-medium">{jobOwner.name || 'Usuario desconocido'}</p>
                       </div>
                     </div>
                   )}
                   
                   {/* Botón de contacto (solo para usuarios autenticados que no son el dueño) */}
-                  {currentUser && jobOwner && currentUser.id !== job.userId && (
+                  {currentUser && jobOwner && job && currentUser.id !== job.userId && (
                     <Button
                       variant="outline"
                       className="w-full mt-2 border-wfc-purple text-wfc-purple hover:bg-wfc-purple/10"
@@ -429,7 +435,7 @@ const JobDetail = () => {
                   )}
                   
                   {/* Botón para ver perfil completo */}
-                  {jobOwner && (
+                  {jobOwner && job && (
                     <Button
                       variant="outline"
                       className="w-full"

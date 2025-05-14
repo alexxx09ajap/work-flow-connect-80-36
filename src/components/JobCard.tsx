@@ -19,9 +19,16 @@ export interface JobProps {
 
 export const JobCard = ({ job }: JobProps) => {
   // Función para formatear la fecha
-  const formatDate = (dateString: string | number): string => {
+  const formatDate = (dateString: string | number | Date): string => {
     try {
-      const date = new Date(dateString);
+      // Si dateString ya es un objeto Date, usarlo directamente
+      const date = dateString instanceof Date ? dateString : new Date(dateString);
+      
+      // Verificar si la fecha es válida
+      if (isNaN(date.getTime())) {
+        return "Fecha desconocida";
+      }
+      
       return format(date, 'dd/MM/yyyy', { locale: es });
     } catch (error) {
       console.error("Error formatting date:", error);

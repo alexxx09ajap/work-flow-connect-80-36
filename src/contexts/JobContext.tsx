@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect } from 'react';
 import { JobType, CommentType, ReplyType, UserType } from '@/types';
 import { jobService } from '@/lib/jobService';
@@ -53,12 +54,26 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true);
     try {
       const allJobs = await jobService.getAllJobs();
-      setJobs(allJobs);
-      setFilteredJobs(allJobs);
+      
+      // Asegurarse de que las fechas sean objetos Date
+      const processedJobs = allJobs.map(job => ({
+        ...job,
+        createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
+        updatedAt: job.updatedAt ? new Date(job.updatedAt) : new Date()
+      }));
+      
+      setJobs(processedJobs);
+      setFilteredJobs(processedJobs);
 
       if (currentUser) {
         const userJobsData = await jobService.getJobsByUser(currentUser.id);
-        setUserJobs(userJobsData);
+        // Procesar las fechas para trabajos del usuario
+        const processedUserJobs = userJobsData.map(job => ({
+          ...job,
+          createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
+          updatedAt: job.updatedAt ? new Date(job.updatedAt) : new Date()
+        }));
+        setUserJobs(processedUserJobs);
 
         // In a real implementation, we would fetch saved jobs from the backend
         // This is a placeholder until that endpoint is implemented
@@ -66,7 +81,7 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       // For popular jobs, we're showing the first 3 most recent jobs
-      const popularJobsTemp = allJobs.slice(0, 3);
+      const popularJobsTemp = processedJobs.slice(0, 3);
       setPopularJobs(popularJobsTemp);
     } catch (error) {
       console.error("Error fetching jobs:", error);
