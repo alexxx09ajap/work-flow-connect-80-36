@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Clock, DollarSign, Briefcase } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { JobType } from '@/types';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 // Extendemos JobType para asegurarnos de que userName es obligatorio para JobProps
 export interface JobProps {
@@ -16,6 +18,17 @@ export interface JobProps {
 }
 
 export const JobCard = ({ job }: JobProps) => {
+  // Función para formatear la fecha
+  const formatDate = (dateString: string | number): string => {
+    try {
+      const date = new Date(dateString);
+      return format(date, 'dd/MM/yyyy', { locale: es });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Fecha desconocida";
+    }
+  };
+
   return (
     <Card className="bg-background dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700 hover:border-wfc-purple dark:hover:border-wfc-purple-light transition-colors">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -23,11 +36,13 @@ export const JobCard = ({ job }: JobProps) => {
           <Avatar>
             <AvatarImage src={job.userPhoto} />
             <AvatarFallback className="bg-wfc-purple-medium text-white">
-              {job.userName?.charAt(0).toUpperCase()}
+              {job.userName?.charAt(0).toUpperCase() || '?'}
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
-            <Link to={`/users/${job.userId}`} className="text-sm font-medium dark:text-white hover:underline">{job.userName}</Link>
+            <Link to={`/users/${job.userId}`} className="text-sm font-medium dark:text-white hover:underline">
+              {job.userName || 'Usuario'}
+            </Link>
             <p className="text-muted-foreground text-xs">{job.category}</p>
           </div>
         </div>
@@ -44,7 +59,7 @@ export const JobCard = ({ job }: JobProps) => {
         </p>
         <div className="mt-4 flex items-center space-x-2">
           <DollarSign className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm dark:text-gray-400">Budget: ${job.budget}</span>
+          <span className="text-sm dark:text-gray-400">Presupuesto: ${job.budget}</span>
         </div>
       </CardContent>
       <CardFooter className="flex justify-between items-center">
@@ -52,12 +67,12 @@ export const JobCard = ({ job }: JobProps) => {
           <div className="flex items-center">
             <Clock className="h-4 w-4 mr-1" />
             <span className="text-xs">
-              {new Date(job.createdAt).toLocaleDateString()}
+              {job.createdAt ? formatDate(job.createdAt) : 'Fecha no disponible'}
             </span>
           </div>
           <div className="flex items-center">
             <Briefcase className="h-4 w-4 mr-1" />
-            <span className="text-xs">{job.skills?.join(', ') || 'No skills specified'}</span>
+            <span className="text-xs">{job.skills?.join(', ') || 'Sin habilidades especificadas'}</span>
           </div>
         </div>
         <Link to={`/jobs/${job.id}`}>
