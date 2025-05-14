@@ -1,15 +1,9 @@
 
 import React, { useState } from 'react';
-import dynamic from '../next-shim'; // Use our local shim instead of Next.js
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SmilePlus } from 'lucide-react';
-
-// Dynamically import EmojiPicker to reduce initial load time
-const DynamicEmojiPicker = dynamic(
-  () => import('emoji-picker-react').then((module) => module.default),
-  { ssr: false, loading: () => <div className="p-2">Cargando emojis...</div> }
-);
+import EmojiPickerLib from 'emoji-picker-react';
 
 interface EmojiPickerProps {
   onEmojiClick: (emoji: string) => void;
@@ -34,12 +28,15 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiClick }) => {
           <SmilePlus className="h-5 w-5" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="end">
-        <DynamicEmojiPicker
-          onEmojiClick={handleEmojiSelect}
-          width="100%"
-          height="350px"
-        />
+      <PopoverContent className="w-full p-0 border-0" align="end">
+        <div className="emoji-picker-container">
+          <EmojiPickerLib
+            onEmojiClick={handleEmojiSelect}
+            width="100%"
+            height="350px"
+            lazyLoadEmojis={true}
+          />
+        </div>
       </PopoverContent>
     </Popover>
   );
