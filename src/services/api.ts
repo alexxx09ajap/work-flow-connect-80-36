@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 // Create axios instance with base URL
@@ -186,6 +185,11 @@ export const fileService = {
             throw new Error('Failed to read file');
           }
           
+          // Validate file size (5MB limit)
+          if (file.size > 5 * 1024 * 1024) {
+            throw new Error('File size exceeds the maximum allowed (5MB)');
+          }
+          
           const response = await api.post('/files', {
             chatId,
             filename: file.name,
@@ -211,6 +215,11 @@ export const fileService = {
   getFileUrl: (fileId: string) => {
     const token = localStorage.getItem('token');
     return `http://localhost:5000/api/files/${fileId}?token=${token}`;
+  },
+  
+  deleteFile: async (fileId: string) => {
+    const response = await api.delete(`/files/${fileId}`);
+    return response.data;
   }
 };
 

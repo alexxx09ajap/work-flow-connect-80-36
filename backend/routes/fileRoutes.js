@@ -13,4 +13,7 @@ router.post('/', fileController.uploadFile);
 // Get a file
 router.get('/:fileId', fileController.getFile);
 
+// Delete a file
+router.delete('/:fileId', fileController.deleteFile);
+
 module.exports = router;

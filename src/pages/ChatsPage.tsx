@@ -34,6 +34,9 @@ import { ChatType, MessageType } from '@/types';
 import ChatMobileSheet from '@/components/ChatMobileSheet';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import EmojiPicker from '@/components/EmojiPicker';
+import FileAttachment from '@/components/FileAttachment';
+import FileUpload from '@/components/FileUpload';
+import { fileService } from '@/services/api';
 
 const ChatsPage = () => {
   const { 
@@ -61,6 +64,7 @@ const ChatsPage = () => {
   const [isMobileChat, setIsMobileChat] = useState(false);
   const [editingMessage, setEditingMessage] = useState<{id: string, content: string} | null>(null);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Get messages for the active chat
@@ -212,6 +216,29 @@ const ChatsPage = () => {
         title: "Error",
         description: "No se pudo eliminar el mensaje."
       });
+    }
+  };
+  
+  const handleFileUpload = async (file: File) => {
+    if (!activeChat) return;
+    
+    setIsUploading(true);
+    
+    try {
+      await fileService.uploadFile(activeChat.id, file);
+      toast({
+        title: "Archivo enviado",
+        description: "El archivo se ha enviado correctamente"
+      });
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo enviar el archivo"
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
   
@@ -592,6 +619,20 @@ const ChatsPage = () => {
                                     </AvatarFallback>
                                   </Avatar>
                                 )}
+                                
+                                {message.fileId && (
+                                  <FileAttachment
+                                    id={message.fileId}
+                                    filename={message.file?.filename || 'archivo.txt'}
+                                    contentType={message.file?.contentType}
+                                    size={message.file?.size}
+                                    uploadedBy={message.senderId}
+                                    onDelete={() => {
+                                      // This will be called after file deletion
+                                      // No need to do anything as the socket will handle the update
+                                    }}
+                                  />
+                                )}
                               </div>
                             )}
                           </React.Fragment>
@@ -606,6 +647,7 @@ const ChatsPage = () => {
                 <div className="p-4 border-t">
                   <div className="flex items-center space-x-2">
                     <EmojiPicker onEmojiClick={handleEmojiClick} />
+                    <FileUpload onFileSelect={handleFileUpload} />
                     <Input
                       placeholder="Escribe un mensaje..."
                       value={messageText}
@@ -617,13 +659,18 @@ const ChatsPage = () => {
                         }
                       }}
                       className="flex-1"
+                      disabled={isUploading}
                     />
                     <Button
                       onClick={handleSendMessage}
-                      disabled={!messageText.trim()}
+                      disabled={!messageText.trim() || isUploading}
                       className="bg-[#9b87f5] hover:bg-[#8a74f0]"
                     >
-                      <Send className="h-4 w-4" />
+                      {isUploading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 </div>

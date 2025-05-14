@@ -23,6 +23,12 @@ const fileModel = {
   // Delete a file
   async delete(fileId) {
     await db.query('DELETE FROM files WHERE id = $1', [fileId]);
+  },
+  
+  // Check if user is the owner of the file
+  async isOwner(fileId, userId) {
+    const result = await db.query('SELECT uploaded_by FROM files WHERE id = $1', [fileId]);
+    return result.rows[0] && result.rows[0].uploaded_by === userId;
   }
 };
 

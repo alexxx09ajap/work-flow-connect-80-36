@@ -236,6 +236,28 @@ const messageModel = {
     return result.rows[0]?.updated_count || 0;
   },
   
+  // Find a message by file ID
+  async findByFileId(fileId) {
+    try {
+      const result = await db.query(
+        'SELECT *, "userId" as "senderId" FROM "Messages" WHERE "fileId" = $1', 
+        [fileId]
+      );
+      
+      if (result.rows[0]) {
+        return {
+          ...result.rows[0],
+          deleted: result.rows[0].deleted || false,
+          edited: result.rows[0].edited || false
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error("Error finding message by file ID:", error);
+      return null;
+    }
+  },
+  
   // Check if columns exist
   async checkColumns() {
     try {
