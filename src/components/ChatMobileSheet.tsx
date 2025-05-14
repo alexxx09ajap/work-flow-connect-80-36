@@ -11,6 +11,7 @@ import { useData } from '@/contexts/DataContext';
 import { MessageType } from '@/types';
 import { Info, MoreVertical, Edit, Trash2, ArrowLeft } from 'lucide-react';
 import EmojiPicker from './EmojiPicker';
+import FileAttachment from './FileAttachment';
 
 interface ChatMobileSheetProps {
   isOpen: boolean;
@@ -95,6 +96,7 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
                 const isSystemMessage = message.senderId === "system";
                 const sender = isSystemMessage ? null : getUserById(message.senderId);
                 const isDeleted = message.deleted;
+                const hasFile = message.file && message.file.filename;
                 
                 const showDateSeparator = index === 0 || 
                   new Date(message.timestamp).toDateString() !== 
@@ -145,7 +147,7 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
                             <p className="break-words">{message.content}</p>
                             
                             {/* Message options */}
-                            {isCurrentUser && !isDeleted && (
+                            {isCurrentUser && !isDeleted && !hasFile && (
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <Button 
@@ -186,6 +188,20 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
                               <span className="text-xs opacity-70 ml-1">(editado)</span>
                             )}
                           </div>
+                          
+                          {/* Render file attachment if present */}
+                          {hasFile && !isDeleted && message.file && (
+                            <div className="mt-1">
+                              <FileAttachment 
+                                id={message.file.id || ''} 
+                                filename={message.file.filename}
+                                contentType={message.file.contentType}
+                                size={message.file.size}
+                                uploadedBy={message.file.uploadedBy || message.senderId}
+                                onDelete={() => onDeleteMessage(message.id)}
+                              />
+                            </div>
+                          )}
                           
                           <div className={`text-xs text-gray-400 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
                             {formatTime(message.timestamp)}

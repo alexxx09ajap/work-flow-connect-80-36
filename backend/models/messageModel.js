@@ -1,4 +1,3 @@
-
 const db = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
@@ -19,47 +18,39 @@ const messageModel = {
       // Verificar si existen las columnas necesarias
       const columnInfo = await this.checkColumns();
       
-      let result;
-      // Construir la consulta basada en las columnas disponibles
-      let query = 'INSERT INTO "Messages" (id, "chatId", "userId", content, read, "createdAt", "updatedAt"';
-      let valueParams = '$1, $2, $3, $4, $5, $6, $7';
-      let values = [messageId, chatId, senderId, text, false, now, now];
-      let valueIndex = 8;
-      
-      if (columnInfo.hasDeleted) {
-        query += ', "deleted"';
-        valueParams += `, $${valueIndex}`;
-        values.push(false);
-        valueIndex++;
-      }
-      
-      if (columnInfo.hasEdited) {
-        query += ', "edited"';
-        valueParams += `, $${valueIndex}`;
-        values.push(false);
-        valueIndex++;
-      }
-      
-      if (columnInfo.hasFileId) {
-        if (fileId) {
-          query += ', "fileId"';
-          valueParams += `, $${valueIndex}`;
-          values.push(fileId);
-          valueIndex++;
-        }
-      } else if (fileId) {
-        // Si tenemos fileId pero la columna no existe, intentamos agregarla primero
+      // Aseguramos que la columna fileId existe
+      if (fileId && !columnInfo.hasFileId) {
         await this.addFileIdColumn();
-        // Añadir fileId a la consulta
-        query += ', "fileId"';
-        valueParams += `, $${valueIndex}`;
-        values.push(fileId);
-        valueIndex++;
       }
       
-      query += `) VALUES (${valueParams}) RETURNING *`;
+      // Construir la consulta dinámica
+      const fields = ['id', 'chatId', 'userId', 'content', 'read', 'createdAt', 'updatedAt'];
+      const values = [messageId, chatId, senderId, text, false, now, now];
+      let paramCounter = values.length + 1;
       
-      result = await db.query(query, values);
+      if (columnInfo.hasDeleted || await this.addDeletedColumn()) {
+        fields.push('deleted');
+        values.push(false);
+      }
+      
+      if (columnInfo.hasEdited || await this.addEditedColumn()) {
+        fields.push('edited');
+        values.push(false);
+      }
+      
+      // Agregar fileId si está presente
+      if (fileId) {
+        fields.push('fileId');
+        values.push(fileId);
+      }
+      
+      // Construir la consulta SQL
+      const fieldStr = fields.map(f => `"${f}"`).join(', ');
+      const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+      
+      const query = `INSERT INTO "Messages" (${fieldStr}) VALUES (${placeholders}) RETURNING *`;
+      
+      const result = await db.query(query, values);
       
       // Añadir el senderId explícitamente para garantizar la coherencia
       const message = {
@@ -250,6 +241,14 @@ const messageModel = {
   // Find a message by file ID
   async findByFileId(fileId) {
     try {
+      // Ver si la tabla tiene la columna fileId primero
+      const columnInfo = await this.checkColumns();
+      
+      if (!columnInfo.hasFileId) {
+        await this.addFileIdColumn();
+        return null; // No puede haber mensajes con fileId si la columna no existía
+      }
+      
       const result = await db.query(
         'SELECT *, "userId" as "senderId" FROM "Messages" WHERE "fileId" = $1', 
         [fileId]
@@ -359,6 +358,11 @@ const messageModel = {
       
       return false;
     } catch (error) {
+      // Si el error es porque la columna ya existe, ignoramos el error
+      if (error.code === '42701') { // 42701 es el código para columna ya existente
+        console.log("La columna 'fileId' ya existe en la tabla Messages");
+        return true;
+      }
       console.error("Error al agregar columna fileId:", error);
       return false;
     }

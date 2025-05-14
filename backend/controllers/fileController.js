@@ -50,7 +50,7 @@ const fileController = {
         const message = await messageModel.create({
           chatId,
           senderId: req.user.userId,
-          text: `File: ${filename}`,
+          text: `[Archivo adjunto: ${filename}]`,
           fileId: file.id
         });
         
@@ -64,7 +64,8 @@ const fileController = {
             id: file.id,
             filename: file.filename,
             contentType: file.content_type,
-            size: file.size
+            size: file.size,
+            uploadedBy: file.uploaded_by
           }
         };
         
@@ -126,7 +127,7 @@ const fileController = {
       // Set headers for download
       res.set({
         'Content-Type': file.content_type,
-        'Content-Disposition': `attachment; filename="${file.filename}"`,
+        'Content-Disposition': `attachment; filename="${encodeURIComponent(file.filename)}"`,
         'Content-Length': file.size
       });
       

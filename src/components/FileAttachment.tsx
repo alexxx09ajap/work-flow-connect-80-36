@@ -2,10 +2,10 @@
 import React from 'react';
 import { fileService } from '@/services/api';
 import { Button } from '@/components/ui/button';
-import { Download, Trash2 } from 'lucide-react';
-import { FileIcon, defaultStyles } from 'react-file-icon';
+import { Download, Trash2, File as FileIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
 
 interface FileProps {
   id: string;
@@ -26,8 +26,60 @@ const formatFileSize = (bytes?: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-const getFileExtension = (filename: string): string => {
-  return filename.split('.').pop()?.toLowerCase() || '';
+// Determine icon and color based on file type
+const getFileTypeInfo = (contentType?: string, filename?: string) => {
+  if (!contentType && !filename) {
+    return { icon: <FileIcon className="h-5 w-5" />, color: 'bg-gray-200' };
+  }
+  
+  const type = contentType?.split('/')[0] || '';
+  const extension = filename?.split('.').pop()?.toLowerCase() || '';
+  
+  // Image files
+  if (type === 'image' || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
+    return { 
+      icon: <FileIcon className="h-5 w-5" />, 
+      color: 'bg-blue-100 text-blue-600' 
+    };
+  }
+  
+  // Document files
+  if (['pdf', 'doc', 'docx', 'txt', 'rtf'].includes(extension)) {
+    return { 
+      icon: <FileIcon className="h-5 w-5" />, 
+      color: 'bg-red-100 text-red-600' 
+    };
+  }
+  
+  // Spreadsheet files
+  if (['xls', 'xlsx', 'csv'].includes(extension)) {
+    return { 
+      icon: <FileIcon className="h-5 w-5" />, 
+      color: 'bg-green-100 text-green-600' 
+    };
+  }
+  
+  // Presentation files
+  if (['ppt', 'pptx'].includes(extension)) {
+    return { 
+      icon: <FileIcon className="h-5 w-5" />, 
+      color: 'bg-orange-100 text-orange-600' 
+    };
+  }
+  
+  // Compressed files
+  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(extension)) {
+    return { 
+      icon: <FileIcon className="h-5 w-5" />, 
+      color: 'bg-purple-100 text-purple-600' 
+    };
+  }
+  
+  // Default for other files
+  return { 
+    icon: <FileIcon className="h-5 w-5" />, 
+    color: 'bg-gray-200 text-gray-600' 
+  };
 };
 
 const FileAttachment: React.FC<FileProps> = ({ 
@@ -40,11 +92,17 @@ const FileAttachment: React.FC<FileProps> = ({
 }) => {
   const { currentUser } = useAuth();
   const isOwner = currentUser?.id === uploadedBy;
-  const fileExt = getFileExtension(filename);
+  const { icon, color } = getFileTypeInfo(contentType, filename);
   
   const handleDownload = () => {
     const url = fileService.getFileUrl(id);
-    window.open(url, '_blank');
+    // Crear un elemento <a> temporal para la descarga
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
   
   const handleDelete = async () => {
@@ -69,12 +127,9 @@ const FileAttachment: React.FC<FileProps> = ({
   };
   
   return (
-    <div className="flex items-center p-3 border rounded-md bg-gray-50 dark:bg-gray-800 max-w-xs">
-      <div className="w-8 h-10 mr-3">
-        <FileIcon 
-          extension={fileExt}
-          {...defaultStyles[fileExt as keyof typeof defaultStyles]}
-        />
+    <div className="flex items-center p-3 border rounded-md bg-gray-50 dark:bg-gray-800 max-w-xs w-full">
+      <div className={cn("w-10 h-10 rounded-md flex items-center justify-center mr-3", color)}>
+        {icon}
       </div>
       
       <div className="flex-1 min-w-0">

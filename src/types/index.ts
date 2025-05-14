@@ -1,4 +1,3 @@
-
 export interface UserType {
   id: string;
   name: string;
@@ -46,6 +45,7 @@ export interface MessageType {
     filename: string;
     contentType?: string;
     size?: number;
+    uploadedBy?: string;
   };
 }
 

@@ -166,7 +166,8 @@ export const fileService = {
 
   // Get a file URL for download
   getFileUrl: (fileId: string) => {
-    return `${API_URL}/files/${fileId}`;
+    const token = localStorage.getItem('token');
+    return `${API_URL}/files/${fileId}?token=${token}`;
   },
 
   // Delete a file
