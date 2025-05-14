@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { JobType, UserType } from '@/types';
 import { userService } from '@/services/api';
 import { JOB_CATEGORIES, SKILLS_LIST } from '@/lib/mockData';
+import { useAuth } from './AuthContext';
 
 export type { UserType };
 
@@ -33,6 +34,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(false);
   const [jobCategories, setJobCategories] = useState<string[]>(JOB_CATEGORIES);
   const [skillsList, setSkillsList] = useState<string[]>(SKILLS_LIST);
+  const { currentUser } = useAuth();
 
   const loadData = async () => {
     setLoading(true);
@@ -71,6 +73,13 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
   const getUserById = (userId: string) => {
     if (!userId) return undefined;
+    
+    // Primero verificamos si es el usuario actual
+    if (currentUser && userId === currentUser.id) {
+      return currentUser;
+    }
+    
+    // Si no es el usuario actual, buscamos en la lista de usuarios
     return users.find(user => user.id === userId);
   };
   

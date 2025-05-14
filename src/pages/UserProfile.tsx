@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/Layout/MainLayout';
@@ -51,10 +50,16 @@ const UserProfile = () => {
       setIsLoading(true);
       if (userId) {
         try {
-          // Intentar obtener el usuario de la caché local
-          const user = getUserById(userId);
-          console.log("UserProfile: Usuario recuperado:", user);
-          setProfileUser(user || null);
+          // Si el userId es el mismo que el usuario actual, usamos los datos del usuario actual
+          if (currentUser && userId === currentUser.id) {
+            console.log("UserProfile: Mostrando perfil del usuario actual:", currentUser);
+            setProfileUser(currentUser);
+          } else {
+            // Intentar obtener el usuario de la caché local
+            const user = getUserById(userId);
+            console.log("UserProfile: Usuario recuperado:", user);
+            setProfileUser(user || null);
+          }
           
           // Filtrar propuestas de este usuario
           if (jobs && jobs.length > 0) {
@@ -78,7 +83,7 @@ const UserProfile = () => {
     };
     
     fetchProfileUser();
-  }, [userId, getUserById, jobs, toast]);
+  }, [userId, getUserById, jobs, toast, currentUser]);
   
   /**
    * Manejar el clic en el botón "Contactar"
