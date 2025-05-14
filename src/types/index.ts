@@ -2,40 +2,51 @@
 export interface UserType {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   role: string;
   photoURL?: string;
+  joinedAt?: number;
+  status?: 'online' | 'offline';
   bio?: string;
   skills?: string[];
-  location?: string;
-  hourlyRate?: number;
-  isOnline?: boolean;
-  lastSeen?: Date | string;
-  createdAt?: Date | string;
-  updatedAt?: Date | string;
 }
 
-export interface CommentType {
+export interface ChatType {
   id: string;
-  content: string;
-  jobId: string;
-  userId: string;
-  userName?: string;
-  userPhoto?: string;
-  createdAt: Date | string;
-  updatedAt?: Date | string;
-  replies?: ReplyType[];
+  name?: string;
+  isGroup?: boolean;
+  participants: string[];
+  createdAt?: string; 
+  updatedAt?: string;
+  lastMessageAt?: string;
+  users?: string[];
+  messages?: MessageType[];
+  participantDetails?: UserType[];
+  otherUser?: UserType;
+  lastMessage?: {
+    content: string;
+    timestamp: string;
+  };
 }
 
-export interface ReplyType {
+export interface MessageType {
   id: string;
+  chatId?: string;
+  senderId: string;
+  senderName?: string;
   content: string;
-  createdAt: Date | string;
-  updatedAt?: Date | string;
-  userId: string;
-  userName?: string;
-  userPhoto?: string;
-  commentId: string;
+  createdAt?: string;
+  updatedAt?: string;
+  edited?: boolean;
+  deleted?: boolean;
+  fileId?: string;
+  timestamp: string;
+  file?: {
+    id?: string;
+    filename: string;
+    contentType?: string;
+    size?: number;
+  };
 }
 
 export interface JobType {
@@ -47,47 +58,31 @@ export interface JobType {
   skills: string[];
   status: 'open' | 'in progress' | 'completed';
   userId: string;
-  userName?: string;
-  userPhoto?: string;
-  createdAt: Date | string;
-  updatedAt: Date | string;
-  timestamp?: string;
-  comments?: CommentType[];
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface MessageType {
+export interface CommentType {
   id: string;
-  chatId?: string;
-  senderId: string;
-  senderName?: string;
   content: string;
-  timestamp: string;
-  createdAt?: Date | string;
-  updatedAt?: Date | string;
-  edited?: boolean;
-  deleted?: boolean;
-  fileId?: string;
-  file?: {
-    id?: string;
-    filename: string;
-    contentType?: string;
-    size?: number;
-  };
+  userId: string;
+  jobId: string;
+  createdAt: string;
+  updatedAt?: string;
+  userName?: string;
+  userAvatar?: string;
+  replies?: ReplyType[];
 }
 
-export interface ChatType {
+export interface ReplyType {
   id: string;
-  name?: string;
-  isGroup?: boolean;
-  participants: string[];
-  lastMessage?: {
-    content: string;
-    timestamp: string;
-  };
-  createdAt?: Date | string;
-  updatedAt?: Date | string;
-  users?: string[];
-  messages?: MessageType[];
+  content: string;
+  userId: string;
+  commentId: string;
+  createdAt: string;
+  updatedAt?: string;
+  userName?: string;
+  userAvatar?: string;
 }
 
 export interface FileType {
@@ -95,13 +90,17 @@ export interface FileType {
   filename: string;
   contentType: string;
   size: number;
+  url?: string;
+  uploadedAt: string;
   uploadedBy: string;
-  chatId?: string;
-  createdAt?: Date | string;
 }
 
-export interface AuthState {
-  currentUser: UserType | null;
-  loading: boolean;
-  error: string | null;
+export interface ChatContextValue {
+  chats: ChatType[];
+  messages: Record<string, MessageType[]>;
+  activeChat: ChatType | null;
+  setActiveChat: (chat: ChatType | null) => void;
+  sendMessage: (chatId: string, content: string) => void;
+  getMessages: (chatId: string) => MessageType[];
+  loadMessages: (chatId: string) => Promise<void>;
 }

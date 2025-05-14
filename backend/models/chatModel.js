@@ -65,7 +65,7 @@ const chatModel = {
   },
   
   // Create a private chat between two users
-  async createPrivateChat(userId1, userId2) {
+  async createPrivateChat(userId1, userId2, otherUserName = '') {
     console.log(`Creating private chat between users ${userId1} and ${userId2}`);
     
     // Check if chat already exists
@@ -76,9 +76,12 @@ const chatModel = {
       return existingChat;
     }
     
-    // Create a new chat
-    console.log('Creating new private chat');
-    const chat = await this.create({ isGroup: false });
+    // Create a new chat with the other user's name
+    console.log('Creating new private chat with name:', otherUserName);
+    const chat = await this.create({ 
+      name: otherUserName, 
+      isGroup: false 
+    });
     
     // Add participants
     await this.addParticipants(chat.id, [userId1, userId2]);

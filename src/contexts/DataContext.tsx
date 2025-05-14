@@ -40,7 +40,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true);
     try {
       // Load users from backend
-      const userData = await userService.getAllUsers();
+      const userData = await userService.getUsers();
       
       // Transform backend user data to match our frontend UserType
       const transformedUsers: UserType[] = userData.map((user: any) => ({

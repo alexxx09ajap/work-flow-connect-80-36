@@ -66,14 +66,14 @@ const chatController = {
         return res.status(400).json({ message: 'Cannot create chat with yourself' });
       }
       
-      // Check if other user exists - Corrección: usar findById en lugar de getUserById
+      // Check if other user exists
       const otherUser = await userModel.findById(otherUserId);
       if (!otherUser) {
         return res.status(404).json({ message: 'User not found' });
       }
       
-      // Create or get private chat
-      const chat = await chatModel.createPrivateChat(currentUserId, otherUserId);
+      // Create or get private chat with the other user's name
+      const chat = await chatModel.createPrivateChat(currentUserId, otherUserId, otherUser.name);
       
       if (!chat) {
         return res.status(500).json({ message: 'Failed to create chat' });
