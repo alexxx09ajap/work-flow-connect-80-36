@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { ChatType, JobType, UserType, MessageType } from '@/types';
 
@@ -134,14 +135,26 @@ export const fileService = {
   // Upload a file
   uploadFile: async (chatId: string, file: File) => {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('chatId', chatId);
+      // Convert file to base64 for sending through API
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+          const base64 = reader.result as string;
+          // Remove the data URL prefix (e.g., "data:image/png;base64,")
+          const base64Content = base64.split(',')[1];
+          resolve(base64Content);
+        };
+        reader.onerror = error => reject(error);
+      });
 
-      const response = await api.post('/files', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+      // Send file data to server
+      const response = await api.post('/files', {
+        filename: file.name,
+        contentType: file.type,
+        size: file.size,
+        data: base64Data,
+        chatId: chatId
       });
       
       return response.data;

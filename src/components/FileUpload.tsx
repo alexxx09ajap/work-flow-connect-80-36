@@ -12,6 +12,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,8 +46,20 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
   
   const handleSend = () => {
     if (selectedFile) {
-      onFileSelect(selectedFile);
-      handleClear();
+      setUploading(true);
+      try {
+        onFileSelect(selectedFile);
+        handleClear();
+      } catch (error) {
+        console.error('Error sending file:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Error al enviar el archivo. Intente nuevamente."
+        });
+      } finally {
+        setUploading(false);
+      }
     }
   };
   
@@ -83,8 +96,13 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
             onClick={handleSend}
             className="h-8 w-8"
             title="Enviar archivo"
+            disabled={uploading}
           >
-            <UploadCloud className="h-4 w-4" />
+            {uploading ? (
+              <span className="animate-spin">⟳</span>
+            ) : (
+              <UploadCloud className="h-4 w-4" />
+            )}
           </Button>
           <Button
             type="button"
@@ -93,6 +111,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
             onClick={handleClear}
             className="h-8 w-8 text-red-500 hover:text-red-700"
             title="Cancelar"
+            disabled={uploading}
           >
             <X className="h-4 w-4" />
           </Button>

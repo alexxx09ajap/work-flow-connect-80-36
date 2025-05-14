@@ -9,11 +9,18 @@ const fileController = {
   // Upload a file and create a message
   async uploadFile(req, res) {
     try {
+      console.log('File upload request received:', req.body.filename);
       const { filename, contentType, data, size, chatId } = req.body;
       
       // Validate file size
       if (size > MAX_FILE_SIZE) {
         return res.status(400).json({ message: 'File size exceeds the maximum allowed (5MB)' });
+      }
+      
+      // Check if chat exists
+      const chat = await chatModel.findById(chatId);
+      if (!chat) {
+        return res.status(404).json({ message: 'Chat not found' });
       }
       
       // Check if user is a participant
@@ -25,6 +32,8 @@ const fileController = {
       // Convert base64 data to Buffer
       const fileBuffer = Buffer.from(data, 'base64');
       
+      console.log(`Processing file: ${filename}, size: ${size}, type: ${contentType}`);
+      
       // Create file
       const file = await fileModel.create({
         filename,
@@ -33,6 +42,8 @@ const fileController = {
         data: fileBuffer,
         uploadedBy: req.user.userId
       });
+      
+      console.log(`File saved with ID: ${file.id}`);
       
       // Create message with file reference
       const message = await messageModel.create({
@@ -66,10 +77,11 @@ const fileController = {
         socketService.notifyUsers(participantIds, 'chat:message', chatId, messageWithFile);
       }
       
+      console.log('File upload successful');
       res.status(201).json(messageWithFile);
     } catch (error) {
       console.error('Error uploading file:', error);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ message: 'Server error during file upload' });
     }
   },
   
@@ -101,7 +113,8 @@ const fileController = {
       // Set headers for download
       res.set({
         'Content-Type': file.content_type,
-        'Content-Disposition': `attachment; filename="${file.filename}"`
+        'Content-Disposition': `attachment; filename="${file.filename}"`,
+        'Content-Length': file.size
       });
       
       // Send file
