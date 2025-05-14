@@ -42,6 +42,8 @@ export const UserSelectDialog = ({
     if (onUserSelect) {
       console.log("Selected user for chat:", user);
       onUserSelect(user.id);
+      
+      // Cerrar el diálogo después de seleccionar
       onOpenChange(false);
     }
   };

@@ -83,8 +83,9 @@ export const chatService = {
   
   createPrivateChat: async (userId: string) => {
     try {
+      console.log("Creating private chat with user ID:", userId);
       const response = await api.post('/chats/private', { userId });
-      console.log("Chat service - created private chat:", response.data);
+      console.log("Chat service - created private chat response:", response.data);
       return response.data;
     } catch (err) {
       console.error("Error creating private chat:", err);

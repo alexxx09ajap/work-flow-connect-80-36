@@ -66,25 +66,34 @@ const chatModel = {
   
   // Create a private chat between two users
   async createPrivateChat(userId1, userId2) {
+    console.log(`Creating private chat between users ${userId1} and ${userId2}`);
+    
     // Check if chat already exists
     const existingChat = await this.findPrivateChat(userId1, userId2);
     
     if (existingChat) {
+      console.log('Chat already exists:', existingChat);
       return existingChat;
     }
     
     // Create a new chat
+    console.log('Creating new private chat');
     const chat = await this.create({ isGroup: false });
     
     // Add participants
     await this.addParticipants(chat.id, [userId1, userId2]);
     
     // Get the full chat with participants
-    return await this.findById(chat.id);
+    const chatWithParticipants = await this.findById(chat.id);
+    console.log('New chat created:', chatWithParticipants);
+    
+    return chatWithParticipants;
   },
   
   // Find a private chat between two users
   async findPrivateChat(userId1, userId2) {
+    console.log(`Finding private chat between users ${userId1} and ${userId2}`);
+    
     const result = await db.query(
       `
         SELECT c.* FROM "Chats" c
@@ -104,6 +113,12 @@ const chatModel = {
       `,
       [userId1, userId2]
     );
+    
+    if (result.rows.length > 0) {
+      console.log('Found existing private chat:', result.rows[0]);
+    } else {
+      console.log('No existing private chat found');
+    }
     
     return result.rows[0];
   },

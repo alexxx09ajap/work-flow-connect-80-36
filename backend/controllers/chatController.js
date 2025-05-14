@@ -55,6 +55,12 @@ const chatController = {
       const { userId: currentUserId } = req.user;
       const { userId: otherUserId } = req.body;
       
+      if (!otherUserId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      console.log(`Creating private chat between ${currentUserId} and ${otherUserId}`);
+      
       if (currentUserId === otherUserId) {
         return res.status(400).json({ message: 'Cannot create chat with yourself' });
       }
@@ -74,6 +80,7 @@ const chatController = {
       
       // Format chat for response
       const formattedChat = await chatModel.formatChatWithParticipants(chat, currentUserId);
+      console.log('Created private chat:', formattedChat);
       
       res.status(201).json(formattedChat);
     } catch (error) {
@@ -172,7 +179,7 @@ const chatController = {
     }
   },
   
-  // Delete chat
+  // Delete a chat
   async deleteChat(req, res) {
     try {
       const { userId } = req.user;
