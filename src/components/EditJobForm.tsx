@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
-import { JobType } from '@/contexts/JobContext';
+import { JobType } from '@/types';
 import { useData } from '@/contexts/DataContext';
 
 type EditJobFormProps = {
@@ -25,7 +25,7 @@ const EditJobForm = ({ job, onSubmit, onCancel, isSubmitting }: EditJobFormProps
     description: job.description,
     budget: job.budget,
     category: job.category,
-    skills: [...job.skills],
+    skills: job.skills || [],
     status: job.status
   });
 
@@ -49,6 +49,8 @@ const EditJobForm = ({ job, onSubmit, onCancel, isSubmitting }: EditJobFormProps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log("Submitting job data:", formData);
     await onSubmit(formData);
   };
 
@@ -113,7 +115,7 @@ const EditJobForm = ({ job, onSubmit, onCancel, isSubmitting }: EditJobFormProps
         <Label htmlFor="status" className="dark:text-gray-200">Estado</Label>
         <Select 
           value={formData.status} 
-          onValueChange={(value: 'open' | 'in-progress' | 'completed') => 
+          onValueChange={(value: 'open' | 'in progress' | 'completed') => 
             setFormData({ ...formData, status: value })
           }
         >
@@ -124,7 +126,7 @@ const EditJobForm = ({ job, onSubmit, onCancel, isSubmitting }: EditJobFormProps
             <SelectItem value="open" className="dark:text-white dark:focus:text-white dark:focus:bg-gray-700">
               Abierto
             </SelectItem>
-            <SelectItem value="in-progress" className="dark:text-white dark:focus:text-white dark:focus:bg-gray-700">
+            <SelectItem value="in progress" className="dark:text-white dark:focus:text-white dark:focus:bg-gray-700">
               En progreso
             </SelectItem>
             <SelectItem value="completed" className="dark:text-white dark:focus:text-white dark:focus:bg-gray-700">

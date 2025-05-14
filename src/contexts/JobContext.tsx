@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect } from 'react';
 import { JobType, CommentType, ReplyType, UserType } from '@/types';
 import { jobService } from '@/lib/jobService';
@@ -22,6 +21,8 @@ export interface JobContextType {
   savedJobs: JobType[];
   deleteComment: (commentId: string) => void;
   createJob: (jobData: Partial<JobType>) => Promise<JobType | null>;
+  updateJob: (jobId: string, jobData: Partial<JobType>) => Promise<JobType | null>;
+  deleteJob: (jobId: string) => Promise<boolean>;
 }
 
 const JobContext = createContext<JobContextType | null>(null);
@@ -104,6 +105,65 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
         description: "Error al crear la propuesta."
       });
       return null;
+    }
+  };
+
+  const updateJob = async (jobId: string, jobData: Partial<JobType>): Promise<JobType | null> => {
+    try {
+      const updatedJob = await jobService.updateJob(jobId, jobData);
+      
+      if (updatedJob) {
+        // Actualizar el estado local reemplazando el trabajo actualizado
+        setJobs(prevJobs => 
+          prevJobs.map(job => job.id === jobId ? updatedJob : job)
+        );
+        
+        setUserJobs(prevJobs => 
+          prevJobs.map(job => job.id === jobId ? updatedJob : job)
+        );
+        
+        setFilteredJobs(prevJobs => 
+          prevJobs.map(job => job.id === jobId ? updatedJob : job)
+        );
+      }
+      
+      return updatedJob;
+    } catch (error) {
+      console.error("Error updating job:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al actualizar la propuesta."
+      });
+      return null;
+    }
+  };
+
+  const deleteJob = async (jobId: string): Promise<boolean> => {
+    try {
+      const success = await jobService.deleteJob(jobId);
+      
+      if (success) {
+        // Eliminar el trabajo del estado local
+        setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
+        setUserJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
+        setFilteredJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
+        
+        toast({
+          title: "Propuesta eliminada",
+          description: "La propuesta se ha eliminado correctamente."
+        });
+      }
+      
+      return success;
+    } catch (error) {
+      console.error("Error deleting job:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al eliminar la propuesta."
+      });
+      return false;
     }
   };
 
@@ -256,6 +316,8 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
     savedJobs,
     deleteComment,
     createJob,
+    updateJob,
+    deleteJob,
     addReplyToComment
   };
 

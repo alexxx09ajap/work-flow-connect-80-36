@@ -33,7 +33,7 @@ import EditJobForm from '@/components/EditJobForm';
 const ProfilePage = () => {
   const { currentUser, updateUserProfile, uploadProfilePhoto } = useAuth();
   const { skillsList, loadData } = useData();
-  const { jobs, loadJobs } = useJobs();
+  const { jobs, updateJob, deleteJob, refreshJobs } = useJobs();
   
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -100,11 +100,11 @@ const ProfilePage = () => {
     
     setIsSubmittingJob(true);
     try {
-      // Implementar updateJob si existe
-      // await updateJob(editingJob.id, jobData);
+      console.log('Updating job with ID:', editingJob.id, 'and data:', jobData);
+      await updateJob(editingJob.id, jobData);
       
-      await loadJobs();
-      await loadData();
+      // Actualizamos la lista de trabajos después de la modificación
+      await refreshJobs();
       
       setEditingJob(null);
       
@@ -113,6 +113,7 @@ const ProfilePage = () => {
         description: "Los cambios han sido guardados correctamente"
       });
     } catch (error) {
+      console.error('Error updating job:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -125,16 +126,21 @@ const ProfilePage = () => {
   
   const handleDeleteJob = async (jobId: string) => {
     try {
-      // Implementar deleteJob si existe
-      // await deleteJob(jobId);
+      console.log('Deleting job with ID:', jobId);
+      const success = await deleteJob(jobId);
       
-      setUserJobs(userJobs.filter(job => job.id !== jobId));
-      
-      toast({
-        title: "Propuesta eliminada",
-        description: "La propuesta ha sido eliminada correctamente"
-      });
+      if (success) {
+        // La lista de trabajos ya se actualiza en el contexto,
+        // pero actualizamos la lista local por si acaso
+        setUserJobs(userJobs.filter(job => job.id !== jobId));
+        
+        toast({
+          title: "Propuesta eliminada",
+          description: "La propuesta ha sido eliminada correctamente"
+        });
+      }
     } catch (error) {
+      console.error('Error deleting job:', error);
       toast({
         variant: "destructive",
         title: "Error",

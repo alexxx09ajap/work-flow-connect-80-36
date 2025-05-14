@@ -1,3 +1,4 @@
+
 import { JobType, CommentType, ReplyType } from '@/types';
 import { UserType } from '@/types';
 import axios from 'axios';
@@ -138,6 +139,11 @@ export const jobService = {
   updateJob: async (id: string, jobData: Partial<JobType>): Promise<JobType | null> => {
     try {
       console.log(`Updating job with ID: ${id}`, jobData);
+      
+      if (!id) {
+        throw new Error('ID de la propuesta no proporcionado');
+      }
+      
       const response = await axios.put(`${API_URL}/jobs/${id}`, jobData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -174,6 +180,11 @@ export const jobService = {
   deleteJob: async (id: string): Promise<boolean> => {
     try {
       console.log(`Deleting job with ID: ${id}`);
+      
+      if (!id) {
+        throw new Error('ID de la propuesta no proporcionado');
+      }
+      
       const response = await axios.delete(`${API_URL}/jobs/${id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
