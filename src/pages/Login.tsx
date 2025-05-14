@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,13 +16,18 @@ const Login = () => {
   const [error, setError] = useState('');
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Redirect if already authenticated
+  // Solo redirigir si el usuario inició sesión y vino desde otra página o si inicia sesión manualmente
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard');
+    // Obtener estado de redirección (si existe)
+    const from = location.state?.from;
+    
+    if (isAuthenticated && from) {
+      // Si está autenticado y vino de otra página, redirigir de vuelta
+      navigate(from.pathname || '/dashboard');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +41,8 @@ const Login = () => {
     try {
       setLoading(true);
       await login(email, password);
-      // El redireccionamiento lo maneja el AuthContext después de un login exitoso
+      // Después de un inicio de sesión exitoso, redirigimos al dashboard
+      navigate('/dashboard');
     } catch (error) {
       console.error('Error de inicio de sesión:', error);
       setError(error instanceof Error ? error.message : 'Error al iniciar sesión');

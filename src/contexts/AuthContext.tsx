@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthState, UserType } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import { authService } from '@/services/api';
@@ -106,6 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [state, dispatch] = useReducer(authReducer, initialState);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Verify if user is already authenticated when page loads
   useEffect(() => {
@@ -133,10 +134,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             payload: { user: data.user }
           });
           
-          // If verification is successful, check if we are on login/register pages
-          // and redirect if needed
-          const currentPath = window.location.pathname;
-          if (currentPath === '/login' || currentPath === '/register' || currentPath === '/') {
+          // Solo redirigir desde login/register a dashboard, pero no desde la página de inicio (/)
+          const currentPath = location.pathname;
+          if ((currentPath === '/login' || currentPath === '/register') && state.isAuthenticated) {
             navigate('/dashboard');
           }
         } else {
@@ -158,7 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     checkAuthStatus();
-  }, [navigate]);
+  }, [navigate, location]);
 
   // Function to login
   const login = async (email: string, password: string) => {
