@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { ChatType, MessageType, UserType } from '@/types';
@@ -127,10 +128,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       newSocket.on('chat:message', (chatId: string, message: MessageType) => {
         console.log("Received message:", message, "for chat:", chatId);
         
-        // Ensure correct timestamp format
-        const messageWithTimestamp = {
+        // Convert any Date objects to strings to ensure consistent format
+        const messageWithTimestamp: MessageType = {
           ...message,
-          timestamp: message.timestamp || message.createdAt?.toISOString() || new Date().toISOString()
+          timestamp: typeof message.timestamp === 'string' 
+            ? message.timestamp 
+            : message.timestamp 
+              ? new Date(message.timestamp).toISOString() 
+              : new Date().toISOString()
         };
         
         // Add message to messages state
@@ -153,7 +158,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
               return {
                 ...chat,
                 lastMessage: {
-                  content: messageWithTimestamp.content,
+                  content: messageWithTimestamp.content || '',
                   timestamp: messageWithTimestamp.timestamp
                 }
               };
@@ -170,7 +175,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const senderName = message.senderName || 'Nuevo mensaje';
           toast({
             title: senderName,
-            description: message.content
+            description: message.content || ''
           });
         }
       });
@@ -180,16 +185,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log("Received updated message:", updatedMessage, "for chat:", chatId);
         
         // Ensure message has proper timestamp format
-        const messageWithTimestamp = {
+        const messageWithTimestamp: MessageType = {
           ...updatedMessage,
-          timestamp: updatedMessage.timestamp || updatedMessage.updatedAt?.toISOString() || new Date().toISOString()
+          timestamp: typeof updatedMessage.timestamp === 'string'
+            ? updatedMessage.timestamp
+            : updatedMessage.timestamp
+              ? new Date(updatedMessage.timestamp).toISOString()
+              : new Date().toISOString()
         };
         
         // Update the message in the messages state
         setMessages((prev) => {
           const chatMessages = prev[chatId] || [];
           const updatedMessages = chatMessages.map((msg) => 
-            msg.id === messageWithTimestamp.id ? { ...messageWithTimestamp } : msg
+            msg.id === messageWithTimestamp.id ? messageWithTimestamp : msg
           );
           
           return {
@@ -207,7 +216,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return {
                   ...chat,
                   lastMessage: {
-                    content: messageWithTimestamp.content,
+                    content: messageWithTimestamp.content || '',
                     timestamp: messageWithTimestamp.timestamp
                   }
                 };
@@ -225,7 +234,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Update the message in the messages state to mark it as deleted
         setMessages((prev) => {
           const chatMessages = prev[chatId] || [];
-          const updatedMessages = chatMessages.map((msg) => 
+          const updatedMessages = chatMessages.map((msg): MessageType => 
             msg.id === deletedMessage.id 
               ? { 
                   ...msg, 
