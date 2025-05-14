@@ -1,3 +1,4 @@
+
 const chatModel = require('../models/chatModel');
 const userModel = require('../models/userModel');
 const messageModel = require('../models/messageModel');
@@ -65,8 +66,8 @@ const chatController = {
         return res.status(400).json({ message: 'Cannot create chat with yourself' });
       }
       
-      // Check if other user exists
-      const otherUser = await userModel.getUserById(otherUserId);
+      // Check if other user exists - Corrección: usar findById en lugar de getUserById
+      const otherUser = await userModel.findById(otherUserId);
       if (!otherUser) {
         return res.status(404).json({ message: 'User not found' });
       }
