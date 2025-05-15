@@ -100,6 +100,15 @@
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
   
+  /* Button hover animation classes */
+  .btn-hover-effect {
+    @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-md active:scale-[0.98];
+  }
+
+  .btn-hover-glow {
+    @apply hover:shadow-[0_0_15px_rgba(147,51,234,0.5)];
+  }
+  
   /* Fix for text visibility in dark mode */
   .dark .bg-gray-50 {
     @apply bg-gray-800 text-gray-200;
