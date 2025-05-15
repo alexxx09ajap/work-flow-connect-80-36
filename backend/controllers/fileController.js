@@ -63,9 +63,9 @@ const fileController = {
           file: {
             id: file.id,
             filename: file.filename,
-            contentType: file.contentType,
+            contentType: file.content_type,
             size: file.size,
-            uploadedBy: file.uploadedBy
+            uploadedBy: file.uploaded_by
           }
         };
         
