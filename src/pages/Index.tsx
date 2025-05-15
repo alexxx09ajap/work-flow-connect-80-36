@@ -1,4 +1,3 @@
-
 /**
  * Landing Page Component
  * 
@@ -12,59 +11,26 @@
  * - Footer
  */
 
-import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Briefcase, MessageCircle, Users, CheckCircle } from 'lucide-react';
 
 const Index = () => {
-  // Add intersection observer for scroll animations
-  useEffect(() => {
-    const observerOptions = {
-      root: null,
-      rootMargin: '0px',
-      threshold: 0.1
-    };
-
-    const handleIntersect = (entries: IntersectionObserverEntry[], observer: IntersectionObserver) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('animate-fade-in');
-          observer.unobserve(entry.target);
-        }
-      });
-    };
-
-    const observer = new IntersectionObserver(handleIntersect, observerOptions);
-    
-    // Select all sections to animate
-    document.querySelectorAll('.animate-on-scroll').forEach(el => {
-      el.classList.add('opacity-0');
-      observer.observe(el);
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <div className="min-h-screen flex flex-col bg-wfc-background">
       {/* Header with navigation links */}
-      <header className="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 shadow-sm backdrop-blur-sm sticky top-0 z-50">
+      <header className="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
         <div className="container-custom flex items-center justify-between py-4">
           {/* Logo */}
-          <Link to="/" className="flex items-center group">
-            <span className="text-xl font-bold text-wfc-purple transition-all duration-300 group-hover:text-wfc-purple-medium">
-              WorkFlowConnect
-            </span>
+          <Link to="/" className="flex items-center">
+            <span className="text-xl font-bold text-wfc-purple">WorkFlowConnect</span>
           </Link>
           
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-4">
-            <Link to="/login" className="text-gray-700 hover:text-wfc-purple transition-colors duration-300 dark:text-gray-200 dark:hover:text-wfc-purple">
-              Iniciar Sesión
-            </Link>
+            <Link to="/login" className="text-gray-700 hover:text-wfc-purple dark:text-gray-200 dark:hover:text-wfc-purple">Iniciar Sesión</Link>
             <Link to="/register">
-              <Button variant="default" className="bg-wfc-purple hover:bg-wfc-purple-medium animate-pulse-subtle">
+              <Button variant="default" className="bg-wfc-purple hover:bg-wfc-purple-medium">
                 Registrarse
               </Button>
             </Link>
@@ -85,20 +51,19 @@ const Index = () => {
       </header>
       
       {/* Hero Section with main call-to-action */}
-      <section className="py-16 md:py-24 bg-gradient-to-r from-wfc-purple to-wfc-magenta text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yLjIxIDEuNzktNCA0LTRzNCAxLjc5IDQgNC0xLjc5IDQtNCA0LTQtMS43OS00LTR6TTYgMTZjMC0yLjIxIDEuNzktNCA0LTRzNCAxLjc5IDQgNC0xLjc5IDQtNCA0LTQtMS43OS00LTR6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30"></div>
-        <div className="container-custom relative">
+      <section className="py-16 md:py-24 bg-gradient-to-r from-wfc-purple to-wfc-magenta text-white">
+        <div className="container-custom">
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="animate-slide-in-right">
-              <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
+            <div>
+              <h1 className="text-3xl md:text-5xl font-bold mb-6">
                 Conecta con los mejores profesionales freelance
               </h1>
               <p className="text-lg md:text-xl mb-8 text-white/90">
                 Publica tus proyectos o encuentra trabajo como freelancer en una plataforma diseñada para ti.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 stagger-animate">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/register">
-                  <Button variant="glass" size="lg" className="w-full sm:w-auto bg-white text-wfc-purple hover:bg-gray-100 shadow-lg">
+                  <Button variant="default" size="lg" className="w-full sm:w-auto bg-white text-wfc-purple hover:bg-gray-100">
                     Registrarse Gratis
                   </Button>
                 </Link>
@@ -109,11 +74,11 @@ const Index = () => {
                 </Link>
               </div>
             </div>
-            <div className="hidden md:block animate-fade-in">
+            <div className="hidden md:block">
               <img 
                 src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80" 
                 alt="Freelancers trabajando" 
-                className="rounded-lg shadow-xl transform transition-transform duration-500 hover:scale-[1.02]"
+                className="rounded-lg shadow-xl"
               />
             </div>
           </div>
@@ -121,14 +86,14 @@ const Index = () => {
       </section>
       
       {/* Features Section highlighting platform capabilities */}
-      <section className="py-16 bg-white dark:bg-gray-800 animate-on-scroll">
+      <section className="py-16 bg-white dark:bg-gray-800">
         <div className="container-custom">
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-12 text-wfc-purple dark:text-wfc-purple-light">
             Todo lo que necesitas en un solo lugar
           </h2>
           
-          <div className="grid md:grid-cols-3 gap-8 stagger-animate">
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center shadow-soft hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center shadow-sm">
               <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-wfc-purple/10 text-wfc-purple mb-4 dark:bg-wfc-purple/20">
                 <Briefcase className="h-6 w-6" />
               </div>
@@ -138,7 +103,7 @@ const Index = () => {
               </p>
             </div>
             
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center shadow-soft hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center shadow-sm">
               <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-wfc-purple/10 text-wfc-purple mb-4 dark:bg-wfc-purple/20">
                 <MessageCircle className="h-6 w-6" />
               </div>
@@ -148,7 +113,7 @@ const Index = () => {
               </p>
             </div>
             
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center shadow-soft hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center shadow-sm">
               <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-wfc-purple/10 text-wfc-purple mb-4 dark:bg-wfc-purple/20">
                 <Users className="h-6 w-6" />
               </div>
@@ -162,9 +127,9 @@ const Index = () => {
       </section>
       
       {/* CTA Section encouraging sign up */}
-      <section className="py-16 bg-wfc-background dark:bg-gray-900 animate-on-scroll">
+      <section className="py-16 bg-wfc-background dark:bg-gray-900">
         <div className="container-custom">
-          <div className="bg-gradient-to-r from-wfc-purple to-wfc-purple-medium rounded-lg p-8 md:p-12 text-white text-center shadow-lg">
+          <div className="bg-wfc-purple rounded-lg p-8 md:p-12 text-white text-center">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">
               Empieza a conectar con profesionales hoy mismo
             </h2>
@@ -172,7 +137,7 @@ const Index = () => {
               Únete a nuestra comunidad de freelancers y empresas para impulsar tus proyectos o encontrar nuevas oportunidades.
             </p>
             <Link to="/register">
-              <Button variant="glass" size="lg" className="bg-white text-wfc-purple hover:bg-gray-100 shadow-xl animate-pulse-subtle">
+              <Button variant="default" size="lg" className="bg-white text-wfc-purple hover:bg-gray-100">
                 Crear una cuenta gratis
               </Button>
             </Link>
@@ -181,14 +146,14 @@ const Index = () => {
       </section>
       
       {/* Benefits Section listing advantages */}
-      <section className="py-16 bg-white dark:bg-gray-800 animate-on-scroll">
+      <section className="py-16 bg-white dark:bg-gray-800">
         <div className="container-custom">
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-12 dark:text-white">
             Por qué elegir WorkFlowConnect
           </h2>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 stagger-animate">
-            <div className="flex items-start p-4 rounded-lg transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="flex items-start">
               <CheckCircle className="h-5 w-5 text-wfc-purple mr-3 mt-1 flex-shrink-0" />
               <div>
                 <h3 className="font-medium mb-1 dark:text-white">Sin comisiones</h3>
@@ -198,7 +163,7 @@ const Index = () => {
               </div>
             </div>
             
-            <div className="flex items-start p-4 rounded-lg transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+            <div className="flex items-start">
               <CheckCircle className="h-5 w-5 text-wfc-purple mr-3 mt-1 flex-shrink-0" />
               <div>
                 <h3 className="font-medium mb-1 dark:text-white">Pagos seguros</h3>
@@ -208,7 +173,7 @@ const Index = () => {
               </div>
             </div>
             
-            <div className="flex items-start p-4 rounded-lg transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+            <div className="flex items-start">
               <CheckCircle className="h-5 w-5 text-wfc-purple mr-3 mt-1 flex-shrink-0" />
               <div>
                 <h3 className="font-medium mb-1 dark:text-white">Soporte 24/7</h3>
@@ -218,7 +183,7 @@ const Index = () => {
               </div>
             </div>
             
-            <div className="flex items-start p-4 rounded-lg transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+            <div className="flex items-start">
               <CheckCircle className="h-5 w-5 text-wfc-purple mr-3 mt-1 flex-shrink-0" />
               <div>
                 <h3 className="font-medium mb-1 dark:text-white">Comunidad global</h3>
@@ -245,27 +210,27 @@ const Index = () => {
             <div>
               <h4 className="text-md font-medium mb-4">Enlaces rápidos</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><Link to="/" className="hover:text-white transition-colors duration-300">Inicio</Link></li>
-                <li><Link to="/register" className="hover:text-white transition-colors duration-300">Registro</Link></li>
-                <li><Link to="/login" className="hover:text-white transition-colors duration-300">Iniciar sesión</Link></li>
+                <li><Link to="/" className="hover:text-white">Inicio</Link></li>
+                <li><Link to="/register" className="hover:text-white">Registro</Link></li>
+                <li><Link to="/login" className="hover:text-white">Iniciar sesión</Link></li>
               </ul>
             </div>
             
             <div>
               <h4 className="text-md font-medium mb-4">Soporte</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors duration-300">Centro de ayuda</a></li>
-                <li><a href="#" className="hover:text-white transition-colors duration-300">Contacto</a></li>
-                <li><a href="#" className="hover:text-white transition-colors duration-300">FAQ</a></li>
+                <li><a href="#" className="hover:text-white">Centro de ayuda</a></li>
+                <li><a href="#" className="hover:text-white">Contacto</a></li>
+                <li><a href="#" className="hover:text-white">FAQ</a></li>
               </ul>
             </div>
             
             <div>
               <h4 className="text-md font-medium mb-4">Legal</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors duration-300">Términos de servicio</a></li>
-                <li><a href="#" className="hover:text-white transition-colors duration-300">Política de privacidad</a></li>
-                <li><a href="#" className="hover:text-white transition-colors duration-300">Cookies</a></li>
+                <li><a href="#" className="hover:text-white">Términos de servicio</a></li>
+                <li><a href="#" className="hover:text-white">Política de privacidad</a></li>
+                <li><a href="#" className="hover:text-white">Cookies</a></li>
               </ul>
             </div>
           </div>
