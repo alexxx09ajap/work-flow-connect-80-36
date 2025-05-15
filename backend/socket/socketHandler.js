@@ -1,4 +1,3 @@
-
 const userModel = require('../models/userModel');
 const chatModel = require('../models/chatModel');
 const messageModel = require('../models/messageModel');
@@ -221,10 +220,16 @@ const socketHandler = (io) => {
         // Update last message in chat
         await chatModel.updateLastMessage(chatId);
         
+        // Get sender information
+        const result = await chatModel.getParticipants(chatId);
+        const sender = result.find(user => user.id === userId);
+        
         // Message to send to clients (without binary data)
         const messageToSend = {
           ...message,
           senderId: userId, // Ensure senderId is explicitly set
+          senderName: sender ? sender.name : 'Unknown User',
+          senderPhoto: sender ? sender.photoURL : null,
           file: {
             id: file.id,
             filename,

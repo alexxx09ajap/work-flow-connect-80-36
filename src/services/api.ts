@@ -166,7 +166,7 @@ export const messageService = {
 
 // Servicios de archivos
 export const fileService = {
-  async uploadFile(chatId: string, file: File): Promise<FileType> {
+  async uploadFile(file: File, chatId: string): Promise<FileType> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('chatId', chatId);
