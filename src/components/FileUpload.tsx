@@ -3,14 +3,12 @@ import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Paperclip, X, UploadCloud } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-
-interface FileUploadProps {
-  onFileSelect: (file: File) => void;
-}
+import { useChat } from '@/contexts/ChatContext';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
+const FileUpload: React.FC = () => {
+  const { activeChat, sendFile } = useChat();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -44,22 +42,34 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
     if (inputRef.current) inputRef.current.value = '';
   };
   
-  const handleSend = () => {
-    if (selectedFile) {
-      setUploading(true);
-      try {
-        onFileSelect(selectedFile);
-        handleClear();
-      } catch (error) {
-        console.error('Error sending file:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Error al enviar el archivo. Intente nuevamente."
-        });
-      } finally {
-        setUploading(false);
-      }
+  const handleSend = async () => {
+    if (!selectedFile || !activeChat) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No hay chat activo o archivo seleccionado"
+      });
+      return;
+    }
+    
+    setUploading(true);
+    
+    try {
+      await sendFile(activeChat.id, selectedFile);
+      handleClear();
+      toast({
+        title: "Éxito",
+        description: "Archivo enviado correctamente"
+      });
+    } catch (error) {
+      console.error('Error sending file:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al enviar el archivo. Intente nuevamente."
+      });
+    } finally {
+      setUploading(false);
     }
   };
   

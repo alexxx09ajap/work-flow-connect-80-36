@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { UserType, JobType, ChatType, MessageType, FileType } from '@/types';
 
@@ -167,22 +166,42 @@ export const messageService = {
 
 // Servicios de archivos
 export const fileService = {
-  async uploadFile(chatId: string, file: File): Promise<FileType> {
+  async uploadFile(file: File, chatId: string): Promise<FileType> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('chatId', chatId);
     
-    const response = await api.post('/files/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+    // Convertir archivo a base64
+    const base64Data = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          // Extraer solo la parte base64 (quitar el prefijo "data:tipo/subtipo;base64,")
+          resolve(reader.result.split(',')[1]);
+        } else {
+          reject(new Error('No se pudo leer el archivo como string'));
+        }
+      };
+      reader.onerror = (error) => reject(error);
+    });
+    
+    // Enviar datos del archivo
+    const response = await api.post('/files', {
+      filename: file.name,
+      contentType: file.type,
+      size: file.size,
+      data: base64Data,
+      chatId
     });
     
     return response.data;
   },
   
-  async getFile(fileId: string): Promise<FileType> {
-    const response = await api.get(`/files/${fileId}`);
+  async getFile(fileId: string): Promise<Blob> {
+    const response = await api.get(`/files/${fileId}`, {
+      responseType: 'blob'
+    });
     return response.data;
   },
   
@@ -191,7 +210,8 @@ export const fileService = {
   },
   
   getFileUrl(fileId: string): string {
-    return `http://localhost:5000/api/files/${fileId}/download`;
+    const token = localStorage.getItem('token');
+    return `http://localhost:5000/api/files/${fileId}?token=${token}`;
   }
 };
 

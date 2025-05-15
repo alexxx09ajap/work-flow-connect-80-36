@@ -1,16 +1,16 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { ChatType, MessageType, UserType } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import io, { Socket } from 'socket.io-client';
-import { chatService, messageService } from '@/services/api';
+import { chatService, messageService, fileService } from '@/services/api';
 
 // Context Type
 export interface ChatContextType {
   createChat: (participantIds: string[], name?: string) => void;
   createPrivateChat: (userId: string) => Promise<ChatType | undefined>;
   sendMessage: (chatId: string, content: string) => void;
+  sendFile: (chatId: string, file: File) => Promise<void>;
   deleteChat: (chatId: string) => void;
   setActiveChat: (chat: ChatType | null) => void;
   markAsRead: (chatId: string) => void;
@@ -432,6 +432,37 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Send a file
+  const sendFile = async (chatId: string, file: File): Promise<void> => {
+    if (!currentUser) return;
+    
+    try {
+      // Usamos el fileService para subir el archivo
+      const fileResponse = await fileService.uploadFile(file, chatId);
+      
+      console.log('File uploaded successfully:', fileResponse);
+      
+      // No necesitamos crear manualmente un mensaje ya que el backend lo hace por nosotros
+      
+      // Asegurarnos de que el chat esté actualizado con el nuevo mensaje
+      if (activeChat?.id === chatId) {
+        await loadMessages(chatId);
+      }
+      
+      // Actualizar la lista de chats para mostrar el último mensaje
+      await loadChats();
+      
+    } catch (error) {
+      console.error('Error sending file:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo enviar el archivo. Intente nuevamente."
+      });
+      throw error; // Re-lanzar el error para manejo adicional
+    }
+  };
+
   // Update a message
   const updateMessage = async (messageId: string, content: string) => {
     if (!currentUser) return;
@@ -745,6 +776,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createChat,
         createPrivateChat,
         sendMessage,
+        sendFile,
         deleteChat,
         setActiveChat,
         markAsRead,

@@ -28,7 +28,7 @@ router.use((req, res, next) => {
   authenticateToken(req, res, next);
 });
 
-// Upload a file
+// Upload a file - Cambiamos directamente a la ruta root para coincidir con fileService
 router.post('/', fileController.uploadFile);
 
 // Get a file
