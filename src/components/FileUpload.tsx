@@ -7,7 +7,21 @@ import { useChat } from '@/contexts/ChatContext';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-const FileUpload: React.FC = () => {
+// Helper function to format file size
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 B';
+  
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  
+  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
+};
+
+interface FileUploadProps {
+  onFileSelect?: (file: File) => Promise<void>;
+}
+
+const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
   const { activeChat, sendFile } = useChat();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -55,7 +69,12 @@ const FileUpload: React.FC = () => {
     setUploading(true);
     
     try {
-      await sendFile(activeChat.id, selectedFile);
+      if (onFileSelect) {
+        await onFileSelect(selectedFile);
+      } else {
+        await sendFile(activeChat.id, selectedFile);
+      }
+      
       handleClear();
       toast({
         title: "Éxito",
@@ -97,7 +116,8 @@ const FileUpload: React.FC = () => {
       ) : (
         <div className="flex items-center space-x-2 p-2 bg-gray-100 dark:bg-gray-800 rounded-md">
           <div className="flex-1 truncate text-sm">
-            {selectedFile.name}
+            <div className="font-medium truncate">{selectedFile.name}</div>
+            <div className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</div>
           </div>
           <Button
             type="button"

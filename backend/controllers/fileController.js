@@ -46,11 +46,11 @@ const fileController = {
         
         console.log(`File saved with ID: ${file.id}`);
         
-        // Create message with file reference
+        // Create message with file reference but with empty text
         const message = await messageModel.create({
           chatId,
           senderId: req.user.userId,
-          text: `[Archivo adjunto: ${filename}]`,
+          text: '', // Empty text instead of description
           fileId: file.id
         });
         

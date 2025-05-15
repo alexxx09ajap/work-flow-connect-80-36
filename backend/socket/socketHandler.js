@@ -210,11 +210,11 @@ const socketHandler = (io) => {
           uploadedBy: userId
         });
         
-        // Create message with file reference
+        // Create message with file reference, but empty text content
         const message = await messageModel.create({
           chatId,
           senderId: userId,
-          text: `File: ${filename}`,
+          text: '', // Empty text instead of file description
           fileId: file.id
         });
         

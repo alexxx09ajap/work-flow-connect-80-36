@@ -166,7 +166,7 @@ export const messageService = {
 
 // Servicios de archivos
 export const fileService = {
-  async uploadFile(file: File, chatId: string): Promise<FileType> {
+  async uploadFile(chatId: string, file: File): Promise<FileType> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('chatId', chatId);
@@ -212,6 +212,16 @@ export const fileService = {
   getFileUrl(fileId: string): string {
     const token = localStorage.getItem('token');
     return `http://localhost:5000/api/files/${fileId}?token=${token}`;
+  },
+
+  // Helper function to format file size
+  formatFileSize(bytes: number | undefined): string {
+    if (!bytes || bytes === 0) return '0 B';
+    
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    
+    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
   }
 };
 
