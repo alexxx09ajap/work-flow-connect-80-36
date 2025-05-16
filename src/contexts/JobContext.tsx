@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect } from 'react';
 import { JobType, CommentType, ReplyType, UserType } from '@/types';
 import { jobService } from '@/lib/jobService';
@@ -57,12 +56,13 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const allJobs = await jobService.getAllJobs();
       
-      // Asegurarse de que las fechas sean objetos Date
+      // Process the jobs to ensure they have the correct format
       const processedJobs = allJobs.map(job => ({
         ...job,
-        createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
-        updatedAt: job.updatedAt ? new Date(job.updatedAt) : new Date(),
-        // Asegurarnos de que el nombre de usuario esté presente
+        // Ensure dates are strings
+        createdAt: job.createdAt ? job.createdAt.toString() : new Date().toString(),
+        updatedAt: job.updatedAt ? job.updatedAt.toString() : new Date().toString(),
+        // Ensure username is present
         userName: job.userName || 'Usuario desconocido'
       }));
       
@@ -71,18 +71,16 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (currentUser) {
         const userJobsData = await jobService.getJobsByUser(currentUser.id);
-        // Procesar las fechas para trabajos del usuario
+        // Process user jobs as well
         const processedUserJobs = userJobsData.map(job => ({
           ...job,
-          createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
-          updatedAt: job.updatedAt ? new Date(job.updatedAt) : new Date(),
-          // Asegurarnos de que el nombre de usuario esté presente
+          createdAt: job.createdAt ? job.createdAt.toString() : new Date().toString(),
+          updatedAt: job.updatedAt ? job.updatedAt.toString() : new Date().toString(),
           userName: job.userName || 'Usuario desconocido'
         }));
         setUserJobs(processedUserJobs);
 
         // In a real implementation, we would fetch saved jobs from the backend
-        // This is a placeholder until that endpoint is implemented
         setSavedJobs([]);
       }
 
@@ -201,11 +199,19 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const comment = await jobService.addComment(jobId, text);
       
+      // Ensure the comment has the user information
+      const commentWithUser = {
+        ...comment,
+        userName: currentUser.name,
+        userPhoto: currentUser.photoURL || '',
+        userId: currentUser.id
+      };
+      
       // Update the jobs state with the new comment
       setJobs(prevJobs => {
         return prevJobs.map(job => {
           if (job.id === jobId) {
-            const updatedComments = [...(job.comments || []), comment];
+            const updatedComments = [...(job.comments || []), commentWithUser];
             return { ...job, comments: updatedComments };
           }
           return job;
@@ -217,7 +223,7 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
         description: "Tu comentario ha sido publicado correctamente."
       });
       
-      return comment;
+      return commentWithUser;
     } catch (error) {
       console.error("Error adding comment:", error);
       toast({
@@ -241,13 +247,21 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const reply = await jobService.addReply(commentId, text);
       
+      // Ensure the reply has the user information
+      const replyWithUser = {
+        ...reply,
+        userName: currentUser.name,
+        userPhoto: currentUser.photoURL || '',
+        userId: currentUser.id
+      };
+      
       // Update the jobs state with the new reply
       setJobs(prevJobs => {
         return prevJobs.map(job => {
           if (job.id === jobId) {
             const updatedComments = job.comments?.map(comment => {
               if (comment.id === commentId) {
-                const updatedReplies = [...(comment.replies || []), reply];
+                const updatedReplies = [...(comment.replies || []), replyWithUser];
                 return { ...comment, replies: updatedReplies };
               }
               return comment;
@@ -263,7 +277,7 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
         description: "Tu respuesta ha sido publicada correctamente."
       });
       
-      return reply;
+      return replyWithUser;
     } catch (error) {
       console.error("Error adding reply:", error);
       toast({
@@ -276,7 +290,38 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Function for the CommentItem component to use
   const addReplyToComment = async (jobId: string, commentId: string, text: string, user: UserType) => {
-    await addReply(commentId, jobId, text);
+    try {
+      const reply = await jobService.addReply(commentId, text);
+      
+      // Create a new reply with the user's information
+      const replyWithUser: ReplyType = {
+        ...reply,
+        userName: user.name,
+        userPhoto: user.photoURL || '',
+        userId: user.id,
+        timestamp: Date.now()
+      };
+      
+      // Update the jobs state with the new reply
+      setJobs(prevJobs => {
+        return prevJobs.map(job => {
+          if (job.id === jobId) {
+            const updatedComments = job.comments?.map(comment => {
+              if (comment.id === commentId) {
+                const updatedReplies = [...(comment.replies || []), replyWithUser];
+                return { ...comment, replies: updatedReplies };
+              }
+              return comment;
+            });
+            return { ...job, comments: updatedComments };
+          }
+          return job;
+        });
+      });
+    } catch (error) {
+      console.error("Error adding reply:", error);
+      throw error;
+    }
   };
 
   const deleteComment = async (commentId: string) => {
