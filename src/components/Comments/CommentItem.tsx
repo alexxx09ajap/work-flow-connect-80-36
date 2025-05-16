@@ -19,6 +19,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyContent, setReplyContent] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  const [localReplies, setLocalReplies] = useState<ReplyType[]>(comment.replies || []);
   
   const { currentUser } = useAuth();
   const { addReplyToComment } = useJobs();
@@ -44,7 +45,17 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
         console.log('Reply response:', response.data);
         
         if (response.data.success && response.data.reply) {
-          // Add the reply to the comment in the local state
+          // Format the reply to match the expected structure
+          const newReply: ReplyType = {
+            ...response.data.reply,
+            text: response.data.reply.content,
+            timestamp: new Date(response.data.reply.createdAt).getTime()
+          };
+          
+          // Update local state with the new reply
+          setLocalReplies(prev => [...prev, newReply]);
+          
+          // Add the reply to the comment in the global state
           await addReplyToComment(jobId, comment.id, replyContent, currentUser);
           
           setReplyContent('');
@@ -85,6 +96,9 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
       minute: '2-digit'
     });
   };
+
+  // Use either the locally managed replies or the ones from props
+  const displayReplies = localReplies.length > 0 ? localReplies : (comment.replies || []);
 
   return (
     <div className="space-y-3">
@@ -148,9 +162,9 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
       )}
 
       {/* Respuestas */}
-      {comment.replies && comment.replies.length > 0 && (
+      {displayReplies.length > 0 && (
         <div className="ml-11 space-y-3 border-l-2 border-gray-100 pl-3">
-          {comment.replies.map((reply: ReplyType) => (
+          {displayReplies.map((reply: ReplyType) => (
             <div key={reply.id} className="flex space-x-3">
               <Avatar className="h-6 w-6">
                 <AvatarImage src={reply.userPhoto} alt={reply.userName} />
