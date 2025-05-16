@@ -86,7 +86,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
           {currentUser && (
             <button
               onClick={() => setShowReplyForm(!showReplyForm)}
-              className="text-xs text-wfc-purple mt-1 flex items-center"
+              className="text-xs text-wfc-purple mt-1 flex items-center hover:text-wfc-purple-dark transition-colors duration-200"
             >
               <MessageCircle className="h-3 w-3 mr-1" />
               {showReplyForm ? 'Cancelar' : 'Responder'}
@@ -108,7 +108,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
             <Button
               size="sm"
               variant="outline"
-              className="mr-2"
+              className="mr-2 hover:bg-gray-100 transition-colors duration-200"
               onClick={() => setShowReplyForm(false)}
             >
               Cancelar
@@ -117,7 +117,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
               size="sm"
               onClick={handleSubmitReply}
               disabled={isSubmittingReply || !replyContent.trim()}
-              className="bg-wfc-purple hover:bg-wfc-purple-medium"
+              className="bg-wfc-purple hover:bg-wfc-purple-medium transition-colors duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
             >
               {isSubmittingReply ? 'Enviando...' : 'Responder'}
             </Button>

@@ -1,3 +1,4 @@
+
 export interface UserType {
   id: string;
   name: string;
@@ -40,6 +41,8 @@ export interface MessageType {
   deleted?: boolean;
   fileId?: string;
   timestamp: string;
+  chatName?: string;
+  chatIsGroup?: boolean;
   file?: {
     id?: string;
     filename: string;
@@ -60,29 +63,38 @@ export interface JobType {
   userId: string;
   createdAt: string;
   updatedAt: string;
+  userName?: string;
+  userPhoto?: string;
+  comments?: CommentType[];
 }
 
 export interface CommentType {
   id: string;
   content: string;
+  text: string;
   userId: string;
   jobId: string;
-  createdAt: string;
+  createdAt?: string;
   updatedAt?: string;
   userName?: string;
+  userPhoto?: string;
   userAvatar?: string;
+  timestamp: number;
   replies?: ReplyType[];
 }
 
 export interface ReplyType {
   id: string;
   content: string;
+  text: string;
   userId: string;
   commentId: string;
-  createdAt: string;
+  createdAt?: string;
   updatedAt?: string;
   userName?: string;
+  userPhoto?: string;
   userAvatar?: string;
+  timestamp: number;
 }
 
 export interface FileType {

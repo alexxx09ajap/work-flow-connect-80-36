@@ -1,4 +1,3 @@
-
 import { JobType, CommentType, ReplyType } from '@/types';
 import { UserType } from '@/types';
 import axios from 'axios';
@@ -224,7 +223,8 @@ export const jobService = {
       
       // In a real implementation, this would be a backend call
       const response = await axios.post(`${API_URL}/jobs/${jobId}/comments`, {
-        text
+        text,
+        content: text
       }, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -282,7 +282,8 @@ export const jobService = {
       
       // In a real implementation, this would be a backend call
       const response = await axios.post(`${API_URL}/comments/${commentId}/replies`, {
-        text
+        text,
+        content: text
       }, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
