@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/Layout/MainLayout';
@@ -17,7 +18,6 @@ import { JobType } from '@/types';
 import { formatDate } from '@/lib/utils';
 import { CommentsList } from '@/components/Comments/CommentsList';
 import { Skeleton } from '@/components/ui/skeleton';
-import axios from 'axios';
 
 const JobDetail = () => {
   // Hooks de React Router para obtener el ID de la propuesta y navegación
@@ -38,8 +38,6 @@ const JobDetail = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-  
   console.log("JobDetail: jobId =", jobId);
   console.log("JobDetail: jobs disponibles =", jobs?.length || 0);
   
@@ -55,33 +53,15 @@ const JobDetail = () => {
       setIsLoading(true);
       try {
         // Intentar obtener el trabajo del caché local primero
-        let jobData = getJobById(jobId);
-        
-        // If we don't have it locally or need fresh data, fetch from API
-        if (!jobData) {
-          try {
-            const response = await axios.get(`${API_URL}/jobs/${jobId}`, {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-              }
-            });
-            
-            if (response.data.success) {
-              jobData = response.data.job;
-            }
-          } catch (apiError) {
-            console.error("API error when fetching job:", apiError);
-          }
-        }
+        const jobData = getJobById(jobId);
         
         if (jobData) {
-          console.log("Trabajo encontrado:", jobData);
+          console.log("Trabajo encontrado localmente:", jobData);
           console.log("Fecha de creación:", jobData.createdAt);
           console.log("Nombre de usuario:", jobData.userName);
           console.log("ID de usuario:", jobData.userId);
-          console.log("Comentarios:", jobData.comments);
           
-          // Ensure date is properly formatted
+          // Asegúrese de que la fecha sea un objeto Date válido
           if (jobData.createdAt && typeof jobData.createdAt === 'string') {
             jobData.createdAt = new Date(jobData.createdAt);
           }
@@ -272,28 +252,9 @@ const JobDetail = () => {
     
     setIsSubmittingComment(true);
     try {
-      // Call the addComment function from JobContext
-      const newComment = await addComment(job.id, commentText);
-      
-      // Also directly call API to ensure it's stored in database
-      try {
-        const response = await axios.post(
-          `${API_URL}/jobs/${job.id}/comments`, 
-          { content: commentText },
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-          }
-        );
-        
-        console.log("API response for comment:", response.data);
-      } catch (apiError) {
-        console.error("API error when adding comment:", apiError);
-        // Continue since the UI was already updated
-      }
-      
-      setCommentText(''); // Clear the comment field
+      // Llamar a la función para añadir el comentario a la propuesta
+      await addComment(job.id, commentText);
+      setCommentText(''); // Limpiar el campo de comentario
       
       toast({
         title: "Comentario enviado",

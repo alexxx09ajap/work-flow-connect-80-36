@@ -8,7 +8,6 @@ import { CommentType, ReplyType } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useJobs } from '@/contexts/JobContext';
 import { toast } from '@/components/ui/use-toast';
-import axios from 'axios';
 
 type CommentItemProps = {
   comment: CommentType;
@@ -23,35 +22,13 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
   const { currentUser } = useAuth();
   const { addReplyToComment } = useJobs();
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
   const handleSubmitReply = async () => {
     if (!replyContent.trim() || !currentUser) return;
     
     setIsSubmittingReply(true);
     try {
       if (currentUser) {
-        // First try the context function which will update UI
         await addReplyToComment(jobId, comment.id, replyContent, currentUser);
-        
-        // Then directly call API to ensure it's stored in database
-        try {
-          const response = await axios.post(
-            `${API_URL}/jobs/${jobId}/comments/${comment.id}/replies`, 
-            { content: replyContent },
-            {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
-              }
-            }
-          );
-          
-          console.log("API response for reply:", response.data);
-        } catch (apiError) {
-          console.error("API error when adding reply:", apiError);
-          // Continue since the UI was already updated
-        }
-        
         setReplyContent('');
         setShowReplyForm(false);
         toast({
@@ -60,7 +37,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
         });
       }
     } catch (error) {
-      console.error("Error submitting reply:", error);
       toast({
         variant: "destructive",
         title: "Error",
