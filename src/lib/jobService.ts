@@ -221,42 +221,29 @@ export const jobService = {
     try {
       console.log(`Adding comment to job ${jobId}: ${text}`);
       
-      // In a real implementation, this would be a backend call
-      const response = await axios.post(`${API_URL}/jobs/${jobId}/comments`, {
-        text,
-        content: text
-      }, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+      // Send the comment to the backend
+      const response = await axios.post(
+        `${API_URL}/jobs/${jobId}/comments`,
+        { content: text },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
         }
-      });
+      );
       
-      if (response.data.success) {
+      console.log('Comment response:', response.data);
+      
+      if (response.data.success && response.data.comment) {
         return response.data.comment;
       }
       
-      // Temporary client-side fallback until backend is fully implemented
-      // This should be removed once the backend is working
-      const token = localStorage.getItem('token');
-      const userInfo = token ? JSON.parse(atob(token.split('.')[1])) : null;
-      
-      const newComment: CommentType = {
-        id: uuidv4(),
-        userId: userInfo?.userId || 'unknown',
-        jobId,
-        text,
-        content: text,
-        timestamp: Date.now(),
-        userName: userInfo?.name || 'Usuario',
-        userPhoto: userInfo?.photoURL || '',
-        replies: []
-      };
-      
-      return newComment;
+      throw new Error('Failed to add comment');
     } catch (error) {
       console.error("Error adding comment:", error);
       
-      // Temporary client-side fallback until backend is fully implemented
+      // Return a fallback comment for the UI
+      // This should only happen if the backend is unavailable
       const token = localStorage.getItem('token');
       const userInfo = token ? JSON.parse(atob(token.split('.')[1])) : null;
       
@@ -276,45 +263,33 @@ export const jobService = {
     }
   },
 
-  addReply: async (commentId: string, text: string): Promise<ReplyType> => {
+  addReply: async (jobId: string, commentId: string, text: string): Promise<ReplyType> => {
     try {
       console.log(`Adding reply to comment ${commentId}: ${text}`);
       
-      // In a real implementation, this would be a backend call
-      const response = await axios.post(`${API_URL}/comments/${commentId}/replies`, {
-        text,
-        content: text
-      }, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+      // Send the reply to the backend
+      const response = await axios.post(
+        `${API_URL}/jobs/${jobId}/comments/${commentId}/replies`,
+        { content: text },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
         }
-      });
+      );
       
-      if (response.data.success) {
+      console.log('Reply response:', response.data);
+      
+      if (response.data.success && response.data.reply) {
         return response.data.reply;
       }
       
-      // Temporary client-side fallback until backend is fully implemented
-      // This should be removed once the backend is working
-      const token = localStorage.getItem('token');
-      const userInfo = token ? JSON.parse(atob(token.split('.')[1])) : null;
-      
-      const newReply: ReplyType = {
-        id: uuidv4(),
-        userId: userInfo?.userId || 'unknown',
-        commentId,
-        text,
-        content: text,
-        timestamp: Date.now(),
-        userName: userInfo?.name || 'Usuario',
-        userPhoto: userInfo?.photoURL || '',
-      };
-      
-      return newReply;
+      throw new Error('Failed to add reply');
     } catch (error) {
       console.error("Error adding reply:", error);
       
-      // Temporary client-side fallback until backend is fully implemented
+      // Return a fallback reply for the UI
+      // This should only happen if the backend is unavailable
       const token = localStorage.getItem('token');
       const userInfo = token ? JSON.parse(atob(token.split('.')[1])) : null;
       

@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect } from 'react';
 import { JobType, CommentType, ReplyType, UserType } from '@/types';
 import { jobService } from '@/lib/jobService';
@@ -197,6 +198,7 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
+      // Send the comment to the backend
       const comment = await jobService.addComment(jobId, text);
       
       // Ensure the comment has the user information
@@ -245,7 +247,8 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
-      const reply = await jobService.addReply(commentId, text);
+      // Send the reply to the backend
+      const reply = await jobService.addReply(jobId, commentId, text);
       
       // Ensure the reply has the user information
       const replyWithUser = {
@@ -291,7 +294,8 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
   // Function for the CommentItem component to use
   const addReplyToComment = async (jobId: string, commentId: string, text: string, user: UserType) => {
     try {
-      const reply = await jobService.addReply(commentId, text);
+      // Send the reply to the backend
+      const reply = await jobService.addReply(jobId, commentId, text);
       
       // Create a new reply with the user's information
       const replyWithUser: ReplyType = {

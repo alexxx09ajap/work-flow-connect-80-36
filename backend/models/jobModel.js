@@ -71,7 +71,12 @@ const jobModel = {
       return null;
     }
     
-    return result.rows[0];
+    const job = result.rows[0];
+    
+    // Get comments for this job
+    job.comments = await jobModel.getComments(jobId);
+    
+    return job;
   },
   
   // Update a job
@@ -135,6 +140,115 @@ const jobModel = {
   async delete(jobId) {
     await db.query('DELETE FROM "Jobs" WHERE id = $1', [jobId]);
     return true;
+  },
+
+  // Get all comments for a job with their replies
+  async getComments(jobId) {
+    // First, get all comments for the job
+    const commentsResult = await db.query(
+      `SELECT c.id, c.content, c."jobId", c."userId", c."createdAt", c."updatedAt",
+              u.name as "userName", u."photoURL" as "userPhoto"
+       FROM "Comments" c
+       JOIN "Users" u ON c."userId" = u.id
+       WHERE c."jobId" = $1
+       ORDER BY c."createdAt" ASC`,
+      [jobId]
+    );
+
+    const comments = commentsResult.rows;
+
+    // For each comment, get its replies
+    for (const comment of comments) {
+      const repliesResult = await db.query(
+        `SELECT r.id, r.content, r."userId", r."commentId", r."createdAt", r."updatedAt",
+                u.name as "userName", u."photoURL" as "userPhoto"
+         FROM "Replies" r
+         JOIN "Users" u ON r."userId" = u.id
+         WHERE r."commentId" = $1
+         ORDER BY r."createdAt" ASC`,
+        [comment.id]
+      );
+
+      // Format the comment and replies to match frontend expectations
+      comment.text = comment.content;
+      comment.timestamp = new Date(comment.createdAt).getTime();
+      comment.replies = repliesResult.rows.map(reply => ({
+        ...reply,
+        text: reply.content,
+        timestamp: new Date(reply.createdAt).getTime()
+      }));
+    }
+
+    return comments;
+  },
+
+  // Add a comment to a job
+  async addComment(jobId, commentData) {
+    const { content, userId } = commentData;
+    const id = uuidv4();
+    const now = new Date();
+
+    const result = await db.query(
+      `INSERT INTO "Comments" (id, content, "jobId", "userId", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, content, "jobId", "userId", "createdAt", "updatedAt"`,
+      [id, content, jobId, userId, now, now]
+    );
+
+    const comment = result.rows[0];
+
+    // Get user information for the comment
+    const userResult = await db.query(
+      `SELECT name, "photoURL" FROM "Users" WHERE id = $1`,
+      [userId]
+    );
+
+    if (userResult.rows.length > 0) {
+      const user = userResult.rows[0];
+      comment.userName = user.name;
+      comment.userPhoto = user.photoURL;
+    }
+
+    // Format the comment to match frontend expectations
+    comment.text = comment.content;
+    comment.timestamp = new Date(comment.createdAt).getTime();
+    comment.replies = [];
+
+    return comment;
+  },
+
+  // Add a reply to a comment
+  async addReplyToComment(commentId, replyData) {
+    const { content, userId } = replyData;
+    const id = uuidv4();
+    const now = new Date();
+
+    const result = await db.query(
+      `INSERT INTO "Replies" (id, content, "userId", "commentId", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, content, "userId", "commentId", "createdAt", "updatedAt"`,
+      [id, content, userId, commentId, now, now]
+    );
+
+    const reply = result.rows[0];
+
+    // Get user information for the reply
+    const userResult = await db.query(
+      `SELECT name, "photoURL" FROM "Users" WHERE id = $1`,
+      [userId]
+    );
+
+    if (userResult.rows.length > 0) {
+      const user = userResult.rows[0];
+      reply.userName = user.name;
+      reply.userPhoto = user.photoURL;
+    }
+
+    // Format the reply to match frontend expectations
+    reply.text = reply.content;
+    reply.timestamp = new Date(reply.createdAt).getTime();
+
+    return reply;
   }
 };
 

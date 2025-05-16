@@ -18,6 +18,7 @@ import { JobType } from '@/types';
 import { formatDate } from '@/lib/utils';
 import { CommentsList } from '@/components/Comments/CommentsList';
 import { Skeleton } from '@/components/ui/skeleton';
+import axios from 'axios';
 
 const JobDetail = () => {
   // Hooks de React Router para obtener el ID de la propuesta y navegación
@@ -63,7 +64,7 @@ const JobDetail = () => {
           
           // Asegúrese de que la fecha sea un objeto Date válido
           if (jobData.createdAt && typeof jobData.createdAt === 'string') {
-            jobData.createdAt = new Date(jobData.createdAt);
+            jobData.createdAt = new Date(jobData.createdAt).toString();
           }
           
           setJob(jobData);
@@ -252,14 +253,33 @@ const JobDetail = () => {
     
     setIsSubmittingComment(true);
     try {
-      // Llamar a la función para añadir el comentario a la propuesta
-      await addComment(job.id, commentText);
-      setCommentText(''); // Limpiar el campo de comentario
+      // Send the comment to the backend API
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await axios.post(
+        `${API_URL}/jobs/${job.id}/comments`,
+        { content: commentText },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
       
-      toast({
-        title: "Comentario enviado",
-        description: "Tu comentario ha sido publicado correctamente"
-      });
+      console.log('Comment response:', response.data);
+      
+      if (response.data.success) {
+        // Update the local state with the new comment
+        await addComment(job.id, commentText);
+        
+        setCommentText(''); // Limpiar el campo de comentario
+        
+        toast({
+          title: "Comentario enviado",
+          description: "Tu comentario ha sido publicado correctamente"
+        });
+      } else {
+        throw new Error('Failed to send comment');
+      }
     } catch (error) {
       console.error("Error al enviar comentario:", error);
       toast({
@@ -310,10 +330,10 @@ const JobDetail = () => {
                   <CardTitle className="text-lg">Descripción</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-700 whitespace-pre-line">{job.description}</p>
+                  <p className="text-gray-700 whitespace-pre-line">{job?.description}</p>
                   
                   {/* Sección de habilidades requeridas */}
-                  {job.skills && job.skills.length > 0 && (
+                  {job?.skills && job.skills.length > 0 && (
                     <div className="mt-6">
                       <h3 className="font-medium mb-2">Habilidades requeridas</h3>
                       <div className="flex flex-wrap gap-2">
@@ -360,8 +380,8 @@ const JobDetail = () => {
                   <div className="mt-6">
                     <Separator className="mb-6" />
                     <CommentsList 
-                      comments={job.comments} 
-                      jobId={job.id}
+                      comments={job?.comments} 
+                      jobId={job?.id || ''}
                       loading={isLoadingComments}
                     />
                   </div>

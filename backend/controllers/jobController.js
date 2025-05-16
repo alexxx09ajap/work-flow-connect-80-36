@@ -280,24 +280,15 @@ const jobController = {
         });
       }
       
-      // Get user info
-      const user = await userModel.findById(userId);
-      
-      const comment = {
-        content,
-        userId,
-        userName: user ? user.name : 'Usuario desconocido',
-        userPhoto: user ? user.avatar : null,
-        timestamp: Date.now()
-      };
-      
       // Add comment to job
-      const updatedJob = await jobModel.addComment(jobId, comment);
+      const comment = await jobModel.addComment(jobId, { content, userId });
+
+      console.log("Added comment to database:", comment);
       
-      return res.status(200).json({
+      return res.status(201).json({
         success: true,
         message: 'Comment added successfully',
-        job: updatedJob
+        comment
       });
       
     } catch (error) {
@@ -334,24 +325,24 @@ const jobController = {
         });
       }
       
-      // Get user info for the reply
-      const user = await userModel.findById(userId);
-      
-      const reply = {
-        content,
-        userId,
-        userName: user ? user.name : 'Usuario desconocido',
-        userPhoto: user ? user.avatar : null,
-        timestamp: Date.now()
-      };
+      // Check if comment exists
+      const commentExists = job.comments.some(comment => comment.id === commentId);
+      if (!commentExists) {
+        return res.status(404).json({
+          success: false,
+          message: 'Comment not found'
+        });
+      }
       
       // Add reply to comment
-      const updatedJob = await jobModel.addReplyToComment(jobId, commentId, reply);
+      const reply = await jobModel.addReplyToComment(commentId, { content, userId });
       
-      return res.status(200).json({
+      console.log("Added reply to database:", reply);
+      
+      return res.status(201).json({
         success: true,
         message: 'Reply added successfully',
-        job: updatedJob
+        reply
       });
       
     } catch (error) {

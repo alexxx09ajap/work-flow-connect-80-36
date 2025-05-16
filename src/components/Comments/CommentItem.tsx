@@ -8,6 +8,7 @@ import { CommentType, ReplyType } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useJobs } from '@/contexts/JobContext';
 import { toast } from '@/components/ui/use-toast';
+import axios from 'axios';
 
 type CommentItemProps = {
   comment: CommentType;
@@ -28,15 +29,36 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
     setIsSubmittingReply(true);
     try {
       if (currentUser) {
-        await addReplyToComment(jobId, comment.id, replyContent, currentUser);
-        setReplyContent('');
-        setShowReplyForm(false);
-        toast({
-          title: "Respuesta enviada",
-          description: "Tu respuesta ha sido publicada correctamente"
-        });
+        // Send the reply to the backend API
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const response = await axios.post(
+          `${API_URL}/jobs/${jobId}/comments/${comment.id}/replies`,
+          { content: replyContent },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        );
+        
+        console.log('Reply response:', response.data);
+        
+        if (response.data.success && response.data.reply) {
+          // Add the reply to the comment in the local state
+          await addReplyToComment(jobId, comment.id, replyContent, currentUser);
+          
+          setReplyContent('');
+          setShowReplyForm(false);
+          toast({
+            title: "Respuesta enviada",
+            description: "Tu respuesta ha sido publicada correctamente"
+          });
+        } else {
+          throw new Error('Failed to send reply');
+        }
       }
     } catch (error) {
+      console.error('Error submitting reply:', error);
       toast({
         variant: "destructive",
         title: "Error",
