@@ -1,0 +1,27 @@
+
+-- Tables to store comments and replies
+CREATE TABLE IF NOT EXISTS "Comments" (
+  "id" UUID PRIMARY KEY,
+  "jobId" UUID NOT NULL REFERENCES "Jobs"(id) ON DELETE CASCADE,
+  "userId" UUID NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
+  "content" TEXT NOT NULL,
+  "timestamp" TIMESTAMP NOT NULL DEFAULT NOW(),
+  
+  CONSTRAINT "fk_comments_job" FOREIGN KEY ("jobId") REFERENCES "Jobs"(id) ON DELETE CASCADE,
+  CONSTRAINT "fk_comments_user" FOREIGN KEY ("userId") REFERENCES "Users"(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS "Replies" (
+  "id" UUID PRIMARY KEY,
+  "commentId" UUID NOT NULL REFERENCES "Comments"(id) ON DELETE CASCADE,
+  "userId" UUID NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
+  "content" TEXT NOT NULL,
+  "timestamp" TIMESTAMP NOT NULL DEFAULT NOW(),
+  
+  CONSTRAINT "fk_replies_comment" FOREIGN KEY ("commentId") REFERENCES "Comments"(id) ON DELETE CASCADE,
+  CONSTRAINT "fk_replies_user" FOREIGN KEY ("userId") REFERENCES "Users"(id) ON DELETE CASCADE
+);
+
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS "idx_comments_job" ON "Comments"("jobId");
+CREATE INDEX IF NOT EXISTS "idx_replies_comment" ON "Replies"("commentId");

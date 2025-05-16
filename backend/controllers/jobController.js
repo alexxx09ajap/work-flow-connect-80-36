@@ -263,6 +263,8 @@ const jobController = {
       const { content } = req.body;
       const userId = req.user.userId;
       
+      console.log('Adding comment to job:', jobId, 'content:', content, 'by user:', userId);
+      
       if (!content) {
         return res.status(400).json({
           success: false,
@@ -280,24 +282,21 @@ const jobController = {
         });
       }
       
-      // Get user info
-      const user = await userModel.findById(userId);
-      
-      const comment = {
+      // Create comment data object
+      const commentData = {
         content,
-        userId,
-        userName: user ? user.name : 'Usuario desconocido',
-        userPhoto: user ? user.avatar : null,
-        timestamp: Date.now()
+        userId
       };
       
       // Add comment to job
-      const updatedJob = await jobModel.addComment(jobId, comment);
+      const comment = await jobModel.addComment(jobId, commentData);
+      
+      console.log('Comment added successfully:', comment);
       
       return res.status(200).json({
         success: true,
         message: 'Comment added successfully',
-        job: updatedJob
+        comment
       });
       
     } catch (error) {
@@ -317,6 +316,8 @@ const jobController = {
       const { content } = req.body;
       const userId = req.user.userId;
       
+      console.log('Adding reply to comment:', commentId, 'in job:', jobId, 'content:', content, 'by user:', userId);
+      
       if (!content) {
         return res.status(400).json({
           success: false,
@@ -334,26 +335,30 @@ const jobController = {
         });
       }
       
-      // Get user info for the reply
-      const user = await userModel.findById(userId);
-      
-      const reply = {
+      // Create reply data object
+      const replyData = {
         content,
-        userId,
-        userName: user ? user.name : 'Usuario desconocido',
-        userPhoto: user ? user.avatar : null,
-        timestamp: Date.now()
+        userId
       };
       
       // Add reply to comment
-      const updatedJob = await jobModel.addReplyToComment(jobId, commentId, reply);
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Reply added successfully',
-        job: updatedJob
-      });
-      
+      try {
+        const reply = await jobModel.addReplyToComment(jobId, commentId, replyData);
+        
+        console.log('Reply added successfully:', reply);
+        
+        return res.status(200).json({
+          success: true,
+          message: 'Reply added successfully',
+          reply
+        });
+      } catch (error) {
+        console.error('Error adding reply to database:', error);
+        return res.status(404).json({
+          success: false,
+          message: error.message
+        });
+      }
     } catch (error) {
       console.error('Error adding reply:', error);
       return res.status(500).json({

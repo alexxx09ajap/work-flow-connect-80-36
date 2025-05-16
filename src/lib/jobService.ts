@@ -221,68 +221,34 @@ export const jobService = {
     try {
       console.log(`Adding comment to job ${jobId}: ${text}`);
       
-      // In a real implementation, this would be a backend call
       const response = await axios.post(`${API_URL}/jobs/${jobId}/comments`, {
-        text,
         content: text
       }, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
+      
+      console.log("Add comment response:", response.data);
       
       if (response.data.success) {
         return response.data.comment;
       }
       
-      // Temporary client-side fallback until backend is fully implemented
-      // This should be removed once the backend is working
-      const token = localStorage.getItem('token');
-      const userInfo = token ? JSON.parse(atob(token.split('.')[1])) : null;
-      
-      const newComment: CommentType = {
-        id: uuidv4(),
-        userId: userInfo?.userId || 'unknown',
-        jobId,
-        text,
-        content: text,
-        timestamp: Date.now(),
-        userName: userInfo?.name || 'Usuario',
-        userPhoto: userInfo?.photoURL || '',
-        replies: []
-      };
-      
-      return newComment;
+      throw new Error(response.data.message || "Error al añadir comentario");
     } catch (error) {
       console.error("Error adding comment:", error);
       
-      // Temporary client-side fallback until backend is fully implemented
-      const token = localStorage.getItem('token');
-      const userInfo = token ? JSON.parse(atob(token.split('.')[1])) : null;
-      
-      const newComment: CommentType = {
-        id: uuidv4(),
-        userId: userInfo?.userId || 'unknown',
-        jobId,
-        text,
-        content: text,
-        timestamp: Date.now(),
-        userName: userInfo?.name || 'Usuario',
-        userPhoto: userInfo?.photoURL || '',
-        replies: []
-      };
-      
-      return newComment;
+      // If the backend request fails, we'll throw the error to be handled by the caller
+      throw error;
     }
   },
 
-  addReply: async (commentId: string, text: string): Promise<ReplyType> => {
+  addReply: async (jobId: string, commentId: string, text: string): Promise<ReplyType> => {
     try {
-      console.log(`Adding reply to comment ${commentId}: ${text}`);
+      console.log(`Adding reply to comment ${commentId} in job ${jobId}: ${text}`);
       
-      // In a real implementation, this would be a backend call
-      const response = await axios.post(`${API_URL}/comments/${commentId}/replies`, {
-        text,
+      const response = await axios.post(`${API_URL}/jobs/${commentId}/comments/${commentId}/replies`, {
         content: text
       }, {
         headers: {
@@ -290,46 +256,18 @@ export const jobService = {
         }
       });
       
+      console.log("Add reply response:", response.data);
+      
       if (response.data.success) {
         return response.data.reply;
       }
       
-      // Temporary client-side fallback until backend is fully implemented
-      // This should be removed once the backend is working
-      const token = localStorage.getItem('token');
-      const userInfo = token ? JSON.parse(atob(token.split('.')[1])) : null;
-      
-      const newReply: ReplyType = {
-        id: uuidv4(),
-        userId: userInfo?.userId || 'unknown',
-        commentId,
-        text,
-        content: text,
-        timestamp: Date.now(),
-        userName: userInfo?.name || 'Usuario',
-        userPhoto: userInfo?.photoURL || '',
-      };
-      
-      return newReply;
+      throw new Error(response.data.message || "Error al añadir respuesta");
     } catch (error) {
       console.error("Error adding reply:", error);
       
-      // Temporary client-side fallback until backend is fully implemented
-      const token = localStorage.getItem('token');
-      const userInfo = token ? JSON.parse(atob(token.split('.')[1])) : null;
-      
-      const newReply: ReplyType = {
-        id: uuidv4(),
-        userId: userInfo?.userId || 'unknown',
-        commentId,
-        text,
-        content: text,
-        timestamp: Date.now(),
-        userName: userInfo?.name || 'Usuario',
-        userPhoto: userInfo?.photoURL || '',
-      };
-      
-      return newReply;
+      // If the backend request fails, we'll throw the error to be handled by the caller
+      throw error;
     }
   },
 

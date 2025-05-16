@@ -59,7 +59,8 @@ const jobModel = {
   
   // Find job by ID
   async findById(jobId) {
-    const result = await db.query(
+    // First, get the job details
+    const jobResult = await db.query(
       `SELECT j.id, j.title, j.description, j.budget, j.category, j.skills, j.status, 
               j."userId", j."createdAt", j."updatedAt"
        FROM "Jobs" j
@@ -67,11 +68,48 @@ const jobModel = {
       [jobId]
     );
     
-    if (result.rows.length === 0) {
+    if (jobResult.rows.length === 0) {
       return null;
     }
     
-    return result.rows[0];
+    const job = jobResult.rows[0];
+    
+    // Get comments for the job
+    const commentsResult = await db.query(
+      `SELECT c.id, c.content, c."userId", c.timestamp, u.name as "userName", u.avatar as "userPhoto"
+       FROM "Comments" c
+       JOIN "Users" u ON c."userId" = u.id
+       WHERE c."jobId" = $1
+       ORDER BY c.timestamp ASC`,
+      [jobId]
+    );
+    
+    // Get replies for each comment
+    const comments = await Promise.all(commentsResult.rows.map(async (comment) => {
+      const repliesResult = await db.query(
+        `SELECT r.id, r.content, r."userId", r.timestamp, u.name as "userName", u.avatar as "userPhoto"
+         FROM "Replies" r
+         JOIN "Users" u ON r."userId" = u.id
+         WHERE r."commentId" = $1
+         ORDER BY r.timestamp ASC`,
+        [comment.id]
+      );
+      
+      return {
+        ...comment,
+        text: comment.content, // For compatibility with frontend
+        replies: repliesResult.rows.map(reply => ({
+          ...reply,
+          text: reply.content // For compatibility with frontend
+        }))
+      };
+    }));
+    
+    // Return job with comments
+    return {
+      ...job,
+      comments
+    };
   },
   
   // Update a job
@@ -135,6 +173,79 @@ const jobModel = {
   async delete(jobId) {
     await db.query('DELETE FROM "Jobs" WHERE id = $1', [jobId]);
     return true;
+  },
+  
+  // Add a comment to a job
+  async addComment(jobId, comment) {
+    const { content, userId } = comment;
+    const id = uuidv4();
+    const timestamp = new Date();
+    
+    // Insert the comment
+    const result = await db.query(
+      `INSERT INTO "Comments" (id, "jobId", "userId", content, timestamp) 
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING id, "jobId", "userId", content, timestamp`,
+      [id, jobId, userId, content, timestamp]
+    );
+    
+    // Get user info for the comment
+    const userResult = await db.query(
+      `SELECT name, avatar FROM "Users" WHERE id = $1`,
+      [userId]
+    );
+    
+    const user = userResult.rows[0] || { name: 'Usuario desconocido', avatar: null };
+    
+    // Return comment with user info
+    return {
+      ...result.rows[0],
+      text: content, // For compatibility with frontend
+      userName: user.name,
+      userPhoto: user.avatar,
+      replies: []
+    };
+  },
+  
+  // Add a reply to a comment
+  async addReplyToComment(jobId, commentId, reply) {
+    const { content, userId } = reply;
+    const id = uuidv4();
+    const timestamp = new Date();
+    
+    // Verify that the comment exists and belongs to the specified job
+    const commentCheck = await db.query(
+      `SELECT id FROM "Comments" WHERE id = $1 AND "jobId" = $2`,
+      [commentId, jobId]
+    );
+    
+    if (commentCheck.rows.length === 0) {
+      throw new Error('Comment not found or does not belong to the specified job');
+    }
+    
+    // Insert the reply
+    const result = await db.query(
+      `INSERT INTO "Replies" (id, "commentId", "userId", content, timestamp) 
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING id, "commentId", "userId", content, timestamp`,
+      [id, commentId, userId, content, timestamp]
+    );
+    
+    // Get user info for the reply
+    const userResult = await db.query(
+      `SELECT name, avatar FROM "Users" WHERE id = $1`,
+      [userId]
+    );
+    
+    const user = userResult.rows[0] || { name: 'Usuario desconocido', avatar: null };
+    
+    // Return reply with user info
+    return {
+      ...result.rows[0],
+      text: content, // For compatibility with frontend
+      userName: user.name,
+      userPhoto: user.avatar
+    };
   }
 };
 
