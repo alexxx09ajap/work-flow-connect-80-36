@@ -29,7 +29,7 @@ router.post('/:jobId/comments', jobController.addComment);
 // Add reply to a comment
 router.post('/:jobId/comments/:commentId/replies', jobController.addReply);
 
-// Añadir este log para depuración
-console.log('Job routes initialized');
+// Add log to verify routes initialization
+console.log('Job routes initialized correctly');
 
 module.exports = router;

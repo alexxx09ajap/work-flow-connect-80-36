@@ -254,6 +254,114 @@ const jobController = {
         error: error.message
       });
     }
+  },
+  
+  // Add comment to a job
+  async addComment(req, res) {
+    try {
+      const { jobId } = req.params;
+      const { content } = req.body;
+      const userId = req.user.userId;
+      
+      if (!content) {
+        return res.status(400).json({
+          success: false,
+          message: "Comment content is required"
+        });
+      }
+      
+      // Check if job exists
+      const job = await jobModel.findById(jobId);
+      
+      if (!job) {
+        return res.status(404).json({
+          success: false,
+          message: 'Job not found'
+        });
+      }
+      
+      // Get user info
+      const user = await userModel.findById(userId);
+      
+      const comment = {
+        content,
+        userId,
+        userName: user ? user.name : 'Usuario desconocido',
+        userPhoto: user ? user.avatar : null,
+        timestamp: Date.now()
+      };
+      
+      // Add comment to job
+      const updatedJob = await jobModel.addComment(jobId, comment);
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Comment added successfully',
+        job: updatedJob
+      });
+      
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error adding comment',
+        error: error.message
+      });
+    }
+  },
+  
+  // Add reply to a comment
+  async addReply(req, res) {
+    try {
+      const { jobId, commentId } = req.params;
+      const { content } = req.body;
+      const userId = req.user.userId;
+      
+      if (!content) {
+        return res.status(400).json({
+          success: false,
+          message: "Reply content is required"
+        });
+      }
+      
+      // Check if job exists
+      const job = await jobModel.findById(jobId);
+      
+      if (!job) {
+        return res.status(404).json({
+          success: false,
+          message: 'Job not found'
+        });
+      }
+      
+      // Get user info for the reply
+      const user = await userModel.findById(userId);
+      
+      const reply = {
+        content,
+        userId,
+        userName: user ? user.name : 'Usuario desconocido',
+        userPhoto: user ? user.avatar : null,
+        timestamp: Date.now()
+      };
+      
+      // Add reply to comment
+      const updatedJob = await jobModel.addReplyToComment(jobId, commentId, reply);
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Reply added successfully',
+        job: updatedJob
+      });
+      
+    } catch (error) {
+      console.error('Error adding reply:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error adding reply',
+        error: error.message
+      });
+    }
   }
 };
 

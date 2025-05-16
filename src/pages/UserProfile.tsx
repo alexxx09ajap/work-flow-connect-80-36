@@ -36,7 +36,7 @@ const UserProfile = () => {
   const { getUserById } = useData(); // Para obtener datos del usuario
   const { jobs } = useJobs(); // Para obtener propuestas
   const { currentUser } = useAuth(); // Usuario actual autenticado
-  const { createPrivateChat, findExistingChat } = useChat(); // Funcionalidades de chat
+  const { createPrivateChat } = useChat(); // Funcionalidades de chat
   const { toast } = useToast();
   
   // Estados para manejo de carga y datos
@@ -55,8 +55,14 @@ const UserProfile = () => {
             console.log("UserProfile: Mostrando perfil del usuario actual:", currentUser);
             setProfileUser(currentUser);
           } else {
-            // Intentar obtener el usuario de la caché local
-            const user = getUserById(userId);
+            // Intentar obtener el usuario de la caché local o del usuario actual si los IDs coinciden
+            let user = getUserById(userId);
+            
+            // Si el usuario no se encuentra en la caché pero el ID coincide con el usuario actual
+            if (!user && currentUser && userId === currentUser.id) {
+              user = currentUser;
+            }
+            
             console.log("UserProfile: Usuario recuperado:", user);
             setProfileUser(user || null);
           }
@@ -93,28 +99,14 @@ const UserProfile = () => {
     if (!currentUser || !profileUser) return;
     
     try {
-      // Verificar si ya existe un chat con este usuario
-      const existingChat = findExistingChat ? 
-        findExistingChat(profileUser.id) : 
-        undefined;
-      
-      if (existingChat) {
-        // Si existe un chat, navegar a él
+      // Crear un nuevo chat privado con este usuario
+      const chatCreated = await createPrivateChat(profileUser.id);
+      if (chatCreated) {
         navigate('/chats');
         toast({
-          title: "Chat existente",
-          description: `Abriendo la conversación con ${profileUser.name}`
+          title: "Chat iniciado",
+          description: `Has iniciado una conversación con ${profileUser.name}`
         });
-      } else {
-        // Si no, crear uno nuevo
-        const chatCreated = await createPrivateChat(profileUser.id);
-        if (chatCreated) {
-          navigate('/chats');
-          toast({
-            title: "Chat iniciado",
-            description: `Has iniciado una conversación con ${profileUser.name}`
-          });
-        }
       }
     } catch (error) {
       console.error("Error al gestionar el chat:", error);
@@ -213,7 +205,7 @@ const UserProfile = () => {
                 {/* Solo mostrar botón de contacto si no es el usuario actual */}
                 {currentUser && currentUser.id !== userId && (
                   <Button 
-                    className="mt-4 w-full bg-wfc-purple hover:bg-wfc-purple-medium"
+                    className="mt-4 w-full bg-wfc-purple hover:bg-wfc-purple-medium transition-colors transform hover:scale-[1.02] active:scale-[0.98] duration-200"
                     onClick={handleContactClick}
                   >
                     <MessageCircle className="h-4 w-4 mr-2" />
@@ -240,7 +232,7 @@ const UserProfile = () => {
                   {profileUser.skills && profileUser.skills.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {profileUser.skills.map((skill, index) => (
-                        <Badge key={index} className="bg-wfc-purple-medium text-white">
+                        <Badge key={index} className="bg-wfc-purple-medium text-white hover:bg-wfc-purple-dark">
                           {skill}
                         </Badge>
                       ))}
@@ -290,21 +282,22 @@ const UserProfile = () => {
                 {userJobs.map((job) => (
                   <div 
                     key={job.id} 
-                    className="border border-gray-200 rounded-lg p-4 hover:border-wfc-purple cursor-pointer transition-colors"
+                    className="border border-gray-200 rounded-lg p-4 hover:border-wfc-purple hover:shadow-md cursor-pointer transition-all duration-200"
                     onClick={() => navigate(`/jobs/${job.id}`)}
                   >
                     <div className="flex flex-col md:flex-row justify-between">
                       <div>
                         <h3 className="font-medium">{job.title}</h3>
                         <p className="text-sm text-gray-500">
-                          Publicado el {formatDate(job.createdAt instanceof Date ? job.createdAt : new Date(job.createdAt))}
+                          Publicado el {formatDate(typeof job.createdAt === 'string' ? new Date(job.createdAt) : job.createdAt)}
                         </p>
                       </div>
                       <div className="mt-2 md:mt-0">
                         <Badge className={`
-                          ${job.status === 'open' ? 'bg-green-100 text-green-800' : 
-                            job.status === 'in progress' ? 'bg-blue-100 text-blue-800' : 
-                            'bg-gray-100 text-gray-800'}
+                          ${job.status === 'open' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 
+                            job.status === 'in progress' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' : 
+                            'bg-gray-100 text-gray-800 hover:bg-gray-200'}
+                          transition-colors duration-200
                         `}>
                           {job.status === 'open' ? 'Abierto' : 
                             job.status === 'in progress' ? 'En progreso' : 
@@ -316,12 +309,12 @@ const UserProfile = () => {
                     {job.skills && job.skills.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {job.skills.slice(0, 3).map((skill, index) => (
-                          <Badge key={index} variant="outline" className="bg-gray-50 text-xs">
+                          <Badge key={index} variant="outline" className="bg-gray-50 text-xs hover:bg-gray-100 transition-colors">
                             {skill}
                           </Badge>
                         ))}
                         {job.skills.length > 3 && (
-                          <Badge variant="outline" className="bg-gray-50 text-xs">
+                          <Badge variant="outline" className="bg-gray-50 text-xs hover:bg-gray-100 transition-colors">
                             +{job.skills.length - 3} más
                           </Badge>
                         )}
