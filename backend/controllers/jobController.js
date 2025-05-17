@@ -69,7 +69,7 @@ const jobController = {
   // Get all jobs with filters
   async getAllJobs(req, res) {
     try {
-      const { category, search, status } = req.query;
+      const { category, search, status, userId } = req.query;
       
       const filter = {};
       
@@ -81,6 +81,11 @@ const jobController = {
       // Filter by status
       if (status) {
         filter.status = status;
+      }
+      
+      // Filter by userId (new filter)
+      if (userId) {
+        filter.userId = userId;
       }
       
       // Search by title or description (simplified for PostgreSQL)
@@ -120,9 +125,12 @@ const jobController = {
     try {
       const { jobId } = req.params;
       
+      console.log(`Getting job by ID: ${jobId}`);
+      
       const job = await jobModel.findById(jobId);
       
       if (!job) {
+        console.error(`Job with ID ${jobId} not found`);
         return res.status(404).json({
           success: false,
           message: 'Job not found'
@@ -137,6 +145,8 @@ const jobController = {
         userName: user ? user.name : 'Usuario desconocido',
         userPhoto: user ? user.avatar : null
       };
+      
+      console.log(`Job found: ${job.id}, title: ${job.title}`);
       
       return res.status(200).json({
         success: true,

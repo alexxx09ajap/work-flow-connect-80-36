@@ -12,6 +12,7 @@ router.use(authenticateToken);
 router.post('/', jobController.createJob);
 
 // Get all jobs with optional filtering
+// Can now filter by userId with ?userId=xxx query parameter
 router.get('/', jobController.getAllJobs);
 
 // Get job by ID
@@ -30,6 +31,6 @@ router.post('/:jobId/comments', jobController.addComment);
 router.post('/:jobId/comments/:commentId/replies', jobController.addReply);
 
 // Add log to verify routes initialization
-console.log('Job routes initialized correctly');
+console.log('Job routes initialized correctly with userId filter support');
 
 module.exports = router;

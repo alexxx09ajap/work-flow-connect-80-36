@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/Layout/MainLayout';
@@ -14,6 +15,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { formatDate } from '@/lib/utils';
 import { UserType, JobType } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import axios from 'axios';
 
 /**
  * Componente de Página de Perfil de Usuario
@@ -55,26 +57,56 @@ const UserProfile = () => {
             console.log("UserProfile: Mostrando perfil del usuario actual:", currentUser);
             setProfileUser(currentUser);
           } else {
-            // Intentar obtener el usuario de la caché local o del usuario actual si los IDs coinciden
-            let user = getUserById(userId);
+            // Cargar el usuario directamente desde el backend en lugar de usar la caché
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+            const response = await axios.get(
+              `${API_URL}/users/${userId}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+              }
+            );
             
-            // Si el usuario no se encuentra en la caché pero el ID coincide con el usuario actual
-            if (!user && currentUser && userId === currentUser.id) {
-              user = currentUser;
+            if (response.data.success && response.data.user) {
+              const user = response.data.user;
+              console.log("UserProfile: Usuario cargado desde el backend:", user);
+              setProfileUser(user);
+            } else {
+              console.log("UserProfile: Usuario no encontrado en el backend");
+              setProfileUser(null);
             }
-            
-            console.log("UserProfile: Usuario recuperado:", user);
-            setProfileUser(user || null);
           }
           
-          // Filtrar propuestas de este usuario
+          // Cargar trabajos del usuario
           if (jobs && jobs.length > 0) {
             const jobsByUser = jobs.filter(job => job.userId === userId);
             console.log("UserProfile: Propuestas del usuario:", jobsByUser);
             setUserJobs(jobsByUser);
           } else {
-            console.log("UserProfile: No hay propuestas disponibles");
-            setUserJobs([]);
+            // Opcionalmente, cargar trabajos directamente desde el backend
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+            try {
+              const jobsResponse = await axios.get(
+                `${API_URL}/jobs?userId=${userId}`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                  }
+                }
+              );
+              
+              if (jobsResponse.data.success && jobsResponse.data.jobs) {
+                console.log("UserProfile: Propuestas cargadas desde el backend:", jobsResponse.data.jobs);
+                setUserJobs(jobsResponse.data.jobs);
+              } else {
+                console.log("UserProfile: No hay propuestas disponibles");
+                setUserJobs([]);
+              }
+            } catch (jobError) {
+              console.error("Error al cargar propuestas del usuario:", jobError);
+              setUserJobs([]);
+            }
           }
         } catch (error) {
           console.error("Error al cargar datos del perfil:", error);
@@ -83,6 +115,7 @@ const UserProfile = () => {
             title: "Error",
             description: "No se pudieron cargar los datos del usuario"
           });
+          setProfileUser(null);
         }
       }
       setIsLoading(false);

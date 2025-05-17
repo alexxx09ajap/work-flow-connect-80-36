@@ -1,4 +1,3 @@
-
 const db = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
@@ -40,6 +39,11 @@ const jobModel = {
     if (filter.status) {
       params.push(filter.status);
       conditions.push(`j.status = $${params.length}`);
+    }
+    
+    if (filter.userId) {
+      params.push(filter.userId);
+      conditions.push(`j."userId" = $${params.length}`);
     }
     
     if (filter.search) {
@@ -144,42 +148,48 @@ const jobModel = {
 
   // Get all comments for a job with their replies
   async getComments(jobId) {
-    // First, get all comments for the job
-    const commentsResult = await db.query(
-      `SELECT c.id, c.content, c."jobId", c."userId", c."createdAt", c."updatedAt",
-              u.name as "userName", u."photoURL" as "userPhoto"
-       FROM "Comments" c
-       JOIN "Users" u ON c."userId" = u.id
-       WHERE c."jobId" = $1
-       ORDER BY c."createdAt" ASC`,
-      [jobId]
-    );
-
-    const comments = commentsResult.rows;
-
-    // For each comment, get its replies
-    for (const comment of comments) {
-      const repliesResult = await db.query(
-        `SELECT r.id, r.content, r."userId", r."commentId", r."createdAt", r."updatedAt",
+    try {
+      // First, get all comments for the job
+      const commentsResult = await db.query(
+        `SELECT c.id, c.content, c."jobId", c."userId", c."createdAt", c."updatedAt",
                 u.name as "userName", u."photoURL" as "userPhoto"
-         FROM "Replies" r
-         JOIN "Users" u ON r."userId" = u.id
-         WHERE r."commentId" = $1
-         ORDER BY r."createdAt" ASC`,
-        [comment.id]
+         FROM "Comments" c
+         JOIN "Users" u ON c."userId" = u.id
+         WHERE c."jobId" = $1
+         ORDER BY c."createdAt" ASC`,
+        [jobId]
       );
 
-      // Format the comment and replies to match frontend expectations
-      comment.text = comment.content;
-      comment.timestamp = new Date(comment.createdAt).getTime();
-      comment.replies = repliesResult.rows.map(reply => ({
-        ...reply,
-        text: reply.content,
-        timestamp: new Date(reply.createdAt).getTime()
-      }));
-    }
+      const comments = commentsResult.rows;
+      console.log(`Found ${comments.length} comments for job ${jobId}`);
 
-    return comments;
+      // For each comment, get its replies
+      for (const comment of comments) {
+        const repliesResult = await db.query(
+          `SELECT r.id, r.content, r."userId", r."commentId", r."createdAt", r."updatedAt",
+                  u.name as "userName", u."photoURL" as "userPhoto"
+           FROM "Replies" r
+           JOIN "Users" u ON r."userId" = u.id
+           WHERE r."commentId" = $1
+           ORDER BY r."createdAt" ASC`,
+          [comment.id]
+        );
+
+        // Format the comment and replies to match frontend expectations
+        comment.text = comment.content;
+        comment.timestamp = new Date(comment.createdAt).getTime();
+        comment.replies = repliesResult.rows.map(reply => ({
+          ...reply,
+          text: reply.content,
+          timestamp: new Date(reply.createdAt).getTime()
+        }));
+      }
+
+      return comments;
+    } catch (error) {
+      console.error(`Error getting comments for job ${jobId}:`, error);
+      return [];
+    }
   },
 
   // Add a comment to a job

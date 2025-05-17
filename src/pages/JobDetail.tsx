@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/Layout/MainLayout';
@@ -54,30 +53,42 @@ const JobDetail = () => {
       
       setIsLoading(true);
       try {
-        // Intentar obtener el trabajo del caché local primero
-        const jobData = getJobById(jobId);
-        
-        if (jobData) {
-          console.log("Trabajo encontrado localmente:", jobData);
-          console.log("Fecha de creación:", jobData.createdAt);
-          console.log("Nombre de usuario:", jobData.userName);
-          console.log("ID de usuario:", jobData.userId);
+        // Intentar obtener el trabajo directamente desde el backend en lugar de usar el caché local
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const response = await axios.get(
+          `${API_URL}/jobs/${jobId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        );
+
+        if (response.data.success && response.data.job) {
+          console.log("Trabajo cargado directamente desde el backend:", response.data.job);
           
-          // Asegúrese de que la fecha sea un objeto Date válido
+          // Asegúrese de que las fechas sean objetos Date válidos
+          const jobData = response.data.job;
           if (jobData.createdAt && typeof jobData.createdAt === 'string') {
             jobData.createdAt = new Date(jobData.createdAt).toString();
           }
           
           setJob(jobData);
-
-          // Cargar los comentarios directamente desde el backend para asegurar que tenemos la última versión
-          await loadComments(jobId);
+          
+          // Si hay comentarios en la respuesta, cárguelos también
+          if (jobData.comments) {
+            console.log("Comentarios cargados con el trabajo:", jobData.comments);
+            setComments(jobData.comments);
+          } else {
+            // Si no hay comentarios en la respuesta, cárguelos por separado
+            await loadComments(jobId);
+          }
         } else {
-          console.error("Trabajo no encontrado");
+          console.error("Trabajo no encontrado en el backend");
           setError("No se pudo encontrar la propuesta solicitada");
         }
       } catch (error) {
-        console.error("Error al cargar trabajo:", error);
+        console.error("Error al cargar trabajo desde el backend:", error);
         setError("Error al cargar los detalles de la propuesta");
         toast({
           variant: "destructive",
@@ -90,7 +101,7 @@ const JobDetail = () => {
     };
     
     loadJobDetails();
-  }, [jobId, getJobById, jobs]);
+  }, [jobId]);
 
   // Nueva función para cargar los comentarios directamente desde el backend
   const loadComments = async (jobId: string) => {
@@ -302,9 +313,6 @@ const JobDetail = () => {
       console.log('Comment response:', response.data);
       
       if (response.data.success) {
-        // Update the local state with the new comment
-        await addComment(job.id, commentText);
-        
         // Add the new comment to our local state
         if (response.data.comment) {
           setComments(prev => [...prev, response.data.comment]);
