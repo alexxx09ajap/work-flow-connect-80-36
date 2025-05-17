@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { MessageType } from '@/types';
-import { Info, MoreVertical, Edit, Trash2, ArrowLeft } from 'lucide-react';
+import { Info, MoreVertical, Edit, Trash2, ArrowLeft, LogOut } from 'lucide-react';
 import EmojiPicker from './EmojiPicker';
 import FileAttachment from './FileAttachment';
 
@@ -22,6 +22,7 @@ interface ChatMobileSheetProps {
   children?: React.ReactNode;
   onEditMessage: (id: string, content: string) => void;
   onDeleteMessage: (id: string) => void;
+  onLeaveGroup?: () => void;
 }
 
 const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
@@ -32,7 +33,8 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
   isGroup = false,
   children,
   onEditMessage,
-  onDeleteMessage
+  onDeleteMessage,
+  onLeaveGroup
 }) => {
   const { currentUser } = useAuth();
   const { getUserById } = useData();
@@ -79,6 +81,18 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <SheetTitle className="flex-1 text-left">{title}</SheetTitle>
+            
+            {/* Botón para salir del grupo en móvil */}
+            {isGroup && onLeaveGroup && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={onLeaveGroup}
+                className="ml-2"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            )}
           </div>
         </SheetHeader>
         
