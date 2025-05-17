@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MainLayout } from '@/components/Layout/MainLayout';
+import MainLayout from '@/components/Layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -18,7 +18,7 @@ import { useMobile } from '@/hooks/use-mobile';
 const ChatsPage = () => {
   const { currentUser } = useAuth();
   const { getUserById } = useData();
-  const { chats, activeChat, messages, setActiveChat, sendMessage, editMessage, deleteMessage, leaveChat } = useChat();
+  const { chats, activeChat, getMessages, setActiveChat, sendMessage, updateMessage, deleteMessage, leaveChat } = useChat();
   const [messageText, setMessageText] = useState('');
   const [editingMessage, setEditingMessage] = useState<{ id: string; content: string } | null>(null);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState<string | null>(null);
@@ -26,8 +26,8 @@ const ChatsPage = () => {
   const isMobile = useMobile();
   const [isMobileChat, setIsMobileChat] = useState(false);
 
-  // Filter messages for active chat
-  const activeMessages = activeChat ? messages.filter(msg => msg.chatId === activeChat.id) : [];
+  // Filtrar mensajes para el chat activo
+  const activeMessages = activeChat ? getMessages(activeChat.id) : [];
 
   useEffect(() => {
     if (isMobile && activeChat) {
@@ -35,31 +35,31 @@ const ChatsPage = () => {
     }
   }, [activeChat, isMobile]);
 
-  // Handle sending messages
+  // Manejar el envío de mensajes
   const handleSendMessage = () => {
     if (messageText.trim() && activeChat) {
       if (editingMessage) {
-        // Edit existing message
-        editMessage(editingMessage.id, messageText.trim());
+        // Editar mensaje existente
+        updateMessage(editingMessage.id, messageText.trim());
         setEditingMessage(null);
       } else {
-        // Send new message
+        // Enviar nuevo mensaje
         sendMessage(activeChat.id, messageText.trim());
       }
       setMessageText('');
     }
   };
 
-  // Handle emoji selection
+  // Manejar selección de emoji
   const handleEmojiClick = (emoji: string) => {
     setMessageText(prev => prev + emoji);
   };
 
-  // Get chat name based on participants
+  // Obtener el nombre del chat según los participantes
   const getChatName = (chat: ChatType): string => {
     if (chat.isGroup) return chat.name || 'Grupo';
     
-    // For direct chats, show the other user's name
+    // Para chats directos, mostrar el nombre del otro usuario
     const otherParticipant = chat.participants.find(p => p !== currentUser?.id);
     if (!otherParticipant) return 'Chat';
     
@@ -67,7 +67,7 @@ const ChatsPage = () => {
     return user?.name || 'Usuario';
   };
 
-  // Handle key press for sending messages
+  // Manejar la pulsación de teclas para enviar mensajes
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -75,7 +75,7 @@ const ChatsPage = () => {
     }
   };
 
-  // Handle leaving a chat
+  // Manejar salida de un chat
   const handleLeaveChat = () => {
     if (activeChat) {
       leaveChat(activeChat.id);
@@ -89,7 +89,7 @@ const ChatsPage = () => {
         <h1 className="text-2xl font-bold mb-4">Chats</h1>
 
         <div className="flex flex-1 gap-4 h-full">
-          {/* Chats sidebar */}
+          {/* Barra lateral de chats */}
           <div className="hidden md:flex md:w-1/3 lg:w-1/4 flex-col gap-2 overflow-y-auto">
             {chats.map(chat => (
               <Card 
@@ -107,7 +107,9 @@ const ChatsPage = () => {
                   <div className="flex-1 overflow-hidden">
                     <h3 className="font-medium text-sm truncate">{getChatName(chat)}</h3>
                     <p className="text-xs text-gray-500 truncate">
-                      {chat.lastMessage || 'No hay mensajes aún'}
+                      {typeof chat.lastMessage === 'string' 
+                        ? chat.lastMessage 
+                        : chat.lastMessage?.content || 'No hay mensajes aún'}
                     </p>
                   </div>
                 </div>
@@ -115,7 +117,7 @@ const ChatsPage = () => {
             ))}
           </div>
 
-          {/* Mobile chat list */}
+          {/* Lista de chat para móvil */}
           <div className="flex md:hidden w-full flex-col gap-2 overflow-y-auto">
             {!activeChat ? (
               chats.map(chat => (
@@ -137,7 +139,9 @@ const ChatsPage = () => {
                     <div className="flex-1 overflow-hidden">
                       <h3 className="font-medium text-sm truncate">{getChatName(chat)}</h3>
                       <p className="text-xs text-gray-500 truncate">
-                        {chat.lastMessage || 'No hay mensajes aún'}
+                        {typeof chat.lastMessage === 'string' 
+                          ? chat.lastMessage 
+                          : chat.lastMessage?.content || 'No hay mensajes aún'}
                       </p>
                     </div>
                   </div>
@@ -146,10 +150,10 @@ const ChatsPage = () => {
             ) : null}
           </div>
 
-          {/* Chat view */}
+          {/* Vista de chat */}
           {activeChat && !isMobile && (
             <div className="hidden md:flex flex-col flex-1 bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden">
-              {/* Chat header */}
+              {/* Cabecera del chat */}
               <div className="flex items-center justify-between p-4 border-b">
                 <div className="flex items-center">
                   <Avatar className="h-8 w-8 mr-2">
@@ -161,7 +165,7 @@ const ChatsPage = () => {
                   <h3 className="font-medium">{getChatName(activeChat)}</h3>
                 </div>
                 
-                {/* Leave Group button for desktop */}
+                {/* Botón de Salir del grupo para escritorio */}
                 {activeChat.isGroup && (
                   <AlertDialog open={isConfirmingLeave} onOpenChange={setIsConfirmingLeave}>
                     <AlertDialogTrigger asChild>
@@ -188,7 +192,7 @@ const ChatsPage = () => {
                 )}
               </div>
 
-              {/* Chat messages */}
+              {/* Mensajes del chat */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {activeMessages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center">
@@ -275,7 +279,7 @@ const ChatsPage = () => {
                 )}
               </div>
 
-              {/* Message input */}
+              {/* Entrada de mensaje */}
               <div className="p-4 border-t">
                 <div className="flex items-center space-x-2">
                   <EmojiPicker onEmojiClick={handleEmojiClick} />
@@ -299,7 +303,7 @@ const ChatsPage = () => {
           )}
         </div>
 
-        {/* Delete message confirmation */}
+        {/* Confirmación de eliminación de mensaje */}
         <AlertDialog open={!!isConfirmingDelete} onOpenChange={(open) => !open && setIsConfirmingDelete(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -322,7 +326,7 @@ const ChatsPage = () => {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Mobile chat view with emoji support */}
+        {/* Vista de chat para móvil con soporte de emojis */}
         {activeChat && (
           <ChatMobileSheet
             isOpen={isMobileChat}
@@ -332,14 +336,15 @@ const ChatsPage = () => {
             isGroup={activeChat.isGroup}
             onEditMessage={(id, content) => setEditingMessage({ id, content })}
             onDeleteMessage={(id) => setIsConfirmingDelete(id)}
-            onLeaveGroup={activeChat.isGroup ? () => setIsConfirmingLeave(true) : undefined}
+            onLeaveGroup={activeChat.isGroup ? handleLeaveChat : undefined}
           >
             <div className="flex items-center space-x-2">
               <EmojiPicker onEmojiClick={handleEmojiClick} />
               <Input
-                placeholder="Escribe un mensaje..."
+                placeholder={editingMessage ? "Editar mensaje..." : "Escribe un mensaje..."}
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
+                onKeyDown={handleKeyPress}
                 className="flex-1"
               />
               <Button

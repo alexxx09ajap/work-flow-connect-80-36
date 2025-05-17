@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { ChatType, MessageType, UserType } from '@/types';
+import { ChatType, MessageType } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import io, { Socket } from 'socket.io-client';
 import { chatService, messageService, fileService } from '@/services/api';

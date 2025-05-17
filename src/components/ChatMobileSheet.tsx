@@ -41,7 +41,7 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
   const { getUserById } = useData();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Scroll to bottom when new messages arrive
+  // Desplazarse al fondo cuando llegan nuevos mensajes
   useEffect(() => {
     if (isOpen) {
       scrollToBottom();
@@ -53,7 +53,7 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
   };
   
   const formatTime = (timestamp: string | Date) => {
-    // Convert to Date object if it's a string
+    // Convertir a objeto Date si es una cadena
     const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
     
     return date.toLocaleTimeString('es-ES', {
@@ -63,7 +63,7 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
   };
 
   const formatDate = (timestamp: string | Date) => {
-    // Convert to Date object if it's a string
+    // Convertir a objeto Date si es una cadena
     const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
     
     return date.toLocaleDateString('es-ES', {
@@ -83,7 +83,7 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
             </Button>
             <SheetTitle className="flex-1 text-left">{title}</SheetTitle>
             
-            {/* Leave group button with alert dialog */}
+            {/* Botón para salir del grupo con diálogo de confirmación */}
             {isGroup && onLeaveGroup && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -112,7 +112,7 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
           </div>
         </SheetHeader>
         
-        {/* Messages area */}
+        {/* Área de mensajes */}
         <ScrollArea className="flex-1 p-4 bg-gray-50 dark:bg-gray-900">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
@@ -176,7 +176,7 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
                           } group`}>
                             <p className="break-words">{message.content}</p>
                             
-                            {/* Message options */}
+                            {/* Opciones de mensaje */}
                             {isCurrentUser && !isDeleted && !hasFile && (
                               <Popover>
                                 <PopoverTrigger asChild>
@@ -213,13 +213,13 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
                               </Popover>
                             )}
                             
-                            {/* Edited indicator */}
+                            {/* Indicador de editado */}
                             {message.edited && !isDeleted && (
                               <span className="text-xs opacity-70 ml-1">(editado)</span>
                             )}
                           </div>
                           
-                          {/* Render file attachment if present */}
+                          {/* Mostrar archivo adjunto si existe */}
                           {hasFile && !isDeleted && message.file && (
                             <div className="mt-1">
                               <FileAttachment 
@@ -256,7 +256,7 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
           )}
         </ScrollArea>
         
-        {/* Message input with emoji picker */}
+        {/* Entrada de mensaje con selector de emojis */}
         <div className="p-4 border-t">
           {children}
         </div>
