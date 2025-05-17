@@ -230,6 +230,8 @@ const jobController = {
       const { jobId } = req.params;
       const userId = req.user.userId;
       
+      console.log(`Attempting to delete job ${jobId} by user ${userId}`);
+      
       // Check if job exists
       const job = await jobModel.findById(jobId);
       
@@ -248,8 +250,10 @@ const jobController = {
         });
       }
       
-      // Delete job
+      // Delete job and all associated comments/replies in a transaction
       await jobModel.delete(jobId);
+      
+      console.log(`Job ${jobId} successfully deleted`);
       
       return res.status(200).json({
         success: true,

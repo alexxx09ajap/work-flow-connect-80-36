@@ -31,6 +31,6 @@ router.post('/:jobId/comments', jobController.addComment);
 router.post('/:jobId/comments/:commentId/replies', jobController.addReply);
 
 // Add log to verify routes initialization
-console.log('Job routes initialized correctly with userId filter support');
+console.log('Job routes initialized correctly with userId filter support and improved deletion handling');
 
 module.exports = router;

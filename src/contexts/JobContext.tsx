@@ -173,16 +173,32 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
           title: "Propuesta eliminada",
           description: "La propuesta se ha eliminado correctamente."
         });
+        
+        return true;
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudo eliminar la propuesta. Inténtalo de nuevo."
+        });
+        return false;
+      }
+    } catch (error: any) {
+      console.error("Error deleting job:", error);
+      
+      let errorMessage = "Error al eliminar la propuesta.";
+      
+      // Si hay un mensaje más específico del error, lo usamos
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
       }
       
-      return success;
-    } catch (error) {
-      console.error("Error deleting job:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Error al eliminar la propuesta."
+        description: errorMessage
       });
+      
       return false;
     }
   };

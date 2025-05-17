@@ -1,3 +1,4 @@
+
 const db = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
@@ -140,10 +141,48 @@ const jobModel = {
     return result.rows[0];
   },
   
-  // Delete a job
+  // Delete a job and all its associated comments and replies
   async delete(jobId) {
-    await db.query('DELETE FROM "Jobs" WHERE id = $1', [jobId]);
-    return true;
+    try {
+      // Start a transaction
+      await db.query('BEGIN');
+      
+      // First, delete all replies to comments of this job
+      // Find all comments for this job
+      const commentsResult = await db.query(
+        'SELECT id FROM "Comments" WHERE "jobId" = $1',
+        [jobId]
+      );
+      
+      // Delete replies for each comment
+      const commentIds = commentsResult.rows.map(comment => comment.id);
+      if (commentIds.length > 0) {
+        console.log(`Deleting replies for comments: ${commentIds.join(', ')}`);
+        // Delete replies for all comments of this job at once
+        await db.query(
+          'DELETE FROM "Replies" WHERE "commentId" IN (SELECT id FROM "Comments" WHERE "jobId" = $1)',
+          [jobId]
+        );
+      }
+      
+      // Delete all comments for this job
+      console.log(`Deleting all comments for job ${jobId}`);
+      await db.query('DELETE FROM "Comments" WHERE "jobId" = $1', [jobId]);
+      
+      // Finally, delete the job itself
+      console.log(`Deleting job ${jobId}`);
+      await db.query('DELETE FROM "Jobs" WHERE id = $1', [jobId]);
+      
+      // Commit the transaction
+      await db.query('COMMIT');
+      
+      return true;
+    } catch (error) {
+      // If there's an error, rollback the transaction
+      await db.query('ROLLBACK');
+      console.error('Error in delete job transaction:', error);
+      throw error;
+    }
   },
 
   // Get all comments for a job with their replies
