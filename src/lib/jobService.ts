@@ -262,6 +262,52 @@ export const jobService = {
       return newComment;
     }
   },
+  
+  updateComment: async (commentId: string, text: string): Promise<CommentType> => {
+    try {
+      console.log(`Updating comment ${commentId}: ${text}`);
+      
+      const response = await axios.put(
+        `${API_URL}/jobs/comments/${commentId}`,
+        { content: text },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      
+      console.log('Update comment response:', response.data);
+      
+      if (response.data.success && response.data.comment) {
+        return response.data.comment;
+      }
+      
+      throw new Error('Failed to update comment');
+    } catch (error) {
+      console.error("Error updating comment:", error);
+      throw error;
+    }
+  },
+  
+  deleteComment: async (commentId: string): Promise<boolean> => {
+    try {
+      console.log(`Deleting comment ${commentId}`);
+      
+      const response = await axios.delete(`${API_URL}/jobs/comments/${commentId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      console.log('Delete comment response:', response.data);
+      
+      return response.data.success;
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      throw error;
+    }
+  },
 
   addReply: async (jobId: string, commentId: string, text: string): Promise<ReplyType> => {
     try {
@@ -307,21 +353,49 @@ export const jobService = {
       return newReply;
     }
   },
-
-  deleteComment: async (commentId: string): Promise<boolean> => {
+  
+  updateReply: async (replyId: string, text: string): Promise<ReplyType> => {
     try {
-      console.log(`Deleting comment ${commentId}`);
+      console.log(`Updating reply ${replyId}: ${text}`);
       
-      // In a real implementation, this would be a backend call
-      const response = await axios.delete(`${API_URL}/comments/${commentId}`, {
+      const response = await axios.put(
+        `${API_URL}/jobs/replies/${replyId}`,
+        { content: text },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      
+      console.log('Update reply response:', response.data);
+      
+      if (response.data.success && response.data.reply) {
+        return response.data.reply;
+      }
+      
+      throw new Error('Failed to update reply');
+    } catch (error) {
+      console.error("Error updating reply:", error);
+      throw error;
+    }
+  },
+  
+  deleteReply: async (replyId: string): Promise<boolean> => {
+    try {
+      console.log(`Deleting reply ${replyId}`);
+      
+      const response = await axios.delete(`${API_URL}/jobs/replies/${replyId}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
       
+      console.log('Delete reply response:', response.data);
+      
       return response.data.success;
     } catch (error) {
-      console.error("Error deleting comment:", error);
+      console.error("Error deleting reply:", error);
       throw error;
     }
   }

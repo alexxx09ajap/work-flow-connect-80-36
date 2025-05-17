@@ -1,4 +1,3 @@
-
 const db = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
@@ -230,7 +229,7 @@ const jobModel = {
       return [];
     }
   },
-
+  
   // Add a comment to a job
   async addComment(jobId, commentData) {
     const { content, userId } = commentData;
@@ -265,7 +264,7 @@ const jobModel = {
 
     return comment;
   },
-
+  
   // Add a reply to a comment
   async addReplyToComment(commentId, replyData) {
     const { content, userId } = replyData;
@@ -298,6 +297,156 @@ const jobModel = {
     reply.timestamp = new Date(reply.createdAt).getTime();
 
     return reply;
+  },
+  
+  // New function: Update a comment
+  async updateComment(commentId, content) {
+    try {
+      const now = new Date();
+      const result = await db.query(
+        `UPDATE "Comments" 
+         SET content = $1, "updatedAt" = $2
+         WHERE id = $3
+         RETURNING id, content, "jobId", "userId", "createdAt", "updatedAt"`,
+        [content, now, commentId]
+      );
+      
+      if (result.rows.length === 0) {
+        return null;
+      }
+      
+      const comment = result.rows[0];
+      
+      // Get user information for the comment
+      const userResult = await db.query(
+        `SELECT name, "photoURL" FROM "Users" WHERE id = $1`,
+        [comment.userId]
+      );
+      
+      if (userResult.rows.length > 0) {
+        const user = userResult.rows[0];
+        comment.userName = user.name;
+        comment.userPhoto = user.photoURL;
+      }
+      
+      // Get replies for this comment
+      comment.replies = await this.getRepliesForComment(commentId);
+      
+      return comment;
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      throw error;
+    }
+  },
+  
+  // Get replies for a specific comment
+  async getRepliesForComment(commentId) {
+    try {
+      const repliesResult = await db.query(
+        `SELECT r.id, r.content, r."userId", r."commentId", r."createdAt", r."updatedAt",
+                u.name as "userName", u."photoURL" as "userPhoto"
+         FROM "Replies" r
+         JOIN "Users" u ON r."userId" = u.id
+         WHERE r."commentId" = $1
+         ORDER BY r."createdAt" ASC`,
+        [commentId]
+      );
+      
+      // Format the replies to match frontend expectations
+      return repliesResult.rows.map(reply => ({
+        ...reply,
+        text: reply.content,
+        timestamp: new Date(reply.createdAt).getTime()
+      }));
+    } catch (error) {
+      console.error(`Error getting replies for comment ${commentId}:`, error);
+      return [];
+    }
+  },
+  
+  // Delete a comment and all its replies
+  async deleteComment(commentId) {
+    try {
+      // Start a transaction
+      await db.query('BEGIN');
+      
+      // First, delete all replies to this comment
+      await db.query('DELETE FROM "Replies" WHERE "commentId" = $1', [commentId]);
+      
+      // Then, delete the comment itself
+      const result = await db.query(
+        'DELETE FROM "Comments" WHERE id = $1 RETURNING "jobId"',
+        [commentId]
+      );
+      
+      // Commit the transaction
+      await db.query('COMMIT');
+      
+      // Return the jobId if available
+      return result.rows.length > 0 ? result.rows[0].jobId : null;
+      
+    } catch (error) {
+      // If there's an error, rollback the transaction
+      await db.query('ROLLBACK');
+      console.error('Error deleting comment:', error);
+      throw error;
+    }
+  },
+  
+  // Update a reply
+  async updateReply(replyId, content) {
+    try {
+      const now = new Date();
+      const result = await db.query(
+        `UPDATE "Replies" 
+         SET content = $1, "updatedAt" = $2
+         WHERE id = $3
+         RETURNING id, content, "userId", "commentId", "createdAt", "updatedAt"`,
+        [content, now, replyId]
+      );
+      
+      if (result.rows.length === 0) {
+        return null;
+      }
+      
+      const reply = result.rows[0];
+      
+      // Get user information for the reply
+      const userResult = await db.query(
+        `SELECT name, "photoURL" FROM "Users" WHERE id = $1`,
+        [reply.userId]
+      );
+      
+      if (userResult.rows.length > 0) {
+        const user = userResult.rows[0];
+        reply.userName = user.name;
+        reply.userPhoto = user.photoURL;
+      }
+      
+      // Format the reply to match frontend expectations
+      reply.text = reply.content;
+      reply.timestamp = new Date(reply.createdAt).getTime();
+      
+      return reply;
+    } catch (error) {
+      console.error('Error updating reply:', error);
+      throw error;
+    }
+  },
+  
+  // Delete a reply
+  async deleteReply(replyId) {
+    try {
+      const result = await db.query(
+        'DELETE FROM "Replies" WHERE id = $1 RETURNING "commentId"',
+        [replyId]
+      );
+      
+      return result.rows.length > 0 ? result.rows[0].commentId : null;
+    } catch (error) {
+      console.error('Error deleting reply:', error);
+      throw error;
+    }
   }
 };
 

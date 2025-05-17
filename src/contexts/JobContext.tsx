@@ -15,13 +15,16 @@ export interface JobContextType {
   getJobById: (id: string) => JobType | undefined;
   loading: boolean;
   addComment: (jobId: string, text: string) => Promise<CommentType | undefined>;
+  updateComment: (commentId: string, text: string) => Promise<CommentType | undefined>;
+  deleteComment: (commentId: string) => Promise<boolean>;
   addReply: (commentId: string, jobId: string, text: string) => Promise<ReplyType | undefined>;
+  updateReply: (replyId: string, text: string) => Promise<ReplyType | undefined>;
+  deleteReply: (replyId: string) => Promise<boolean>;
   addReplyToComment: (jobId: string, commentId: string, text: string, user: UserType) => Promise<void>;
   refreshJobs: () => Promise<void>;
   saveJob: (jobId: string) => Promise<void>;
   unsaveJob: (jobId: string) => Promise<void>;
   savedJobs: JobType[];
-  deleteComment: (commentId: string) => void;
   createJob: (jobData: Partial<JobType>) => Promise<JobType | null>;
   updateJob: (jobId: string, jobData: Partial<JobType>) => Promise<JobType | null>;
   deleteJob: (jobId: string) => Promise<boolean>;
@@ -252,6 +255,89 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const updateComment = async (commentId: string, text: string): Promise<CommentType | undefined> => {
+    if (!currentUser) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Debes iniciar sesión para editar comentarios."
+      });
+      return;
+    }
+
+    try {
+      // Send the update to the backend
+      const updatedComment = await jobService.updateComment(commentId, text);
+      
+      // Update the jobs state with the updated comment
+      setJobs(prevJobs => {
+        return prevJobs.map(job => {
+          if (job.comments) {
+            const commentExists = job.comments.some(comment => comment.id === commentId);
+            if (commentExists) {
+              const updatedComments = job.comments.map(comment => 
+                comment.id === commentId ? updatedComment : comment
+              );
+              return { ...job, comments: updatedComments };
+            }
+          }
+          return job;
+        });
+      });
+      
+      toast({
+        title: "Comentario actualizado",
+        description: "Tu comentario ha sido actualizado correctamente."
+      });
+      
+      return updatedComment;
+    } catch (error) {
+      console.error("Error updating comment:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al actualizar el comentario."
+      });
+    }
+  };
+
+  const deleteComment = async (commentId: string): Promise<boolean> => {
+    try {
+      const success = await jobService.deleteComment(commentId);
+      
+      if (success) {
+        // Update the jobs state by removing the deleted comment
+        setJobs(prevJobs => {
+          return prevJobs.map(job => {
+            const updatedComments = job.comments?.filter(comment => comment.id !== commentId);
+            return { ...job, comments: updatedComments };
+          });
+        });
+        
+        toast({
+          title: "Comentario eliminado",
+          description: "El comentario ha sido eliminado correctamente."
+        });
+        return true;
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Error al eliminar el comentario."
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al eliminar el comentario."
+      });
+      return false;
+    }
+  };
+
   const addReply = async (commentId: string, jobId: string, text: string): Promise<ReplyType | undefined> => {
     if (!currentUser) {
       toast({
@@ -307,7 +393,104 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Function for the CommentItem component to use
+  const updateReply = async (replyId: string, text: string): Promise<ReplyType | undefined> => {
+    if (!currentUser) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Debes iniciar sesión para editar respuestas."
+      });
+      return;
+    }
+
+    try {
+      // Send the update to the backend
+      const updatedReply = await jobService.updateReply(replyId, text);
+      
+      // Update the jobs state with the updated reply
+      setJobs(prevJobs => {
+        return prevJobs.map(job => {
+          if (job.comments) {
+            const updatedComments = job.comments.map(comment => {
+              if (comment.replies) {
+                const replyExists = comment.replies.some(reply => reply.id === replyId);
+                if (replyExists) {
+                  const updatedReplies = comment.replies.map(reply =>
+                    reply.id === replyId ? updatedReply : reply
+                  );
+                  return { ...comment, replies: updatedReplies };
+                }
+              }
+              return comment;
+            });
+            return { ...job, comments: updatedComments };
+          }
+          return job;
+        });
+      });
+      
+      toast({
+        title: "Respuesta actualizada",
+        description: "Tu respuesta ha sido actualizada correctamente."
+      });
+      
+      return updatedReply;
+    } catch (error) {
+      console.error("Error updating reply:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al actualizar la respuesta."
+      });
+    }
+  };
+
+  const deleteReply = async (replyId: string): Promise<boolean> => {
+    try {
+      const success = await jobService.deleteReply(replyId);
+      
+      if (success) {
+        // Update the jobs state by removing the deleted reply
+        setJobs(prevJobs => {
+          return prevJobs.map(job => {
+            if (job.comments) {
+              const updatedComments = job.comments.map(comment => {
+                if (comment.replies) {
+                  const updatedReplies = comment.replies.filter(reply => reply.id !== replyId);
+                  return { ...comment, replies: updatedReplies };
+                }
+                return comment;
+              });
+              return { ...job, comments: updatedComments };
+            }
+            return job;
+          });
+        });
+        
+        toast({
+          title: "Respuesta eliminada",
+          description: "La respuesta ha sido eliminada correctamente."
+        });
+        return true;
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Error al eliminar la respuesta."
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error("Error deleting reply:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error al eliminar la respuesta."
+      });
+      return false;
+    }
+  };
+
   const addReplyToComment = async (jobId: string, commentId: string, text: string, user: UserType) => {
     try {
       // Send the reply to the backend
@@ -344,32 +527,6 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const deleteComment = async (commentId: string) => {
-    try {
-      await jobService.deleteComment(commentId);
-      
-      // Update the jobs state by removing the deleted comment
-      setJobs(prevJobs => {
-        return prevJobs.map(job => {
-          const updatedComments = job.comments?.filter(comment => comment.id !== commentId);
-          return { ...job, comments: updatedComments };
-        });
-      });
-      
-      toast({
-        title: "Comentario eliminado",
-        description: "El comentario ha sido eliminado correctamente."
-      });
-    } catch (error) {
-      console.error("Error deleting comment:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Error al eliminar el comentario."
-      });
-    }
-  };
-
   const saveJob = async (jobId: string) => {
     // This will be implemented when job saving functionality is added
     toast({
@@ -395,12 +552,15 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
     getJobById,
     loading,
     addComment,
+    updateComment,
+    deleteComment,
     addReply,
+    updateReply,
+    deleteReply,
     refreshJobs,
     saveJob,
     unsaveJob,
     savedJobs,
-    deleteComment,
     createJob,
     updateJob,
     deleteJob,

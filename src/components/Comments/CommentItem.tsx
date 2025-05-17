@@ -3,11 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Edit, Trash2, Reply, Check, X } from 'lucide-react';
 import { CommentType, ReplyType } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useJobs } from '@/contexts/JobContext';
 import { toast } from '@/components/ui/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import axios from 'axios';
 
 type CommentItemProps = {
@@ -21,8 +22,17 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
   const [localReplies, setLocalReplies] = useState<ReplyType[]>([]);
   
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState('');
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  
+  // Para las respuestas
+  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
+  const [editReplyContent, setEditReplyContent] = useState('');
+  const [isSubmittingReplyEdit, setIsSubmittingReplyEdit] = useState(false);
+  
   const { currentUser } = useAuth();
-  const { addReplyToComment } = useJobs();
+  const { addReplyToComment, updateComment, deleteComment, updateReply, deleteReply } = useJobs();
 
   // Inicializa las respuestas locales con las respuestas del comentario
   useEffect(() => {
@@ -30,6 +40,13 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
       setLocalReplies(comment.replies);
     }
   }, [comment.replies]);
+  
+  // Para inicializar el contenido de edición cuando comienza a editar
+  useEffect(() => {
+    if (isEditing) {
+      setEditContent(comment.text || comment.content || '');
+    }
+  }, [isEditing, comment]);
 
   const handleSubmitReply = async () => {
     if (!replyContent.trim() || !currentUser) return;
@@ -86,6 +103,116 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
       setIsSubmittingReply(false);
     }
   };
+  
+  const handleSubmitEdit = async () => {
+    if (!editContent.trim() || !currentUser) return;
+    
+    setIsSubmittingEdit(true);
+    try {
+      // Actualizar el comentario en el backend
+      const updatedComment = await updateComment(comment.id, editContent);
+      
+      if (updatedComment) {
+        // Update local state with the edited comment
+        comment.text = updatedComment.content || updatedComment.text;
+        comment.content = updatedComment.content;
+        
+        setIsEditing(false);
+        toast({
+          title: "Comentario actualizado",
+          description: "Tu comentario ha sido actualizado correctamente"
+        });
+      }
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar el comentario"
+      });
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  };
+  
+  const handleDeleteComment = async () => {
+    try {
+      const success = await deleteComment(comment.id);
+      
+      if (success) {
+        toast({
+          title: "Comentario eliminado",
+          description: "El comentario ha sido eliminado correctamente"
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo eliminar el comentario"
+      });
+    }
+  };
+  
+  const handleSubmitReplyEdit = async (replyId: string) => {
+    if (!editReplyContent.trim() || !currentUser) return;
+    
+    setIsSubmittingReplyEdit(true);
+    try {
+      // Actualizar la respuesta en el backend
+      const updatedReply = await updateReply(replyId, editReplyContent);
+      
+      if (updatedReply) {
+        // Update local replies with the edited reply
+        setLocalReplies(prev => 
+          prev.map(reply => 
+            reply.id === replyId 
+              ? { ...reply, text: updatedReply.content || updatedReply.text, content: updatedReply.content } 
+              : reply
+          )
+        );
+        
+        setEditingReplyId(null);
+        toast({
+          title: "Respuesta actualizada",
+          description: "Tu respuesta ha sido actualizada correctamente"
+        });
+      }
+    } catch (error) {
+      console.error('Error updating reply:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar la respuesta"
+      });
+    } finally {
+      setIsSubmittingReplyEdit(false);
+    }
+  };
+  
+  const handleDeleteReply = async (replyId: string) => {
+    try {
+      const success = await deleteReply(replyId);
+      
+      if (success) {
+        // Remove the deleted reply from local state
+        setLocalReplies(prev => prev.filter(reply => reply.id !== replyId));
+        
+        toast({
+          title: "Respuesta eliminada",
+          description: "La respuesta ha sido eliminada correctamente"
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting reply:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo eliminar la respuesta"
+      });
+    }
+  };
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -103,6 +230,13 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
       minute: '2-digit'
     });
   };
+  
+  const startEditReply = (reply: ReplyType) => {
+    setEditingReplyId(reply.id);
+    setEditReplyContent(reply.text || reply.content || '');
+  };
+
+  const isCommentOwner = currentUser && comment.userId === currentUser.id;
 
   return (
     <div className="space-y-3">
@@ -121,16 +255,90 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
               {formatDate(comment.timestamp)} {formatTime(comment.timestamp)}
             </span>
           </div>
-          <p className="text-gray-700 text-sm mt-1">{comment.text || comment.content}</p>
           
-          {currentUser && (
-            <button
-              onClick={() => setShowReplyForm(!showReplyForm)}
-              className="text-xs text-wfc-purple mt-1 flex items-center hover:text-wfc-purple-dark transition-colors duration-200 transform hover:scale-[1.02]"
-            >
-              <MessageCircle className="h-3 w-3 mr-1" />
-              {showReplyForm ? 'Cancelar' : 'Responder'}
-            </button>
+          {isEditing ? (
+            <div className="mt-2">
+              <Textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="min-h-[80px] text-sm"
+              />
+              <div className="flex justify-end mt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mr-2"
+                  onClick={() => setIsEditing(false)}
+                  disabled={isSubmittingEdit}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSubmitEdit}
+                  disabled={isSubmittingEdit || !editContent.trim()}
+                  className="bg-wfc-purple hover:bg-wfc-purple-medium"
+                >
+                  <Check className="h-4 w-4 mr-1" />
+                  {isSubmittingEdit ? 'Guardando...' : 'Guardar'}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-gray-700 text-sm mt-1">{comment.text || comment.content}</p>
+              
+              <div className="flex items-center mt-1 space-x-3">
+                {currentUser && (
+                  <button
+                    onClick={() => setShowReplyForm(!showReplyForm)}
+                    className="text-xs text-wfc-purple flex items-center hover:text-wfc-purple-dark"
+                  >
+                    <Reply className="h-3 w-3 mr-1" />
+                    {showReplyForm ? 'Cancelar' : 'Responder'}
+                  </button>
+                )}
+                
+                {isCommentOwner && (
+                  <>
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="text-xs text-blue-500 flex items-center hover:text-blue-700"
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      Editar
+                    </button>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button className="text-xs text-red-500 flex items-center hover:text-red-700">
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Eliminar
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta acción eliminará tu comentario y todas sus respuestas. Esta acción no se puede deshacer.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={handleDeleteComment}
+                            className="bg-red-500 hover:bg-red-600"
+                          >
+                            Eliminar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -148,7 +356,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
             <Button
               size="sm"
               variant="outline"
-              className="mr-2 hover:bg-gray-100 transition-colors duration-200 transform hover:scale-[1.02]"
+              className="mr-2 hover:bg-gray-100"
               onClick={() => setShowReplyForm(false)}
             >
               Cancelar
@@ -157,7 +365,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
               size="sm"
               onClick={handleSubmitReply}
               disabled={isSubmittingReply || !replyContent.trim()}
-              className="bg-wfc-purple hover:bg-wfc-purple-medium transition-colors duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+              className="bg-wfc-purple hover:bg-wfc-purple-medium"
             >
               {isSubmittingReply ? 'Enviando...' : 'Responder'}
             </Button>
@@ -183,7 +391,79 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
                     {formatDate(reply.timestamp)} {formatTime(reply.timestamp)}
                   </span>
                 </div>
-                <p className="text-gray-700 text-xs mt-1">{reply.text || reply.content}</p>
+                
+                {editingReplyId === reply.id ? (
+                  <div className="mt-2">
+                    <Textarea
+                      value={editReplyContent}
+                      onChange={(e) => setEditReplyContent(e.target.value)}
+                      className="min-h-[60px] text-xs"
+                    />
+                    <div className="flex justify-end mt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mr-2 h-7 text-xs"
+                        onClick={() => setEditingReplyId(null)}
+                        disabled={isSubmittingReplyEdit}
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Cancelar
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleSubmitReplyEdit(reply.id)}
+                        disabled={isSubmittingReplyEdit || !editReplyContent.trim()}
+                        className="bg-wfc-purple hover:bg-wfc-purple-medium h-7 text-xs"
+                      >
+                        <Check className="h-3 w-3 mr-1" />
+                        {isSubmittingReplyEdit ? 'Guardando...' : 'Guardar'}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-gray-700 text-xs mt-1">{reply.text || reply.content}</p>
+                    
+                    {currentUser && reply.userId === currentUser.id && (
+                      <div className="flex items-center mt-1 space-x-2">
+                        <button
+                          onClick={() => startEditReply(reply)}
+                          className="text-xs text-blue-500 flex items-center hover:text-blue-700"
+                        >
+                          <Edit className="h-3 w-3 mr-1" />
+                          Editar
+                        </button>
+                        
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <button className="text-xs text-red-500 flex items-center hover:text-red-700">
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Eliminar
+                            </button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción eliminará tu respuesta. Esta acción no se puede deshacer.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteReply(reply.id)}
+                                className="bg-red-500 hover:bg-red-600"
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           ))}

@@ -27,10 +27,22 @@ router.delete('/:jobId', jobController.deleteJob);
 // Add comment to a job
 router.post('/:jobId/comments', jobController.addComment);
 
+// Update a comment
+router.put('/comments/:commentId', jobController.updateComment);
+
+// Delete a comment
+router.delete('/comments/:commentId', jobController.deleteComment);
+
 // Add reply to a comment
 router.post('/:jobId/comments/:commentId/replies', jobController.addReply);
 
+// Update a reply
+router.put('/replies/:replyId', jobController.updateReply);
+
+// Delete a reply
+router.delete('/replies/:replyId', jobController.deleteReply);
+
 // Add log to verify routes initialization
-console.log('Job routes initialized correctly with userId filter support and improved deletion handling');
+console.log('Job routes initialized correctly with userId filter support, improved deletion handling, and comment management');
 
 module.exports = router;
