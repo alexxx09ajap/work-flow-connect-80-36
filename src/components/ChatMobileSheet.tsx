@@ -12,6 +12,7 @@ import { MessageType } from '@/types';
 import { Info, MoreVertical, Edit, Trash2, ArrowLeft, LogOut } from 'lucide-react';
 import EmojiPicker from './EmojiPicker';
 import FileAttachment from './FileAttachment';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface ChatMobileSheetProps {
   isOpen: boolean;
@@ -82,16 +83,31 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
             </Button>
             <SheetTitle className="flex-1 text-left">{title}</SheetTitle>
             
-            {/* Botón para salir del grupo en móvil */}
+            {/* Leave group button with alert dialog */}
             {isGroup && onLeaveGroup && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={onLeaveGroup}
-                className="ml-2"
-              >
-                <LogOut className="h-5 w-5" />
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="ml-2"
+                  >
+                    <LogOut className="h-5 w-5" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Salir del grupo?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      ¿Estás seguro de que deseas salir del grupo? No podrás acceder a los mensajes anteriores.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={onLeaveGroup}>Salir</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
         </SheetHeader>
