@@ -1,5 +1,7 @@
+
 const jobModel = require('../models/jobModel');
 const userModel = require('../models/userModel');
+const db = require('../config/database'); // Añadimos la importación de la base de datos
 
 const jobController = {
   // Create a new job
