@@ -700,10 +700,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentUser) return false;
     
     try {
+      // Llamamos a la función actualizada en chatService
       await chatService.addUsersToChat(chatId, [userId]);
       
-      // Update chat in state by reloading chats
+      // Actualizar la información de chats después de añadir participante
       await loadChats();
+      
+      // Si el chat activo es el que estamos modificando, recargamos los detalles
+      if (activeChat?.id === chatId) {
+        const chats = await chatService.getChats();
+        const updatedChat = chats.find(c => c.id === chatId);
+        if (updatedChat) {
+          setActiveChat(updatedChat);
+        }
+      }
       
       toast({
         title: "Participante agregado",
