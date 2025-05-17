@@ -14,7 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { MessageCircle, Calendar, DollarSign, User } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { JobType } from '@/types';
+import { JobType, CommentType } from '@/types';
 import { formatDate } from '@/lib/utils';
 import { CommentsList } from '@/components/Comments/CommentsList';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,6 +38,7 @@ const JobDetail = () => {
   const [job, setJob] = useState<JobType | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [comments, setComments] = useState<CommentType[]>([]);
   
   console.log("JobDetail: jobId =", jobId);
   console.log("JobDetail: jobs disponibles =", jobs?.length || 0);
@@ -68,6 +69,9 @@ const JobDetail = () => {
           }
           
           setJob(jobData);
+
+          // Cargar los comentarios directamente desde el backend para asegurar que tenemos la última versión
+          await loadComments(jobId);
         } else {
           console.error("Trabajo no encontrado");
           setError("No se pudo encontrar la propuesta solicitada");
@@ -87,6 +91,36 @@ const JobDetail = () => {
     
     loadJobDetails();
   }, [jobId, getJobById, jobs]);
+
+  // Nueva función para cargar los comentarios directamente desde el backend
+  const loadComments = async (jobId: string) => {
+    setIsLoadingComments(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await axios.get(
+        `${API_URL}/jobs/${jobId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      
+      if (response.data.success && response.data.job.comments) {
+        console.log("Comentarios cargados del backend:", response.data.job.comments);
+        setComments(response.data.job.comments);
+      }
+    } catch (error) {
+      console.error("Error al cargar comentarios:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron cargar los comentarios"
+      });
+    } finally {
+      setIsLoadingComments(false);
+    }
+  };
 
   // Obtener información del propietario de la propuesta
   const jobOwner = job ? getUserById(job.userId) : undefined;
@@ -271,6 +305,11 @@ const JobDetail = () => {
         // Update the local state with the new comment
         await addComment(job.id, commentText);
         
+        // Add the new comment to our local state
+        if (response.data.comment) {
+          setComments(prev => [...prev, response.data.comment]);
+        }
+        
         setCommentText(''); // Limpiar el campo de comentario
         
         toast({
@@ -380,7 +419,7 @@ const JobDetail = () => {
                   <div className="mt-6">
                     <Separator className="mb-6" />
                     <CommentsList 
-                      comments={job?.comments} 
+                      comments={comments.length > 0 ? comments : job?.comments} 
                       jobId={job?.id || ''}
                       loading={isLoadingComments}
                     />

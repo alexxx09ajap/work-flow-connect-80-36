@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,10 +19,17 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyContent, setReplyContent] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
-  const [localReplies, setLocalReplies] = useState<ReplyType[]>(comment.replies || []);
+  const [localReplies, setLocalReplies] = useState<ReplyType[]>([]);
   
   const { currentUser } = useAuth();
   const { addReplyToComment } = useJobs();
+
+  // Inicializa las respuestas locales con las respuestas del comentario
+  useEffect(() => {
+    if (comment.replies && comment.replies.length > 0) {
+      setLocalReplies(comment.replies);
+    }
+  }, [comment.replies]);
 
   const handleSubmitReply = async () => {
     if (!replyContent.trim() || !currentUser) return;
@@ -97,9 +104,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
     });
   };
 
-  // Use either the locally managed replies or the ones from props
-  const displayReplies = localReplies.length > 0 ? localReplies : (comment.replies || []);
-
   return (
     <div className="space-y-3">
       {/* Comentario principal */}
@@ -162,9 +166,9 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
       )}
 
       {/* Respuestas */}
-      {displayReplies.length > 0 && (
+      {localReplies.length > 0 && (
         <div className="ml-11 space-y-3 border-l-2 border-gray-100 pl-3">
-          {displayReplies.map((reply: ReplyType) => (
+          {localReplies.map((reply: ReplyType) => (
             <div key={reply.id} className="flex space-x-3">
               <Avatar className="h-6 w-6">
                 <AvatarImage src={reply.userPhoto} alt={reply.userName} />
