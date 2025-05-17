@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { UserType, JobType, ChatType, MessageType, FileType } from '@/types';
 
@@ -130,11 +129,6 @@ export const chatService = {
   
   async removeUserFromChat(chatId: string, userId: string): Promise<void> {
     await api.delete(`/chats/${chatId}/participants/${userId}`);
-  },
-  
-  async leaveChat(chatId: string): Promise<{ message: string, chatId: string }> {
-    const response = await api.post(`/chats/${chatId}/leave`);
-    return response.data;
   }
 };
 

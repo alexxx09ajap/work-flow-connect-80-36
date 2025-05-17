@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { ChatType, MessageType } from '@/types';
+import { ChatType, MessageType, UserType } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import io, { Socket } from 'socket.io-client';
 import { chatService, messageService, fileService } from '@/services/api';
@@ -27,7 +27,6 @@ export interface ChatContextType {
   updateMessage: (messageId: string, content: string) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
   searchMessages: (query: string, chatId?: string) => Promise<MessageType[]>;
-  leaveChat: (chatId: string) => Promise<boolean>;
 }
 
 const ChatContext = createContext<ChatContextType | null>(null);
@@ -781,39 +780,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Leave a group chat
-  const leaveChat = async (chatId: string): Promise<boolean> => {
-    if (!currentUser) return false;
-    
-    try {
-      // Llamar al endpoint para salir del chat
-      const result = await chatService.leaveChat(chatId);
-      
-      // Actualizar la lista de chats eliminando este chat de la lista
-      setChats((prev) => prev.filter(chat => chat.id !== chatId));
-      
-      // Si el chat activo es del que salimos, establecer activeChat como null
-      if (activeChat?.id === chatId) {
-        setActiveChat(null);
-      }
-      
-      toast({
-        title: "Has salido del chat",
-        description: "Has abandonado el grupo exitosamente"
-      });
-      
-      return true;
-    } catch (error) {
-      console.error('Error al salir del chat:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo salir del grupo"
-      });
-      return false;
-    }
-  };
-
   return (
     <ChatContext.Provider
       value={{
@@ -836,8 +802,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loadMessages,
         updateMessage,
         deleteMessage,
-        searchMessages,
-        leaveChat
+        searchMessages
       }}
     >
       {children}

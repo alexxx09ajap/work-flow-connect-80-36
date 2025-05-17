@@ -9,10 +9,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { MessageType } from '@/types';
-import { Info, MoreVertical, Edit, Trash2, ArrowLeft, LogOut } from 'lucide-react';
+import { Info, MoreVertical, Edit, Trash2, ArrowLeft } from 'lucide-react';
 import EmojiPicker from './EmojiPicker';
 import FileAttachment from './FileAttachment';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface ChatMobileSheetProps {
   isOpen: boolean;
@@ -23,7 +22,6 @@ interface ChatMobileSheetProps {
   children?: React.ReactNode;
   onEditMessage: (id: string, content: string) => void;
   onDeleteMessage: (id: string) => void;
-  onLeaveGroup?: () => void;
 }
 
 const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
@@ -34,14 +32,13 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
   isGroup = false,
   children,
   onEditMessage,
-  onDeleteMessage,
-  onLeaveGroup
+  onDeleteMessage
 }) => {
   const { currentUser } = useAuth();
   const { getUserById } = useData();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Desplazarse al fondo cuando llegan nuevos mensajes
+  // Scroll to bottom when new messages arrive
   useEffect(() => {
     if (isOpen) {
       scrollToBottom();
@@ -53,7 +50,7 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
   };
   
   const formatTime = (timestamp: string | Date) => {
-    // Convertir a objeto Date si es una cadena
+    // Convert to Date object if it's a string
     const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
     
     return date.toLocaleTimeString('es-ES', {
@@ -63,7 +60,7 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
   };
 
   const formatDate = (timestamp: string | Date) => {
-    // Convertir a objeto Date si es una cadena
+    // Convert to Date object if it's a string
     const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
     
     return date.toLocaleDateString('es-ES', {
@@ -82,37 +79,10 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <SheetTitle className="flex-1 text-left">{title}</SheetTitle>
-            
-            {/* Botón para salir del grupo con diálogo de confirmación */}
-            {isGroup && onLeaveGroup && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="ml-2"
-                  >
-                    <LogOut className="h-5 w-5" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>¿Salir del grupo?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      ¿Estás seguro de que deseas salir del grupo? No podrás acceder a los mensajes anteriores.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={onLeaveGroup}>Salir</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
           </div>
         </SheetHeader>
         
-        {/* Área de mensajes */}
+        {/* Messages area */}
         <ScrollArea className="flex-1 p-4 bg-gray-50 dark:bg-gray-900">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
@@ -176,7 +146,7 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
                           } group`}>
                             <p className="break-words">{message.content}</p>
                             
-                            {/* Opciones de mensaje */}
+                            {/* Message options */}
                             {isCurrentUser && !isDeleted && !hasFile && (
                               <Popover>
                                 <PopoverTrigger asChild>
@@ -213,13 +183,13 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
                               </Popover>
                             )}
                             
-                            {/* Indicador de editado */}
+                            {/* Edited indicator */}
                             {message.edited && !isDeleted && (
                               <span className="text-xs opacity-70 ml-1">(editado)</span>
                             )}
                           </div>
                           
-                          {/* Mostrar archivo adjunto si existe */}
+                          {/* Render file attachment if present */}
                           {hasFile && !isDeleted && message.file && (
                             <div className="mt-1">
                               <FileAttachment 
@@ -256,7 +226,7 @@ const ChatMobileSheet: React.FC<ChatMobileSheetProps> = ({
           )}
         </ScrollArea>
         
-        {/* Entrada de mensaje con selector de emojis */}
+        {/* Message input with emoji picker */}
         <div className="p-4 border-t">
           {children}
         </div>
